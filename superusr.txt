@@ -1,2 +1,0 @@
-username:kushal
-password:kushal123
