@@ -13,4 +13,3 @@ class BlogAdmin(admin.ModelAdmin):
   list_filter = ['title','category','created_at','updated_at','is_featured','status']
   list_editable = ['is_featured','status']
 admin.site.register(Blog,BlogAdmin)
-
