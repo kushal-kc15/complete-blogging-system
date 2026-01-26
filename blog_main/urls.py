@@ -27,6 +27,7 @@ urlpatterns = [
     path('register/',views.Register,name='register'),
     path('login/',views.Login,name='login'),
     path('logout/',views.Logout,name='logout'),
+    path('dashboard/',include('dashboard.urls')),
     path('about/', views.about, name='about'),
     path('<slug:slug>/',BlogsView.BlogDetail,name='Blog_detail'),
     path('blogs/search/',BlogsView.Search,name='search'),
