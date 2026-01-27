@@ -4,9 +4,9 @@ from blogs.models import Blog
 
 
 class LatestPostsFeed(Feed):
-    title = "Django Blog - Latest Posts"
+    title = "InkSpire - Latest Posts"
     link = "/"
-    description = "Latest posts from Django Blog"
+    description = "Latest posts from InkSpire blogging platform"
 
     def items(self):
         return Blog.objects.filter(status='published').order_by('-created_at')[:10]
