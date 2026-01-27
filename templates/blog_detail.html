@@ -2,6 +2,18 @@
 
 {% block content %}
 
+<!-- SEO Meta Tags -->
+{% if post.meta_description %}
+<meta name="description" content="{{ post.meta_description }}">
+{% else %}
+<meta name="description" content="{{ post.short_description|truncatewords:25 }}">
+{% endif %}
+<meta property="og:title" content="{{ post.title }}">
+<meta property="og:description" content="{{ post.short_description|truncatewords:25 }}">
+{% if post.featured_image %}
+<meta property="og:image" content="{{ request.build_absolute_uri }}{{ post.featured_image.url }}">
+{% endif %}
+
 <!-- Page content-->
 <div class="container mt-5">
   <div class="row">
@@ -13,31 +25,170 @@
           <!-- Post title-->
           <h1 class="fw-bolder mb-1">{{ post.title }}</h1>
           <!-- Post meta content-->
-          <div class="text-muted fst-italic mb-2">Posted on {{ post.created_at }} by {{ post.author }}</div>
+          <div class="text-muted fst-italic mb-2">
+            Posted on {{ post.created_at|date:"M d, Y" }} by {{ post.author }}
+            <span class="mx-2">|</span>
+            <i class="fa fa-eye"></i> {{ post.views }} views
+            <span class="mx-2">|</span>
+            <i class="fa fa-clock-o"></i> {{ post.reading_time }} min read
+          </div>
           <!-- Post category-->
-          <a class="badge bg-warning text-decoration-none text-light"
-            href="{% url 'posts_by_category' post.category.id %}">{{ post.category }}</a>
+          <div class="mb-2">
+            <a class="badge bg-warning text-decoration-none text-dark"
+              href="{% url 'posts_by_category' post.category.id %}">
+              {{ post.category }}
+            </a>
+          </div>
+
+          <!-- Like, Bookmark, Share buttons -->
+          <div class="d-flex align-items-center gap-3 mt-3">
+            {% if user.is_authenticated %}
+            <a href="{% url 'like_post' post.slug %}"
+              class="btn btn-sm {% if user_has_liked %}btn-danger{% else %}btn-outline-danger{% endif %}">
+              <i class="fa fa-heart"></i> {{ like_count }}
+            </a>
+            <a href="{% url 'bookmark_post' post.slug %}"
+              class="btn btn-sm {% if user_has_bookmarked %}btn-primary{% else %}btn-outline-primary{% endif %}">
+              <i class="fa fa-bookmark"></i> {% if user_has_bookmarked %}Saved{% else %}Save{% endif %}
+            </a>
+            {% else %}
+            <a href="{% url 'login' %}" class="btn btn-sm btn-outline-danger">
+              <i class="fa fa-heart"></i> {{ like_count }}
+            </a>
+            {% endif %}
+
+            <!-- Share buttons -->
+            <div class="btn-group">
+              <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}&text={{ post.title }}"
+                target="_blank" class="btn btn-sm btn-outline-info">
+                <i class="fa fa-twitter"></i>
+              </a>
+              <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" target="_blank"
+                class="btn btn-sm btn-outline-primary">
+                <i class="fa fa-facebook"></i>
+              </a>
+              <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri }}&title={{ post.title }}"
+                target="_blank" class="btn btn-sm btn-outline-secondary">
+                <i class="fa fa-linkedin"></i>
+              </a>
+              <a href="https://wa.me/?text={{ post.title }} {{ request.build_absolute_uri }}" target="_blank"
+                class="btn btn-sm btn-outline-success">
+                <i class="fa fa-whatsapp"></i>
+              </a>
+            </div>
+          </div>
         </header>
+
         <!-- Preview image figure-->
         {% if post.featured_image %}
-        <figure class="mb-4"><img class="img-fluid rounded" src="{{post.featured_image.url}}" alt="..." /></figure>
+        <figure class="mb-4"><img class="img-fluid rounded" src="{{ post.featured_image.url }}"
+            alt="{{ post.title }}" /></figure>
         {% endif %}
+
         <!-- Post content-->
         <section class="mb-5">
           <p class="fs-5 mb-4" style="font-weight: bold;">{{ post.short_description }}</p>
-          <p class="fs-5 mb-4">{{ post.blog_body }}</p>
+          <div class="fs-5 mb-4">{{ post.blog_body|safe }}</div>
+
+          <!-- Related Posts -->
+          {% if related_posts %}
+          <div class="mt-5 p-4 bg-light rounded">
+            <h4><i class="fa fa-th-list"></i> Related Posts</h4>
+            <div class="row">
+              {% for related in related_posts %}
+              <div class="col-md-4">
+                <div class="card border-0 bg-transparent">
+                  {% if related.featured_image %}
+                  <img src="{{ related.featured_image.url }}" class="card-img-top rounded" alt="{{ related.title }}"
+                    style="height: 120px; object-fit: cover;">
+                  {% endif %}
+                  <div class="card-body px-0">
+                    <h6><a href="{% url 'Blog_detail' related.slug %}" class="text-dark">{{
+                        related.title|truncatewords:8 }}</a></h6>
+                    <small class="text-muted">{{ related.created_at|timesince }} ago</small>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
 
           <!-- Comments Section -->
           <div class="mt-5">
-            <h4>Comments ({{ comment_count }})</h4>
+            <h4><i class="fa fa-comments"></i> Comments ({{ comment_count }})</h4>
 
             {% if comments %}
             {% for comment in comments %}
-            <div class="card mt-2">
+            <div class="card mt-3">
               <div class="card-body">
-                <p class="card-text mb-1">{{ comment.Comment }}</p>
-                <small class="text-muted">By <strong>{{ comment.user.username }}</strong> | {{
-                  comment.created_at|timesince }} ago</small>
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <strong>{{ comment.user.username }}</strong>
+                    <small class="text-muted">| {{ comment.created_at|timesince }} ago</small>
+                  </div>
+                  {% if user == comment.user %}
+                  <div>
+                    <button class="btn btn-sm btn-link text-primary" onclick="toggleEditForm({{ comment.id }})">
+                      <i class="fa fa-edit"></i>
+                    </button>
+                    <a href="{% url 'delete_comment' comment.id %}" class="btn btn-sm btn-link text-danger"
+                      onclick="return confirm('Delete this comment?')">
+                      <i class="fa fa-trash"></i>
+                    </a>
+                  </div>
+                  {% endif %}
+                </div>
+                <p class="card-text mt-2 mb-1" id="comment-text-{{ comment.id }}">{{ comment.comment }}</p>
+
+                <!-- Edit form (hidden) -->
+                <form id="edit-form-{{ comment.id }}" action="{% url 'edit_comment' comment.id %}" method="POST"
+                  style="display: none;">
+                  {% csrf_token %}
+                  <textarea name="comment" class="form-control mb-2">{{ comment.comment }}</textarea>
+                  <button type="submit" class="btn btn-sm btn-warning">Update</button>
+                  <button type="button" class="btn btn-sm btn-secondary"
+                    onclick="toggleEditForm({{ comment.id }})">Cancel</button>
+                </form>
+
+                <!-- Reply button -->
+                {% if user.is_authenticated %}
+                <button class="btn btn-sm btn-link p-0" onclick="toggleReplyForm({{ comment.id }})">
+                  <i class="fa fa-reply"></i> Reply
+                </button>
+
+                <!-- Reply form (hidden) -->
+                <form id="reply-form-{{ comment.id }}" action="{% url 'Blog_detail' post.slug %}" method="POST"
+                  style="display: none;" class="mt-2">
+                  {% csrf_token %}
+                  <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                  <textarea name="comment" class="form-control mb-2" rows="2" placeholder="Write a reply..."></textarea>
+                  <button type="submit" class="btn btn-sm btn-warning">Reply</button>
+                  <button type="button" class="btn btn-sm btn-secondary"
+                    onclick="toggleReplyForm({{ comment.id }})">Cancel</button>
+                </form>
+                {% endif %}
+
+                <!-- Replies -->
+                {% for reply in comment.replies.all %}
+                <div class="card mt-2 ml-4" style="margin-left: 30px; background-color: #f8f9fa;">
+                  <div class="card-body py-2">
+                    <div class="d-flex justify-content-between">
+                      <div>
+                        <strong>{{ reply.user.username }}</strong>
+                        <small class="text-muted">| {{ reply.created_at|timesince }} ago</small>
+                      </div>
+                      {% if user == reply.user %}
+                      <a href="{% url 'delete_comment' reply.id %}" class="btn btn-sm btn-link text-danger"
+                        onclick="return confirm('Delete this reply?')">
+                        <i class="fa fa-trash"></i>
+                      </a>
+                      {% endif %}
+                    </div>
+                    <p class="card-text mt-1 mb-0">{{ reply.comment }}</p>
+                  </div>
+                </div>
+                {% endfor %}
               </div>
             </div>
             {% endfor %}
@@ -62,39 +213,63 @@
             {% endif %}
           </div>
 
-
         </section>
       </article>
     </div>
+
     <!-- Side widgets-->
     <div class="col-lg-4">
-
-      <!-- Categories widget-->
+      <!-- Author widget -->
       <div class="card mb-4 p-3 border-0 bg-light">
-        <h4 class="font-italic">Categories</h4>
+        <h4 class="font-italic"><i class="fa fa-user"></i> Author</h4>
         <div class="card-body">
-          <div class="row">
-            <div class="col-sm-12">
-              <ul class="list-unstyled mb-0">
-                {% for cat in categories %}
-                <li><a href="{% url 'posts_by_category' cat.id %}" class="text-dark">{{ cat.name }}</a></li>
-                {% endfor %}
-              </ul>
-            </div>
-          </div>
+          <p class="mb-1"><strong>{{ post.author.get_full_name|default:post.author.username }}</strong></p>
+          <small class="text-muted">{{ post.author.email }}</small>
         </div>
       </div>
 
-      <!-- Side widget (About or Social) -->
+      <!-- Categories widget-->
       <div class="card mb-4 p-3 border-0 bg-light">
-        <h4 class="font-italic">Follow Us</h4>
-        <ol class="list-unstyled">
-          <li><a href="https://github.com/kushal-kc15" class="text-dark">GitHub</a></li>
-          <li><a href="https://linkedin.com/in/kushal-kc-2896862a8" class="text-dark">LinkedIn</a></li>
-        </ol>
+        <h4 class="font-italic"><i class="fa fa-folder"></i> Categories</h4>
+        <div class="card-body">
+          <ul class="list-unstyled mb-0">
+            {% for cat in categories %}
+            <li><a href="{% url 'posts_by_category' cat.id %}" class="text-dark">{{ cat.name }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <!-- RSS Feed -->
+      <div class="card mb-4 p-3 border-0 bg-light">
+        <h4 class="font-italic"><i class="fa fa-rss"></i> Subscribe</h4>
+        <div class="card-body">
+          <a href="{% url 'rss_feed' %}" class="btn btn-warning btn-sm">
+            <i class="fa fa-rss"></i> RSS Feed
+          </a>
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+  function toggleEditForm(commentId) {
+    var form = document.getElementById('edit-form-' + commentId);
+    var text = document.getElementById('comment-text-' + commentId);
+    if (form.style.display === 'none') {
+      form.style.display = 'block';
+      text.style.display = 'none';
+    } else {
+      form.style.display = 'none';
+      text.style.display = 'block';
+    }
+  }
+
+  function toggleReplyForm(commentId) {
+    var form = document.getElementById('reply-form-' + commentId);
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  }
+</script>
 
 {% endblock %}

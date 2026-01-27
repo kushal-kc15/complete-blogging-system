@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+  <h3 class="text-uppercase text-warning mb-4" style="letter-spacing: 2px;">
+    <i class="fa fa-bookmark"></i> My Bookmarks
+  </h3>
+
+  <div class="row">
+    {% for bookmark in bookmarks %}
+    <div class="col-md-6 mb-4">
+      <div class="card border-0 h-100">
+        {% if bookmark.blog.featured_image %}
+        <img src="{{ bookmark.blog.featured_image.url }}" class="card-img-top" alt="{{ bookmark.blog.title }}"
+          style="height: 200px; object-fit: cover;">
+        {% endif %}
+        <div class="card-body">
+          <h5><a href="{% url 'Blog_detail' bookmark.blog.slug %}" class="text-dark">{{ bookmark.blog.title }}</a></h5>
+          <small class="text-muted">Bookmarked {{ bookmark.created_at|timesince }} ago</small>
+          <p class="card-text mt-2">{{ bookmark.blog.short_description|truncatewords:20 }}</p>
+          <a href="{% url 'bookmark_post' bookmark.blog.slug %}" class="btn btn-sm btn-outline-danger">
+            <i class="fa fa-times"></i> Remove
+          </a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+      <div class="alert alert-info">
+        <i class="fa fa-info-circle"></i> You haven't bookmarked any posts yet.
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}

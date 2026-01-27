@@ -17,4 +17,9 @@ urlpatterns = [
     path('users/add', views.add_user, name='add_user'),
     path('users/edit/<int:id>/', views.edit_user, name='edit_user'),
     path('users/delete/<int:id>/', views.delete_user, name='delete_user'),
+
+    # Contact Messages Management
+    path('messages/', views.contact_messages, name='contact_messages'),
+    path('messages/view/<int:id>/', views.view_message, name='view_message'),
+    path('messages/delete/<int:id>/', views.delete_message, name='delete_message'),
 ]

@@ -1,48 +1,126 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django_ckeditor_5.fields import CKEditor5Field
+
+
 # Create your models here.
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='profile')
+    bio = models.TextField(max_length=500, blank=True)
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    website = models.URLField(max_length=200, blank=True)
+    location = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.user.username} Profile'
+
+
 class Category(models.Model):
-  name = models.CharField(max_length=100,unique=True)
-  created_at=models.DateTimeField(auto_now_add=True)
-  updated_at=models.DateTimeField(auto_now=True)
+    name = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-  class Meta:
-    verbose_name = "Category"
-    verbose_name_plural = "Categories"
-  
-  def __str__(self):
-    return self.name
+    class Meta:
+        verbose_name = "Category"
+        verbose_name_plural = "Categories"
+
+    def __str__(self):
+        return self.name
 
 
-STATUS_CHOICES=(
-  ('draft','Draft'),
-  ('published','Published'),
+STATUS_CHOICES = (
+    ('draft', 'Draft'),
+    ('published', 'Published'),
 )
-class Blog(models.Model):
-  title=models.CharField(max_length=200)
-  slug=models.SlugField(max_length=200,unique=True)
-  category=models.ForeignKey(Category,on_delete=models.CASCADE)
-  author=models.ForeignKey(User,on_delete=models.CASCADE)
-  created_at=models.DateTimeField(auto_now_add=True)
-  updated_at=models.DateTimeField(auto_now=True)
-  featured_image=models.ImageField(upload_to='uploads/%Y/%m/%d',blank=True,null=True)
-  blog_body=models.TextField(max_length=2000)
-  short_description=models.TextField(max_length=500)
-  status=models.CharField(max_length=10,choices=STATUS_CHOICES,default='draft')
-  is_featured=models.BooleanField(default=False)
 
-  class Meta:
-    verbose_name = "Blog"
-    verbose_name_plural = "Blogs"
-  
-  def __str__(self):
-    return self.title
+
+class Blog(models.Model):
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=200, unique=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    featured_image = models.ImageField(
+        upload_to='uploads/%Y/%m/%d', blank=True, null=True)
+    blog_body = CKEditor5Field('Content', config_name='extends')
+    short_description = models.TextField(max_length=500)
+    status = models.CharField(
+        max_length=10, choices=STATUS_CHOICES, default='draft')
+    is_featured = models.BooleanField(default=False)
+    views = models.PositiveIntegerField(default=0)
+    meta_description = models.CharField(max_length=160, blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Blog"
+        verbose_name_plural = "Blogs"
+
+    def __str__(self):
+        return self.title
+
+    def reading_time(self):
+        """Calculate reading time based on average reading speed of 200 words per minute"""
+        import re
+        text = re.sub('<[^<]+?>', '', self.blog_body)  # Remove HTML tags
+        word_count = len(text.split())
+        minutes = word_count // 200
+        return max(1, minutes)  # At least 1 minute
+
+
+class Like(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    blog = models.ForeignKey(
+        Blog, on_delete=models.CASCADE, related_name='likes')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'blog')
+
+    def __str__(self):
+        return f'{self.user.username} likes {self.blog.title}'
+
+
+class Bookmark(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    blog = models.ForeignKey(
+        Blog, on_delete=models.CASCADE, related_name='bookmarks')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'blog')
+
+    def __str__(self):
+        return f'{self.user.username} bookmarked {self.blog.title}'
+
 
 class Comment(models.Model):
-  user=models.ForeignKey(User,on_delete=models.CASCADE)
-  blog=models.ForeignKey(Blog,on_delete=models.CASCADE)
-  Comment=models.TextField()
-  created_at=models.DateTimeField(auto_now_add=True)
-  updated_at=models.DateTimeField(auto_now=True)
-  def __str__(self):
-    return f'Comment by {self.user.username} on {self.blog.title}'
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    blog = models.ForeignKey(
+        Blog, on_delete=models.CASCADE, related_name='comments')
+    parent = models.ForeignKey(
+        'self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Comment by {self.user.username} on {self.blog.title}'
+
+
+class Contact(models.Model):
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f'{self.name} - {self.subject}'

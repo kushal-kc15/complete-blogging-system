@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-sm mt-4">
+      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0"><i class="fa fa-user"></i> My Profile</h4>
+        <a href="{% url 'edit_profile' %}" class="btn btn-light btn-sm">
+          <i class="fa fa-edit"></i> Edit Profile
+        </a>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <!-- Avatar Section -->
+          <div class="col-md-4 text-center mb-4">
+            {% if profile.avatar %}
+            <img src="{{ profile.avatar.url }}" alt="Avatar" class="rounded-circle mb-3"
+              style="width: 150px; height: 150px; object-fit: cover;">
+            {% else %}
+            <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3"
+              style="width: 150px; height: 150px;">
+              <i class="fa fa-user text-white" style="font-size: 4rem;"></i>
+            </div>
+            {% endif %}
+            <h5>{{ user.username }}</h5>
+            <p class="text-muted">{{ user.email }}</p>
+          </div>
+
+          <!-- Profile Info -->
+          <div class="col-md-8">
+            <table class="table table-borderless">
+              <tr>
+                <th width="30%"><i class="fa fa-user"></i> Full Name:</th>
+                <td>{{ user.first_name }} {{ user.last_name }}{% if not user.first_name and not user.last_name %}<span
+                    class="text-muted">Not set</span>{% endif %}</td>
+              </tr>
+              <tr>
+                <th><i class="fa fa-envelope"></i> Email:</th>
+                <td>{{ user.email }}</td>
+              </tr>
+              <tr>
+                <th><i class="fa fa-map-marker"></i> Location:</th>
+                <td>{{ profile.location|default:"<span class='text-muted'>Not set</span>" }}</td>
+              </tr>
+              <tr>
+                <th><i class="fa fa-globe"></i> Website:</th>
+                <td>
+                  {% if profile.website %}
+                  <a href="{{ profile.website }}" target="_blank">{{ profile.website }}</a>
+                  {% else %}
+                  <span class="text-muted">Not set</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <th><i class="fa fa-calendar"></i> Joined:</th>
+                <td>{{ user.date_joined|date:"F d, Y" }}</td>
+              </tr>
+            </table>
+
+            <hr>
+
+            <h6><i class="fa fa-info-circle"></i> Bio</h6>
+            <p class="text-muted">{{ profile.bio|default:"No bio yet." }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer bg-light">
+        <div class="d-flex gap-2">
+          <a href="{% url 'change_password' %}" class="btn btn-outline-dark">
+            <i class="fa fa-key"></i> Change Password
+          </a>
+          <a href="{% url 'my_bookmarks' %}" class="btn btn-outline-primary">
+            <i class="fa fa-bookmark"></i> My Bookmarks
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

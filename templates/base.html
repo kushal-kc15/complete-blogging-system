@@ -25,7 +25,7 @@
             <div class="input-group">
               <input class="form-control" type="text" name="keyword" value="{{ keyword }}"
                 placeholder="Enter search term..." aria-label="Enter search term..." aria-describedby="button-search" />
-              <button type="submit" class="btn btn-warning" id="button-search" type="button">Go!</button>
+              <button type="submit" class="btn btn-warning" id="button-search" type="button">Search</button>
             </div>
           </form>
         </div>
@@ -34,8 +34,10 @@
           <a class="btn btn-sm btn-warning" href="{% url 'login' %}">Login</a> &nbsp;
           <a class="btn btn-sm btn-outline-secondary" href="{% url 'register' %}">Register</a>
           {% else %}
-          <a class="btn btn-sm btn-warning mr-2" href="{% url 'dashboard' %}" >Dashboard</a>
-          <a class="btn btn-sm btn-warning mr-2" href="{% url 'logout' %}">Logout</a>
+          <a class="btn btn-sm btn-outline-secondary mr-2" href="{% url 'profile' %}"><i class="fa fa-user"></i>
+            Profile</a>
+          <a class="btn btn-sm btn-warning mr-2" href="{% url 'dashboard' %}">Dashboard</a>
+          <a class="btn btn-sm btn-outline-danger mr-2" href="{% url 'logout' %}">Logout</a>
           {% endif %}
         </div>
       </div>
@@ -53,10 +55,98 @@
     {% block content %}
 
     {% endblock %}
-    <!-- footer content -->
-    <footer class="blog-footer">
-      <p>Django blog built with � by <a href="#">Kushal Kc</a></p>
-    </footer>
+  </div>
+
+  <!-- Modern Footer -->
+  <footer class="bg-dark text-light mt-5">
+    <div class="container py-5">
+      <div class="row">
+        <!-- About Section -->
+        <div class="col-lg-4 col-md-6 mb-4 mb-lg-0">
+          <h5 class="text-uppercase mb-4" style="letter-spacing: 2px;">Django Blog</h5>
+          <p class="text-muted">A modern blogging platform built with Django. Share your stories, ideas, and connect
+            with readers around the world.</p>
+          <div class="d-flex mt-3">
+            <a href="#" class="text-light me-3" style="font-size: 1.5rem;"><i class="fa fa-facebook"></i></a>
+            <a href="#" class="text-light me-3" style="font-size: 1.5rem;"><i class="fa fa-twitter"></i></a>
+            <a href="#" class="text-light me-3" style="font-size: 1.5rem;"><i class="fa fa-instagram"></i></a>
+            <a href="#" class="text-light me-3" style="font-size: 1.5rem;"><i class="fa fa-linkedin"></i></a>
+            <a href="{% url 'rss_feed' %}" class="text-light" style="font-size: 1.5rem;"><i class="fa fa-rss"></i></a>
+          </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="col-lg-2 col-md-6 mb-4 mb-lg-0">
+          <h6 class="text-uppercase mb-4" style="letter-spacing: 1px;">Quick Links</h6>
+          <ul class="list-unstyled">
+            <li class="mb-2"><a href="{% url 'home' %}" class="text-muted text-decoration-none hover-light"><i
+                  class="fa fa-angle-right me-2"></i> Home</a></li>
+            <li class="mb-2"><a href="{% url 'about' %}" class="text-muted text-decoration-none hover-light"><i
+                  class="fa fa-angle-right me-2"></i> About</a></li>
+            <li class="mb-2"><a href="{% url 'contact' %}" class="text-muted text-decoration-none hover-light"><i
+                  class="fa fa-angle-right me-2"></i> Contact</a></li>
+            <li class="mb-2"><a href="{% url 'rss_feed' %}" class="text-muted text-decoration-none hover-light"><i
+                  class="fa fa-angle-right me-2"></i> RSS Feed</a></li>
+          </ul>
+        </div>
+
+        <!-- Categories -->
+        <div class="col-lg-2 col-md-6 mb-4 mb-lg-0">
+          <h6 class="text-uppercase mb-4" style="letter-spacing: 1px;">Categories</h6>
+          <ul class="list-unstyled">
+            {% for category in categories|slice:":5" %}
+            <li class="mb-2"><a href="{% url 'posts_by_category' category.id %}"
+                class="text-muted text-decoration-none"><i class="fa fa-angle-right me-2"></i> {{ category.name }}</a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <!-- Newsletter -->
+        <div class="col-lg-4 col-md-6 mb-4 mb-lg-0">
+          <h6 class="text-uppercase mb-4" style="letter-spacing: 1px;">Stay Updated</h6>
+          <p class="text-muted small">Subscribe to our newsletter for the latest posts and updates.</p>
+          <form class="mt-3">
+            <div class="input-group">
+              <input type="email" class="form-control" placeholder="Enter your email"
+                style="border-radius: 25px 0 0 25px;">
+              <button class="btn btn-warning" type="button" style="border-radius: 0 25px 25px 0;"><i
+                  class="fa fa-paper-plane"></i></button>
+            </div>
+          </form>
+          <div class="mt-4">
+            <span class="text-muted small"><i class="fa fa-envelope me-2"></i> contact@djangoblog.com</span>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4" style="border-color: rgba(255,255,255,0.1);">
+
+      <!-- Bottom Footer -->
+      <div class="row align-items-center">
+        <div class="col-md-6 text-center text-md-start">
+          <p class="text-muted mb-0 small">&copy; 2026 Django Blog. All rights reserved.</p>
+        </div>
+        <div class="col-md-6 text-center text-md-end">
+          <a href="#" class="text-muted text-decoration-none small me-3">Privacy Policy</a>
+          <a href="#" class="text-muted text-decoration-none small me-3">Terms of Service</a>
+          <a href="/sitemap.xml" class="text-muted text-decoration-none small">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <style>
+    footer a:hover {
+      color: #ffc107 !important;
+      transition: color 0.3s ease;
+    }
+
+    footer .input-group .form-control:focus {
+      box-shadow: none;
+      border-color: #ffc107;
+    }
+  </style>
 </body>
 
 </html>

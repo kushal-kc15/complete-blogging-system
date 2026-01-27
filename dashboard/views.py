@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from .forms import AddUserForm, EditUserForm
 import time
 from django.shortcuts import render, redirect, get_object_or_404
-from blogs.models import Blog, Category
+from blogs.models import Blog, Category, Contact
 from django.contrib.auth.decorators import login_required
 from .forms import CategoryForm, BlogForm
 from django.template.defaultfilters import slugify
@@ -164,3 +164,35 @@ def delete_user(request, id):
     user = get_object_or_404(User, id=id)
     user.delete()
     return redirect('users')
+
+
+# ======== Contact Messages Management ========
+@login_required
+def contact_messages(request):
+    messages = Contact.objects.all().order_by('-created_at')
+    unread_count = Contact.objects.filter(is_read=False).count()
+    context = {
+        'messages': messages,
+        'unread_count': unread_count,
+    }
+    return render(request, 'dashboard/messages.html', context)
+
+
+@login_required
+def view_message(request, id):
+    message = get_object_or_404(Contact, id=id)
+    # Mark as read when viewed
+    if not message.is_read:
+        message.is_read = True
+        message.save()
+    context = {
+        'message': message,
+    }
+    return render(request, 'dashboard/view_message.html', context)
+
+
+@login_required
+def delete_message(request, id):
+    message = get_object_or_404(Contact, id=id)
+    message.delete()
+    return redirect('contact_messages')

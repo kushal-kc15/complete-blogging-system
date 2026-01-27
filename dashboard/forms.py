@@ -2,6 +2,7 @@ from django import forms
 from blogs.models import Blog, Category
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django_ckeditor_5.widgets import CKEditor5Widget
 
 
 class CategoryForm(forms.ModelForm):
@@ -11,7 +12,6 @@ class CategoryForm(forms.ModelForm):
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Enter category name'
             })
         }
 
@@ -20,11 +20,10 @@ class BlogForm(forms.ModelForm):
     class Meta:
         model = Blog
         fields = ('title', 'category', 'featured_image',
-                  'short_description', 'blog_body', 'status', 'is_featured')
+                  'short_description', 'blog_body', 'status', 'is_featured', 'meta_description')
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Enter post title'
             }),
             'category': forms.Select(attrs={
                 'class': 'form-control'
@@ -35,24 +34,26 @@ class BlogForm(forms.ModelForm):
             'short_description': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
-                'placeholder': 'Enter a brief description...'
             }),
-            'blog_body': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 8,
-                'placeholder': 'Write your blog content here...'
-            }),
+            'blog_body': CKEditor5Widget(
+                attrs={'class': 'django_ckeditor_5'},
+                config_name='extends'
+            ),
             'status': forms.Select(attrs={
                 'class': 'form-control'
             }),
             'is_featured': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
+            'meta_description': forms.TextInput(attrs={
+                'class': 'form-control',
+            }),
         }
         labels = {
             'blog_body': 'Content',
             'short_description': 'Short Description',
             'is_featured': 'Featured Post',
+            'meta_description': 'SEO Description (160 chars)',
         }
 
 

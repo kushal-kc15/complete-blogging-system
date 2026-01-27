@@ -1,11 +1,22 @@
 <div class="col-md-3">
     <div class="nav flex-column nav-pills bg-light" aria-orientation="vertical">
-        <a href="{% url 'dashboard' %}" class="nav-link text-dark {% if '/dashboard/' == request.path %}bg-warning{% endif %}">Dashboard</a>
+        <a href="{% url 'dashboard' %}"
+            class="nav-link text-dark {% if '/dashboard/' == request.path %}bg-warning{% endif %}"><i
+                class="fa fa-dashboard"></i> Dashboard</a>
         {% if perms.auth.view_user %}
-        <a href="{% url 'users' %}" class="nav-link text-dark {% if '/users/' in request.path %}bg-warning{% endif %}">Users</a>
+        <a href="{% url 'users' %}"
+            class="nav-link text-dark {% if '/users/' in request.path %}bg-warning{% endif %}"><i
+                class="fa fa-users"></i> Users</a>
         {% endif %}
-        <a href="{% url 'categories' %}" class="nav-link text-dark {% if '/categories/' in request.path %}bg-warning{% endif %}">Categories</a>
-        <a href="{% url 'posts' %}" class="nav-link text-dark {% if '/posts/' in request.path %}bg-warning{% endif %}">Posts</a>
-        <a href="" class="nav-link text-dark">Logout</a>
+        <a href="{% url 'categories' %}"
+            class="nav-link text-dark {% if '/categories/' in request.path %}bg-warning{% endif %}"><i
+                class="fa fa-folder"></i> Categories</a>
+        <a href="{% url 'posts' %}"
+            class="nav-link text-dark {% if '/posts/' in request.path %}bg-warning{% endif %}"><i
+                class="fa fa-file-text"></i> Posts</a>
+        <a href="{% url 'contact_messages' %}"
+            class="nav-link text-dark {% if '/messages/' in request.path %}bg-warning{% endif %}"><i
+                class="fa fa-envelope"></i> Messages</a>
+        <a href="{% url 'logout' %}" class="nav-link text-dark"><i class="fa fa-sign-out"></i> Logout</a>
     </div>
 </div>

@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card shadow-sm mt-4">
+      <div class="card-header bg-dark text-white">
+        <h4 class="mb-0"><i class="fa fa-edit"></i> Edit Profile</h4>
+      </div>
+      <div class="card-body">
+        {% if form.errors %}
+        <div class="alert alert-danger">
+          <strong>Please correct the errors below:</strong>
+          <ul class="mb-0 mt-2">
+            {% for field in form %}
+            {% for error in field.errors %}
+            <li>{{ field.label }}: {{ error }}</li>
+            {% endfor %}
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+
+          <div class="row mb-4">
+            <!-- Avatar Preview -->
+            <div class="col-md-4 text-center">
+              {% if user.profile.avatar %}
+              <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="rounded-circle mb-3"
+                style="width: 150px; height: 150px; object-fit: cover;" id="avatar-preview">
+              {% else %}
+              <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3"
+                style="width: 150px; height: 150px;" id="avatar-placeholder">
+                <i class="fa fa-user text-white" style="font-size: 4rem;"></i>
+              </div>
+              <img src="" alt="Avatar" class="rounded-circle mb-3 d-none"
+                style="width: 150px; height: 150px; object-fit: cover;" id="avatar-preview">
+              {% endif %}
+              <div class="mb-3">
+                <label for="id_avatar" class="btn btn-outline-secondary btn-sm">
+                  <i class="fa fa-camera"></i> Change Avatar
+                </label>
+                <input type="file" name="avatar" id="id_avatar" class="d-none" accept="image/*">
+              </div>
+            </div>
+
+            <!-- User Info -->
+            <div class="col-md-8">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">First Name</label>
+                  <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}"
+                    placeholder="First Name">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Last Name</label>
+                  <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}"
+                    placeholder="Last Name">
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Location</label>
+                {{ form.location }}
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Website</label>
+                {{ form.website }}
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Bio</label>
+            {{ form.bio }}
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-success">
+              <i class="fa fa-save"></i> Save Changes
+            </button>
+            <a href="{% url 'profile' %}" class="btn btn-secondary">
+              <i class="fa fa-times"></i> Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Avatar preview
+  document.getElementById('id_avatar').addEventListener('change', function (e) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const preview = document.getElementById('avatar-preview');
+        const placeholder = document.getElementById('avatar-placeholder');
+        preview.src = e.target.result;
+        preview.classList.remove('d-none');
+        if (placeholder) placeholder.classList.add('d-none');
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+</script>
+{% endblock %}

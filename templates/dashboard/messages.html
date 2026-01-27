@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="row">
+  <!-- Left sidebar -->
+  {% include 'dashboard/sidebar.html' %}
+
+  <!-- Right side content -->
+  <div class="col-md-9">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2><i class="fa fa-envelope"></i> Contact Messages</h2>
+      {% if unread_count > 0 %}
+      <span class="badge bg-danger">{{ unread_count }} unread</span>
+      {% endif %}
+    </div>
+
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Status</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Subject</th>
+          <th>Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for msg in messages %}
+        <tr class="{% if not msg.is_read %}table-warning{% endif %}">
+          <td>{{ forloop.counter }}</td>
+          <td>
+            {% if msg.is_read %}
+            <span class="badge bg-secondary">Read</span>
+            {% else %}
+            <span class="badge bg-success">New</span>
+            {% endif %}
+          </td>
+          <td>{{ msg.name }}</td>
+          <td><a href="mailto:{{ msg.email }}">{{ msg.email }}</a></td>
+          <td>{{ msg.subject|truncatewords:5 }}</td>
+          <td>{{ msg.created_at|date:"M d, Y H:i" }}</td>
+          <td>
+            <a href="{% url 'view_message' msg.id %}" class="btn btn-sm btn-info text-white"><i
+                class="fa fa-eye"></i></a>
+            <a href="{% url 'delete_message' msg.id %}" class="btn btn-sm btn-danger"
+              onclick="return confirm('Are you sure you want to delete this message?');"><i class="fa fa-trash"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center">No messages found</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

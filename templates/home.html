@@ -15,15 +15,21 @@
 {% endfor %}
 
 <!--featured post-->
-<h3 class="text-uppercase text-warning" style="letter-spacing: 2px;">Featured Post</h3>
+<h3 class="text-uppercase text-warning mt-4" style="letter-spacing: 2px;">Featured Posts</h3>
 <div class="row mb-2">
   {% for post in featured_post %}
   {% if not forloop.first %}
   <div class="col-md-6">
     <div class="card border-0">
       <div class="card-body">
-        <h3> <a href="{% url 'Blog_detail' post.slug %}" class="text-dark">{{post.title}}</a></h3>
-        <small class="mb-1 text-muted">{{post.created_at | timesince}} ago | {{post.author}}</small>
+        <h3><a href="{% url 'Blog_detail' post.slug %}" class="text-dark">{{post.title}}</a></h3>
+        <small class="mb-1 text-muted">
+          {{post.created_at | timesince}} ago | {{post.author}}
+          <span class="mx-1">|</span>
+          <i class="fa fa-eye"></i> {{ post.views }}
+          <span class="mx-1">|</span>
+          <i class="fa fa-clock-o"></i> {{ post.reading_time }} min
+        </small>
         <p class="card-text">{{post.short_description | truncatewords:15}}</p>
       </div>
     </div>
@@ -32,35 +38,83 @@
   {% endfor %}
 </div>
 
-<h3 class="text-uppercase text-warning" style="letter-spacing: 2px;">Latest Post</h3>
+<h3 class="text-uppercase text-warning mt-4" style="letter-spacing: 2px;">Latest Posts</h3>
 <main role="main" class="container p-0">
   <div class="row">
     <div class="col-md-8 blog-main">
       {% for post in posts %}
-      <div class="card border-0">
+      <div class="card border-0 mb-3">
         <div class="card-body">
           <h3><a href="{% url 'Blog_detail' post.slug %}" class="text-dark">{{post.title}}</a></h3>
-          <small class="mb-1 text-muted">{{post.created_at | timesince}} ago | {{post.author}}</small>
+          <small class="mb-1 text-muted">
+            {{post.created_at | timesince}} ago | {{post.author}}
+            <span class="mx-1">|</span>
+            <i class="fa fa-eye"></i> {{ post.views }}
+            <span class="mx-1">|</span>
+            <i class="fa fa-clock-o"></i> {{ post.reading_time }} min
+            <span class="mx-1">|</span>
+            <i class="fa fa-heart"></i> {{ post.likes.count }}
+          </small>
           <p class="card-text">{{post.short_description | truncatewords:25}}</p>
         </div>
       </div>
+      {% empty %}
+      <p class="text-muted">No posts yet.</p>
       {% endfor %}
-      <!-- /.blog-post -->
+
+      <!-- Pagination -->
+      {% if posts.has_other_pages %}
+      <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination">
+          {% if posts.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ posts.previous_page_number }}">&laquo; Previous</a>
+          </li>
+          {% endif %}
+
+          {% for num in posts.paginator.page_range %}
+          {% if posts.number == num %}
+          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num > posts.number|add:'-3' and num < posts.number|add:'3' %} <li class="page-item"><a
+              class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+            {% endfor %}
+
+            {% if posts.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ posts.next_page_number }}">Next &raquo;</a>
+            </li>
+            {% endif %}
+        </ul>
+      </nav>
+      {% endif %}
 
     </div>
     <!-- /.blog-main -->
 
     <aside class="col-md-4 blog-sidebar">
       <div class="p-3 mb-3 bg-light rounded">
-        <h4 class="font-italic"><a href="{% url 'about' %}" class="text-dark">About Us</a></h4>
+        <h4 class="font-italic"><a href="{% url 'about' %}" class="text-dark"><i class="fa fa-info-circle"></i> About
+            Us</a></h4>
       </div>
 
-      <div class="p-3">
-        <h4 class="font-italic">Follow Us</h4>
-        <ol class="list-unstyled">
-          <li><a href="https://github.com/kushal-kc15" class="text-dark">GitHub</a></li>
-          <li><a href="https://linkedin.com/in/kushal-kc-2896862a8" class="text-dark">LinkedIn</a></li>
-        </ol>
+      <div class="p-3 mb-3 bg-light rounded">
+        <h4 class="font-italic"><a href="{% url 'contact' %}" class="text-dark"><i class="fa fa-envelope"></i> Contact
+            Us</a></h4>
+      </div>
+
+      {% if user.is_authenticated %}
+      <div class="p-3 mb-3 bg-light rounded">
+        <h4 class="font-italic"><a href="{% url 'my_bookmarks' %}" class="text-dark"><i class="fa fa-bookmark"></i> My
+            Bookmarks</a></h4>
+      </div>
+      {% endif %}
+
+      <div class="p-3 bg-light rounded">
+        <h4 class="font-italic"><i class="fa fa-rss"></i> Subscribe</h4>
+        <a href="{% url 'rss_feed' %}" class="btn btn-warning btn-sm mt-2">
+          <i class="fa fa-rss"></i> RSS Feed
+        </a>
       </div>
     </aside><!-- /.blog-sidebar -->
 
@@ -68,5 +122,4 @@
 
 </main><!-- /.container -->
 
-</div>
 {% endblock %}
