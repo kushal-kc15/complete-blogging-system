@@ -46,13 +46,7 @@ DEMO:-https://complete-blogging-system.onrender.com
 
 ---
 
-## 📸 Screenshots
 
-| Home Page | Blog Detail | Dashboard |
-|-----------|-------------|-----------|
-| Modern homepage with featured posts | Rich content with comments | Full admin dashboard |
-
----
 
 ## 🛠️ Tech Stack
 
