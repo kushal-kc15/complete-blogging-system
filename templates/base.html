@@ -36,8 +36,13 @@
           {% else %}
           <a class="btn btn-sm btn-outline-secondary mr-2" href="{% url 'profile' %}"><i class="fa fa-user"></i>
             Profile</a>
+          {% if user.is_staff or perms.blogs.view_blog or perms.blogs.view_category %}
           <a class="btn btn-sm btn-warning mr-2" href="{% url 'dashboard' %}">Dashboard</a>
-          <a class="btn btn-sm btn-outline-danger mr-2" href="{% url 'logout' %}">Logout</a>
+          {% endif %}
+          <form action="{% url 'logout' %}" method="POST" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger mr-2">Logout</button>
+          </form>
           {% endif %}
         </div>
       </div>

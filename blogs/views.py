@@ -4,6 +4,8 @@ from .models import Blog, Category, Comment, Like, Bookmark, Contact
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.views.decorators.http import require_POST
 
 
 # Create your views here.
@@ -62,7 +64,15 @@ def BlogDetail(request, slug):
             if comment_text:
                 parent = None
                 if parent_id:
-                    parent = Comment.objects.get(id=parent_id)
+                    parent = Comment.objects.filter(
+                        id=parent_id, blog=post
+                    ).first()
+                    if parent is None:
+                        messages.error(
+                            request,
+                            'The comment you tried to reply to is not valid.'
+                        )
+                        return redirect('Blog_detail', slug=slug)
                 Comment.objects.create(
                     user=request.user,
                     blog=post,
@@ -84,6 +94,7 @@ def BlogDetail(request, slug):
 
 
 @login_required(login_url='login')
+@require_POST
 def like_post(request, slug):
     post = get_object_or_404(Blog, slug=slug)
     like, created = Like.objects.get_or_create(user=request.user, blog=post)
@@ -93,6 +104,7 @@ def like_post(request, slug):
 
 
 @login_required(login_url='login')
+@require_POST
 def bookmark_post(request, slug):
     post = get_object_or_404(Blog, slug=slug)
     bookmark, created = Bookmark.objects.get_or_create(
@@ -117,6 +129,7 @@ def edit_comment(request, comment_id):
 
 
 @login_required(login_url='login')
+@require_POST
 def delete_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
     slug = comment.blog.slug

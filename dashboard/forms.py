@@ -60,8 +60,7 @@ class BlogForm(forms.ModelForm):
 class AddUserForm(UserCreationForm):
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'is_active',
-                  'is_staff', 'is_superuser', 'groups', 'user_permissions']
+        fields = ['username', 'first_name', 'last_name', 'email', 'is_active']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -77,8 +76,7 @@ class AddUserForm(UserCreationForm):
 class EditUserForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'is_active',
-                  'is_staff', 'is_superuser', 'groups', 'user_permissions']
+        fields = ['username', 'first_name', 'last_name', 'email', 'is_active']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

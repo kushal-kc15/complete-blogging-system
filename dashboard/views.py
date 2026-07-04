@@ -4,12 +4,29 @@ import time
 from django.shortcuts import render, redirect, get_object_or_404
 from blogs.models import Blog, Category, Contact
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import permission_required, user_passes_test
+from django.views.decorators.http import require_POST
 from .forms import CategoryForm, BlogForm
 from django.template.defaultfilters import slugify
 # Create your views here.
 
 
+def superuser_required(view_func):
+    return user_passes_test(
+        lambda user: user.is_superuser,
+        login_url='login',
+        redirect_field_name=None,
+    )(view_func)
+
+
 @login_required(login_url='login')
+@user_passes_test(
+    lambda user: user.is_staff or user.has_perms([
+        'blogs.view_blog', 'blogs.view_category',
+    ]),
+    login_url='login',
+    redirect_field_name=None,
+)
 def dashboard(request):
     blogs_count = Blog.objects.all().count()
     category_count = Category.objects.all().count()
@@ -20,6 +37,8 @@ def dashboard(request):
     return render(request, 'dashboard/dashboard.html', context)
 
 
+@login_required(login_url='login')
+@permission_required('blogs.view_category', raise_exception=True)
 def categories(request):
     categories = Category.objects.all()
     context = {
@@ -28,6 +47,8 @@ def categories(request):
     return render(request, 'dashboard/categories.html', context)
 
 
+@login_required(login_url='login')
+@permission_required('blogs.add_category', raise_exception=True)
 def add_category(request):
     # form = CategoryForm()
     if request.method == 'POST':
@@ -43,6 +64,8 @@ def add_category(request):
     return render(request, 'dashboard/add_category.html', context)
 
 
+@login_required(login_url='login')
+@permission_required('blogs.change_category', raise_exception=True)
 def edit_category(request, id):
     category = get_object_or_404(Category, id=id)
     form = CategoryForm(instance=category)
@@ -58,12 +81,17 @@ def edit_category(request, id):
     return render(request, 'dashboard/edit_category.html', context)
 
 
+@login_required(login_url='login')
+@permission_required('blogs.delete_category', raise_exception=True)
+@require_POST
 def delete_category(request, id):
     category = get_object_or_404(Category, id=id)
     category.delete()
     return redirect('categories')
 
 
+@login_required(login_url='login')
+@permission_required('blogs.view_blog', raise_exception=True)
 def posts(request):
     posts = Blog.objects.all()
     context = {
@@ -73,6 +101,7 @@ def posts(request):
 
 
 @login_required(login_url='login')
+@permission_required('blogs.add_blog', raise_exception=True)
 def add_post(request):
     if request.method == 'POST':
         form = BlogForm(request.POST, request.FILES)
@@ -95,6 +124,8 @@ def add_post(request):
     return render(request, 'dashboard/add_post.html', context)
 
 
+@login_required(login_url='login')
+@permission_required('blogs.change_blog', raise_exception=True)
 def edit_post(request, id):
     post = get_object_or_404(Blog, id=id)
     form = BlogForm(instance=post)
@@ -116,12 +147,17 @@ def edit_post(request, id):
     return render(request, 'dashboard/edit_post.html', context)
 
 
+@login_required(login_url='login')
+@permission_required('blogs.delete_blog', raise_exception=True)
+@require_POST
 def delete_post(request, id):
     post = get_object_or_404(Blog, id=id)
     post.delete()
     return redirect('posts')
 
 
+@login_required(login_url='login')
+@superuser_required
 def users(request):
     users = User.objects.all()
     context = {
@@ -130,6 +166,8 @@ def users(request):
     return render(request, 'dashboard/users.html', context)
 
 
+@login_required(login_url='login')
+@superuser_required
 def add_user(request):
     if request.method == 'POST':
         form = AddUserForm(request.POST)
@@ -144,6 +182,8 @@ def add_user(request):
     return render(request, 'dashboard/add_user.html', context)
 
 
+@login_required(login_url='login')
+@superuser_required
 def edit_user(request, id):
     user = get_object_or_404(User, id=id)
     if request.method == 'POST':
@@ -160,6 +200,9 @@ def edit_user(request, id):
     return render(request, 'dashboard/edit_user.html', context)
 
 
+@login_required(login_url='login')
+@superuser_required
+@require_POST
 def delete_user(request, id):
     user = get_object_or_404(User, id=id)
     user.delete()
@@ -168,6 +211,7 @@ def delete_user(request, id):
 
 # ======== Contact Messages Management ========
 @login_required
+@permission_required('blogs.view_contact', raise_exception=True)
 def contact_messages(request):
     messages = Contact.objects.all().order_by('-created_at')
     unread_count = Contact.objects.filter(is_read=False).count()
@@ -179,6 +223,7 @@ def contact_messages(request):
 
 
 @login_required
+@permission_required('blogs.view_contact', raise_exception=True)
 def view_message(request, id):
     message = get_object_or_404(Contact, id=id)
     # Mark as read when viewed
@@ -192,6 +237,8 @@ def view_message(request, id):
 
 
 @login_required
+@permission_required('blogs.delete_contact', raise_exception=True)
+@require_POST
 def delete_message(request, id):
     message = get_object_or_404(Contact, id=id)
     message.delete()

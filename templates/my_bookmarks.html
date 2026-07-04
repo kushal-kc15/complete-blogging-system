@@ -19,9 +19,10 @@
           <h5><a href="{% url 'Blog_detail' bookmark.blog.slug %}" class="text-dark">{{ bookmark.blog.title }}</a></h5>
           <small class="text-muted">Bookmarked {{ bookmark.created_at|timesince }} ago</small>
           <p class="card-text mt-2">{{ bookmark.blog.short_description|truncatewords:20 }}</p>
-          <a href="{% url 'bookmark_post' bookmark.blog.slug %}" class="btn btn-sm btn-outline-danger">
-            <i class="fa fa-times"></i> Remove
-          </a>
+          <form action="{% url 'bookmark_post' bookmark.blog.slug %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa fa-times"></i> Remove</button>
+          </form>
         </div>
       </div>
     </div>

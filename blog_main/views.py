@@ -6,6 +6,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import auth
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 
 
 # from django.http import HttpResponse
@@ -69,6 +70,7 @@ def Login(request):
     return render(request, 'login.html', context)
 
 
+@require_POST
 def Logout(request):
     auth.logout(request)
     return redirect('/')

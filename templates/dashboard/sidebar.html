@@ -3,20 +3,23 @@
         <a href="{% url 'dashboard' %}"
             class="nav-link text-dark {% if '/dashboard/' == request.path %}bg-warning{% endif %}"><i
                 class="fa fa-dashboard"></i> Dashboard</a>
-        {% if perms.auth.view_user %}
+        {% if user.is_superuser %}
         <a href="{% url 'users' %}"
             class="nav-link text-dark {% if '/users/' in request.path %}bg-warning{% endif %}"><i
                 class="fa fa-users"></i> Users</a>
         {% endif %}
-        <a href="{% url 'categories' %}"
+        {% if perms.blogs.view_category %}<a href="{% url 'categories' %}"
             class="nav-link text-dark {% if '/categories/' in request.path %}bg-warning{% endif %}"><i
-                class="fa fa-folder"></i> Categories</a>
-        <a href="{% url 'posts' %}"
+                class="fa fa-folder"></i> Categories</a>{% endif %}
+        {% if perms.blogs.view_blog %}<a href="{% url 'posts' %}"
             class="nav-link text-dark {% if '/posts/' in request.path %}bg-warning{% endif %}"><i
-                class="fa fa-file-text"></i> Posts</a>
-        <a href="{% url 'contact_messages' %}"
+                class="fa fa-file-text"></i> Posts</a>{% endif %}
+        {% if perms.blogs.view_contact %}<a href="{% url 'contact_messages' %}"
             class="nav-link text-dark {% if '/messages/' in request.path %}bg-warning{% endif %}"><i
-                class="fa fa-envelope"></i> Messages</a>
-        <a href="{% url 'logout' %}" class="nav-link text-dark"><i class="fa fa-sign-out"></i> Logout</a>
+                class="fa fa-envelope"></i> Messages</a>{% endif %}
+        <form action="{% url 'logout' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="nav-link text-dark border-0 bg-transparent"><i class="fa fa-sign-out"></i> Logout</button>
+        </form>
     </div>
 </div>
