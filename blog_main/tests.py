@@ -1,8 +1,11 @@
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
+from io import BytesIO
+from PIL import Image
 
-from blogs.models import Blog, Category
+from blogs.models import Blog, Category, UserProfile
 
 
 class SEOOperationsTests(TestCase):
@@ -53,3 +56,70 @@ class SEOOperationsTests(TestCase):
         content = response.content.decode()
         self.assertIn('Published SEO Post', content)
         self.assertNotIn('Draft SEO Post', content)
+
+
+class AuthProfileCoreTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='reader',
+            password='test-password',
+            email='reader@example.com',
+        )
+        UserProfile.objects.create(user=self.user)
+
+    def image_bytes(self, image_format='GIF'):
+        image = Image.new('RGB', (1, 1), color='white')
+        buffer = BytesIO()
+        image.save(buffer, format=image_format)
+        return buffer.getvalue()
+
+    def test_login_respects_safe_next_redirect(self):
+        response = self.client.post(
+            reverse('login'),
+            {
+                'username': 'reader',
+                'password': 'test-password',
+                'next': reverse('profile'),
+            },
+        )
+        self.assertRedirects(response, reverse('profile'))
+
+    def test_login_rejects_unsafe_next_redirect(self):
+        response = self.client.post(
+            reverse('login'),
+            {
+                'username': 'reader',
+                'password': 'test-password',
+                'next': 'https://evil.example/profile',
+            },
+        )
+        self.assertRedirects(response, reverse('home'))
+
+    def test_password_reset_page_renders_clean_text(self):
+        response = self.client.get(reverse('password_reset'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "we'll send you reset instructions")
+        self.assertNotContains(response, 'â')
+
+    def test_invalid_avatar_upload_is_rejected(self):
+        self.client.force_login(self.user)
+        upload = SimpleUploadedFile(
+            'avatar.gif',
+            self.image_bytes('GIF'),
+            content_type='image/gif',
+        )
+        response = self.client.post(
+            reverse('edit_profile'),
+            {
+                'first_name': 'Reader',
+                'last_name': '',
+                'bio': '',
+                'website': '',
+                'location': '',
+                'avatar': upload,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Upload a JPEG, PNG, or WebP avatar image.')
+        self.user.profile.refresh_from_db()
+        self.assertFalse(self.user.profile.avatar)

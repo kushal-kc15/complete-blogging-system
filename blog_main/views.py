@@ -8,6 +8,7 @@ from django.contrib import auth
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
+from django.utils.http import url_has_allowed_host_and_scheme
 
 
 # from django.http import HttpResponse
@@ -73,14 +74,19 @@ def Register(request):
 
 
 def Login(request):
+    next_url = request.POST.get('next') or request.GET.get('next') or ''
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = auth.authenticate(username=username, password=password)
+            user = form.get_user()
             if user is not None:
                 auth.login(request, user)
+                if next_url and url_has_allowed_host_and_scheme(
+                    next_url,
+                    allowed_hosts={request.get_host()},
+                    require_https=request.is_secure(),
+                ):
+                    return redirect(next_url)
                 return redirect('home')
             else:
                 messages.error(request, 'Invalid username or password')
@@ -88,6 +94,7 @@ def Login(request):
         form = AuthenticationForm()
     context = {
         'form': form,
+        'next': next_url,
     }
     return render(request, 'login.html', context)
 
