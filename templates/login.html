@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load socialaccount %}
 
 {% block title %}Login | InkSpire{% endblock %}
 {% block meta_description %}Login to your InkSpire account.{% endblock %}
@@ -19,6 +20,15 @@
         <p class="mb-0">Please check your username and password.</p>
       </div>
       {% endif %}
+
+      <form method="post" action="{% provider_login_url 'google' process='login' %}" class="mb-3">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-dark w-100">
+          <i class="fa fa-google"></i> Continue with Google
+        </button>
+      </form>
+
+      <div class="text-center text-muted small mb-3">or log in with username</div>
 
       <form action="{% url 'login' %}" method="POST" class="auth-form">
         {% csrf_token %}

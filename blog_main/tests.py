@@ -192,3 +192,15 @@ class AuthProfileCoreTests(TestCase):
         self.assertContains(response, 'This email is already registered.')
         self.user.refresh_from_db()
         self.assertEqual(self.user.email, 'readernew@example.com')
+
+    def test_login_page_includes_google_auth_option(self):
+        response = self.client.get(reverse('login'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Continue with Google')
+        self.assertContains(response, '/accounts/google/login/')
+
+    def test_register_page_includes_google_auth_option(self):
+        response = self.client.get(reverse('register'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Continue with Google')
+        self.assertContains(response, '/accounts/google/login/')

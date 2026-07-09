@@ -8,7 +8,7 @@ Live demo: https://complete-blogging-system.onrender.com
 
 - Publishes articles with categories, featured posts, rich text content, featured images, alt text, and reading time.
 - Provides public homepage, category archive, search results, article detail, author profile, about, and contact pages.
-- Supports registration, login, logout, profile editing, password change, and password reset.
+- Supports registration, username/password login, Google login, logout, profile editing, password change, and password reset.
 - Includes reader engagement: comments/replies, likes, bookmarks, RSS feed, and social sharing.
 - Gives staff/editor users a dashboard for posts, categories, contact messages, and comment moderation.
 
@@ -50,6 +50,7 @@ Live demo: https://complete-blogging-system.onrender.com
 - Django 5.1.4
 - SQLite for local development
 - Bootstrap 5
+- django-allauth for Google authentication
 - CKEditor 5
 - django-crispy-forms + crispy-bootstrap5
 - Pillow
@@ -82,6 +83,8 @@ Create a `.env` file for local settings if needed.
 SECRET_KEY=replace-me
 DEBUG=True
 ALLOWED_HOSTS=127.0.0.1,localhost
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 ```
 
 For production, set:
@@ -91,9 +94,16 @@ DEBUG=False
 SECRET_KEY=your-production-secret
 ALLOWED_HOSTS=your-domain.com,www.your-domain.com
 DJANGO_SETTINGS_MODULE=blog_main.settings_prod
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
 
 Local password reset uses Django's console email backend, so reset links are printed in the terminal during development.
+
+For Google login, create OAuth credentials in Google Cloud Console and add these authorized redirect URIs:
+
+- `http://127.0.0.1:8000/accounts/google/login/callback/`
+- `https://your-domain.com/accounts/google/login/callback/`
 
 ## Useful commands
 
