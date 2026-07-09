@@ -9,14 +9,6 @@
                 <h4 class="mb-0"><i class="fa fa-sign-in"></i> Login</h4>
             </div>
             <div class="card-body p-4">
-                {% if messages %}
-                <div class="alert alert-danger">
-                    {% for message in messages %}
-                    <p class="mb-0">{{ message }}</p>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
                 {% if form.errors %}
                 <div class="alert alert-danger">
                     <p class="mb-0">Invalid username or password</p>

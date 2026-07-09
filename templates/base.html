@@ -4,155 +4,150 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>InkSpire - Modern Blogging Platform</title>
-  <link href="https://getbootstrap.com/docs/4.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}InkSpire - Modern Blogging Platform{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}InkSpire is a modern blogging platform for stories, ideas, and thoughtful publishing.{% endblock %}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Playfair+Display:700,900" rel="stylesheet">
-  <link href="{% static 'css/blog.css' %}" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="{% static 'css/blog.css' %}" rel="stylesheet">
+  {% block extra_head %}{% endblock %}
 </head>
 
 <body>
-  <div class="container">
-    <header class="blog-header py-3">
-      <div class="row flex-nowrap justify-content-between align-items-center">
-        <div class="col-4 pt-1">
-          <a class="blog-header-logo text-dark" href="/"><i class="fa fa-pencil"></i> InkSpire</a>
-        </div>
-        <div class="col-4">
-          <form action="{% url 'search' %}" method="">
-            <div class="input-group">
-              <input class="form-control" type="text" name="keyword" value="{{ keyword }}"
-                placeholder="Enter search term..." aria-label="Enter search term..." aria-describedby="button-search" />
-              <button type="submit" class="btn btn-warning" id="button-search" type="button">Search</button>
-            </div>
+  <header class="site-header border-bottom">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white" aria-label="Primary navigation">
+      <div class="container">
+        <a class="navbar-brand blog-header-logo text-dark" href="{% url 'home' %}">
+          <i class="fa fa-pencil"></i> InkSpire
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#siteNavbar"
+          aria-controls="siteNavbar" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="siteNavbar">
+          <form action="{% url 'search' %}" method="GET" class="site-search d-flex my-3 my-lg-0 mx-lg-auto" role="search">
+            <input class="form-control me-2" type="search" name="keyword" value="{{ keyword }}"
+              placeholder="Search InkSpire" aria-label="Search InkSpire">
+            <button type="submit" class="btn btn-warning">Search</button>
           </form>
-        </div>
-        <div class="col-4 d-flex justify-content-end align-items-center">
-          {% if not user.is_authenticated %}
-          <a class="btn btn-sm btn-warning" href="{% url 'login' %}">Login</a> &nbsp;
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'register' %}">Register</a>
-          {% else %}
-          <a class="btn btn-sm btn-outline-secondary mr-2" href="{% url 'profile' %}"><i class="fa fa-user"></i>
-            Profile</a>
-          {% if user.is_staff or perms.blogs.view_blog or perms.blogs.view_category %}
-          <a class="btn btn-sm btn-warning mr-2" href="{% url 'dashboard' %}">Dashboard</a>
-          {% endif %}
-          <form action="{% url 'logout' %}" method="POST" class="d-inline">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-outline-danger mr-2">Logout</button>
-          </form>
-          {% endif %}
+
+          <ul class="navbar-nav align-items-lg-center ms-lg-3">
+            {% if not user.is_authenticated %}
+            <li class="nav-item me-lg-2 mb-2 mb-lg-0">
+              <a class="btn btn-sm btn-warning w-100" href="{% url 'login' %}">Login</a>
+            </li>
+            <li class="nav-item">
+              <a class="btn btn-sm btn-outline-secondary w-100" href="{% url 'register' %}">Register</a>
+            </li>
+            {% else %}
+            <li class="nav-item me-lg-2 mb-2 mb-lg-0">
+              <a class="btn btn-sm btn-outline-secondary w-100" href="{% url 'profile' %}">
+                <i class="fa fa-user"></i> Profile
+              </a>
+            </li>
+            {% if user.is_staff or perms.blogs.view_blog or perms.blogs.view_category %}
+            <li class="nav-item me-lg-2 mb-2 mb-lg-0">
+              <a class="btn btn-sm btn-warning w-100" href="{% url 'dashboard' %}">Dashboard</a>
+            </li>
+            {% endif %}
+            <li class="nav-item">
+              <form action="{% url 'logout' %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
+              </form>
+            </li>
+            {% endif %}
+          </ul>
         </div>
       </div>
-    </header>
+    </nav>
 
-    <div class="nav-scroller py-1 mb-2">
-      <nav class="nav d-flex justify-content-between">
-        {% for category in categories %}
-        <a class="p-2 text-muted" href="{% url 'posts_by_category' category.id %}">{{category.name}}</a>
-        {% endfor %}
-        <a class="p-2 text-muted" href="{% url 'about' %}">About Us</a>
-      </nav>
+    <div class="nav-scroller py-1">
+      <div class="container">
+        <nav class="nav category-nav flex-nowrap overflow-auto" aria-label="Categories">
+          {% for category in categories %}
+          <a class="nav-link px-0 me-4 text-muted" href="{% url 'posts_by_category' category.id %}">{{ category.name }}</a>
+          {% endfor %}
+          <a class="nav-link px-0 text-muted" href="{% url 'about' %}">About Us</a>
+        </nav>
+      </div>
     </div>
-    <!-- main content -->
+  </header>
+
+  <main class="site-main">
+    <div class="container">
+      {% if messages %}
+      <div class="site-messages">
+        {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
     {% block content %}
-
     {% endblock %}
-  </div>
+  </main>
 
-  <!-- Modern Footer -->
-  <footer class="bg-dark text-light mt-5">
+  <footer class="site-footer bg-dark text-light mt-5">
     <div class="container py-5">
       <div class="row">
-        <!-- About Section -->
         <div class="col-lg-4 col-md-6 mb-4 mb-lg-0">
-          <h5 class="text-uppercase mb-4" style="letter-spacing: 2px;"><i class="fa fa-pencil"></i> InkSpire</h5>
-          <p class="text-muted">A modern blogging platform that inspires creativity. Share your stories, ideas, and
-            connect
-            with readers around the world.</p>
-          <div class="d-flex mt-3">
-            <a href="#" class="text-light me-3" style="font-size: 1.5rem;"><i class="fa fa-facebook"></i></a>
-            <a href="#" class="text-light me-3" style="font-size: 1.5rem;"><i class="fa fa-twitter"></i></a>
-            <a href="#" class="text-light me-3" style="font-size: 1.5rem;"><i class="fa fa-instagram"></i></a>
-            <a href="#" class="text-light me-3" style="font-size: 1.5rem;"><i class="fa fa-linkedin"></i></a>
-            <a href="{% url 'rss_feed' %}" class="text-light" style="font-size: 1.5rem;"><i class="fa fa-rss"></i></a>
-          </div>
+          <h5 class="footer-heading text-uppercase mb-4"><i class="fa fa-pencil"></i> InkSpire</h5>
+          <p class="text-white-50">A modern blogging platform for stories, ideas, and thoughtful publishing.</p>
+          <a href="{% url 'rss_feed' %}" class="footer-social-link" aria-label="RSS feed"><i class="fa fa-rss"></i></a>
         </div>
 
-        <!-- Quick Links -->
         <div class="col-lg-2 col-md-6 mb-4 mb-lg-0">
-          <h6 class="text-uppercase mb-4" style="letter-spacing: 1px;">Quick Links</h6>
+          <h6 class="footer-heading text-uppercase mb-4">Quick Links</h6>
           <ul class="list-unstyled">
-            <li class="mb-2"><a href="{% url 'home' %}" class="text-muted text-decoration-none hover-light"><i
-                  class="fa fa-angle-right me-2"></i> Home</a></li>
-            <li class="mb-2"><a href="{% url 'about' %}" class="text-muted text-decoration-none hover-light"><i
-                  class="fa fa-angle-right me-2"></i> About</a></li>
-            <li class="mb-2"><a href="{% url 'contact' %}" class="text-muted text-decoration-none hover-light"><i
-                  class="fa fa-angle-right me-2"></i> Contact</a></li>
-            <li class="mb-2"><a href="{% url 'rss_feed' %}" class="text-muted text-decoration-none hover-light"><i
-                  class="fa fa-angle-right me-2"></i> RSS Feed</a></li>
+            <li class="mb-2"><a href="{% url 'home' %}" class="footer-link"><i class="fa fa-angle-right me-2"></i> Home</a></li>
+            <li class="mb-2"><a href="{% url 'about' %}" class="footer-link"><i class="fa fa-angle-right me-2"></i> About</a></li>
+            <li class="mb-2"><a href="{% url 'contact' %}" class="footer-link"><i class="fa fa-angle-right me-2"></i> Contact</a></li>
+            <li class="mb-2"><a href="{% url 'rss_feed' %}" class="footer-link"><i class="fa fa-angle-right me-2"></i> RSS Feed</a></li>
           </ul>
         </div>
 
-        <!-- Categories -->
         <div class="col-lg-2 col-md-6 mb-4 mb-lg-0">
-          <h6 class="text-uppercase mb-4" style="letter-spacing: 1px;">Categories</h6>
+          <h6 class="footer-heading text-uppercase mb-4">Categories</h6>
           <ul class="list-unstyled">
             {% for category in categories|slice:":5" %}
-            <li class="mb-2"><a href="{% url 'posts_by_category' category.id %}"
-                class="text-muted text-decoration-none"><i class="fa fa-angle-right me-2"></i> {{ category.name }}</a>
-            </li>
+            <li class="mb-2"><a href="{% url 'posts_by_category' category.id %}" class="footer-link"><i class="fa fa-angle-right me-2"></i> {{ category.name }}</a></li>
             {% endfor %}
           </ul>
         </div>
 
-        <!-- Newsletter -->
-        <div class="col-lg-4 col-md-6 mb-4 mb-lg-0">
-          <h6 class="text-uppercase mb-4" style="letter-spacing: 1px;">Stay Updated</h6>
-          <p class="text-muted small">Subscribe to our newsletter for the latest posts and updates.</p>
-          <form class="mt-3">
-            <div class="input-group">
-              <input type="email" class="form-control" placeholder="Enter your email"
-                style="border-radius: 25px 0 0 25px;">
-              <button class="btn btn-warning" type="button" style="border-radius: 0 25px 25px 0;"><i
-                  class="fa fa-paper-plane"></i></button>
-            </div>
-          </form>
+        <div class="col-lg-4 col-md-6">
+          <h6 class="footer-heading text-uppercase mb-4">Stay Updated</h6>
+          <p class="text-white-50 small mb-3">Newsletter signup is not available yet. Use RSS for updates.</p>
+          <a class="btn btn-outline-warning btn-sm" href="{% url 'rss_feed' %}"><i class="fa fa-rss"></i> Subscribe via RSS</a>
           <div class="mt-4">
-            <span class="text-muted small"><i class="fa fa-envelope me-2"></i> contact@inkspire.com</span>
+            <span class="text-white-50 small"><i class="fa fa-envelope me-2"></i> contact@inkspire.com</span>
           </div>
         </div>
       </div>
 
-      <hr class="my-4" style="border-color: rgba(255,255,255,0.1);">
+      <hr class="footer-divider my-4">
 
-      <!-- Bottom Footer -->
       <div class="row align-items-center">
         <div class="col-md-6 text-center text-md-start">
-          <p class="text-muted mb-0 small">&copy; 2026 InkSpire. All rights reserved.</p>
+          <p class="text-white-50 mb-0 small">&copy; 2026 InkSpire. All rights reserved.</p>
         </div>
-        <div class="col-md-6 text-center text-md-end">
-          <a href="#" class="text-muted text-decoration-none small me-3">Privacy Policy</a>
-          <a href="#" class="text-muted text-decoration-none small me-3">Terms of Service</a>
-          <a href="/sitemap.xml" class="text-muted text-decoration-none small">Sitemap</a>
+        <div class="col-md-6 text-center text-md-end mt-3 mt-md-0">
+          <a href="/sitemap.xml" class="footer-link small">Sitemap</a>
         </div>
       </div>
     </div>
   </footer>
 
-  <style>
-    footer a:hover {
-      color: #ffc107 !important;
-      transition: color 0.3s ease;
-    }
-
-    footer .input-group .form-control:focus {
-      box-shadow: none;
-      border-color: #ffc107;
-    }
-  </style>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  {% block extra_scripts %}{% endblock %}
 </body>
 
 </html>

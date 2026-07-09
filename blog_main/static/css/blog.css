@@ -4,6 +4,27 @@
   border-bottom: 1px solid #e5e5e5;
 }
 
+.site-header {
+  background: #fff;
+}
+
+.site-search {
+  width: min(100%, 420px);
+}
+
+.category-nav {
+  gap: .25rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.category-nav .nav-link {
+  white-space: nowrap;
+}
+
+.site-messages {
+  padding-top: 1rem;
+}
+
 .blog-header-logo {
   font-family: "Playfair Display", Georgia, "Times New Roman", serif/*rtl:Amiri, Georgia, "Times New Roman", serif*/;
   font-size: 2.25rem;
@@ -57,6 +78,37 @@ h1, h2, h3, h4, h5, h6 {
 /*
  * Footer
  */
+.site-footer a:hover {
+  color: #ffc107 !important;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.footer-heading {
+  letter-spacing: 1px;
+}
+
+.footer-heading:first-child {
+  letter-spacing: 2px;
+}
+
+.footer-link {
+  color: rgba(255, 255, 255, .5);
+  text-decoration: none;
+}
+
+.footer-social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #f8f9fa;
+  font-size: 1.5rem;
+}
+
+.footer-divider {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
 .blog-footer {
   padding: 2.5rem 0;
   color: #727272;
