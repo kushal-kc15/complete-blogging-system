@@ -3,6 +3,7 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.models import User
 from .models import Blog, Category, Comment, Like, Bookmark, Contact, UserProfile
 from django.db.models import Q
+from django.db.models import Prefetch
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -38,9 +39,15 @@ def BlogDetail(request, slug):
     post.save(update_fields=['views'])
 
     # Get comments (only parent comments, replies are fetched via related_name)
+    visible_replies = Comment.objects.filter(is_visible=True).order_by('created_at')
     comments = Comment.objects.filter(
-        blog=post, parent=None).order_by('-created_at')
-    comment_count = Comment.objects.filter(blog=post).count()
+        blog=post, parent=None, is_visible=True
+    ).prefetch_related(
+        Prefetch('replies', queryset=visible_replies, to_attr='visible_replies')
+    ).order_by('-created_at')
+    comment_count = Comment.objects.filter(
+        blog=post, is_visible=True
+    ).filter(Q(parent__isnull=True) | Q(parent__is_visible=True)).count()
 
     # Check if user has liked/bookmarked
     user_has_liked = False
@@ -66,7 +73,7 @@ def BlogDetail(request, slug):
                 parent = None
                 if parent_id:
                     parent = Comment.objects.filter(
-                        id=parent_id, blog=post
+                        id=parent_id, blog=post, is_visible=True
                     ).first()
                     if parent is None:
                         messages.error(

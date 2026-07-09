@@ -697,6 +697,11 @@ h1, h2, h3, h4, h5, h6 {
   color: #664d03;
 }
 
+.status-hidden {
+  background: #f8d7da;
+  color: #842029;
+}
+
 .dashboard-actions {
   display: inline-flex;
   flex-wrap: wrap;

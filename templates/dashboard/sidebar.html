@@ -14,6 +14,9 @@
         {% if perms.blogs.view_blog %}<a href="{% url 'posts' %}"
             class="nav-link text-dark {% if '/posts/' in request.path %}bg-warning{% endif %}"><i
                 class="fa fa-file-text"></i> Posts</a>{% endif %}
+        {% if user.is_staff or perms.blogs.view_comment or perms.blogs.change_comment %}<a href="{% url 'dashboard_comments' %}"
+            class="nav-link text-dark {% if '/comments/' in request.path %}bg-warning{% endif %}"><i
+                class="fa fa-comments"></i> Comments</a>{% endif %}
         {% if perms.blogs.view_contact %}<a href="{% url 'contact_messages' %}"
             class="nav-link text-dark {% if '/messages/' in request.path %}bg-warning{% endif %}"><i
                 class="fa fa-envelope"></i> Messages</a>{% endif %}

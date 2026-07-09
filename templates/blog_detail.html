@@ -226,7 +226,7 @@
                 {% endif %}
 
                 <!-- Replies -->
-                {% for reply in comment.replies.all %}
+                {% for reply in comment.visible_replies %}
                 <div class="card comment-reply">
                   <div class="card-body py-2">
                     <div class="d-flex justify-content-between">

@@ -62,6 +62,17 @@ class EngagementSecurityTests(TestCase):
         self.assertContains(response, 'The comment you tried to reply to is not valid.')
         self.assertFalse(Comment.objects.filter(comment='Invalid reply').exists())
 
+    def test_hidden_comments_do_not_appear_publicly(self):
+        Comment.objects.create(
+            user=self.user,
+            blog=self.first_post,
+            comment='Hidden moderation text',
+            is_visible=False,
+        )
+        response = self.client.get(reverse('Blog_detail', args=[self.first_post.slug]))
+        self.assertContains(response, 'Parent')
+        self.assertNotContains(response, 'Hidden moderation text')
+
 
 class PublicAuthorProfileTests(TestCase):
     def setUp(self):

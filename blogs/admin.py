@@ -34,9 +34,10 @@ admin.site.register(Blog, BlogAdmin)
 
 
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ['user', 'blog', 'parent', 'created_at', 'updated_at']
+    list_display = ['user', 'blog', 'parent', 'is_visible', 'created_at', 'updated_at']
     search_fields = ['user__username', 'blog__title', 'comment']
-    list_filter = ['created_at', 'updated_at']
+    list_filter = ['is_visible', 'created_at', 'updated_at']
+    list_editable = ['is_visible']
 
 
 admin.site.register(Comment, CommentAdmin)

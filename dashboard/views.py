@@ -2,7 +2,8 @@ from django.contrib.auth.models import User
 from .forms import AddUserForm, EditUserForm
 import time
 from django.shortcuts import render, redirect, get_object_or_404
-from blogs.models import Blog, Category, Contact
+from django.contrib import messages
+from blogs.models import Blog, Category, Comment, Contact
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import permission_required, user_passes_test
 from django.views.decorators.http import require_POST
@@ -14,6 +15,22 @@ from django.template.defaultfilters import slugify
 def superuser_required(view_func):
     return user_passes_test(
         lambda user: user.is_superuser,
+        login_url='login',
+        redirect_field_name=None,
+    )(view_func)
+
+
+def comment_moderator_required(view_func):
+    return user_passes_test(
+        lambda user: user.is_staff or user.has_perm('blogs.view_comment') or user.has_perm('blogs.change_comment'),
+        login_url='login',
+        redirect_field_name=None,
+    )(view_func)
+
+
+def comment_change_required(view_func):
+    return user_passes_test(
+        lambda user: user.is_staff or user.has_perm('blogs.change_comment'),
         login_url='login',
         redirect_field_name=None,
     )(view_func)
@@ -165,6 +182,32 @@ def delete_post(request, id):
     post = get_object_or_404(Blog, id=id)
     post.delete()
     return redirect('posts')
+
+
+@login_required(login_url='login')
+@comment_moderator_required
+def comments(request):
+    comments = Comment.objects.select_related(
+        'user', 'blog', 'blog__category'
+    ).order_by('-created_at')
+    context = {
+        'comments': comments,
+        'visible_count': Comment.objects.filter(is_visible=True).count(),
+        'hidden_count': Comment.objects.filter(is_visible=False).count(),
+    }
+    return render(request, 'dashboard/comments.html', context)
+
+
+@login_required(login_url='login')
+@comment_change_required
+@require_POST
+def toggle_comment_visibility(request, id):
+    comment = get_object_or_404(Comment, id=id)
+    comment.is_visible = not comment.is_visible
+    comment.save(update_fields=['is_visible', 'updated_at'])
+    action = 'visible' if comment.is_visible else 'hidden'
+    messages.success(request, f'Comment marked as {action}.')
+    return redirect('dashboard_comments')
 
 
 @login_required(login_url='login')
