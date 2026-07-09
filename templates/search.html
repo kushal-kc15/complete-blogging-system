@@ -2,12 +2,19 @@
 
 {% block title %}Search{% if keyword %}: {{ keyword }}{% endif %} | InkSpire{% endblock %}
 {% block meta_description %}Search InkSpire articles{% if keyword %} for {{ keyword }}{% endif %}.{% endblock %}
+{% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}
+{% block og_title %}Search InkSpire{% if keyword %}: {{ keyword }}{% endif %}{% endblock %}
+{% block og_description %}Search InkSpire articles{% if keyword %} for {{ keyword }}{% endif %}.{% endblock %}
+{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
+{% block twitter_title %}Search InkSpire{% if keyword %}: {{ keyword }}{% endif %}{% endblock %}
+{% block twitter_description %}Search InkSpire articles{% if keyword %} for {{ keyword }}{% endif %}.{% endblock %}
+{% block extra_head %}<meta name="robots" content="noindex,follow">{% endblock %}
 
 {% block content %}
 <section class="archive-header">
   <div class="container">
     <span class="eyebrow">Search</span>
-    <h1>{% if keyword %}Results for “{{ keyword }}”{% else %}Search InkSpire{% endif %}</h1>
+    <h1>{% if keyword %}Results for "{{ keyword }}"{% else %}Search InkSpire{% endif %}</h1>
     <p>{% if keyword %}Articles matching your search term.{% else %}Enter a search term in the navigation bar to find articles.{% endif %}</p>
   </div>
 </section>
@@ -45,7 +52,7 @@
     {% else %}
     <div class="empty-state">
       <h2>No posts found</h2>
-      <p>{% if keyword %}No published articles matched “{{ keyword }}”. Try a different search term.{% else %}Start with a keyword, topic, or title.{% endif %}</p>
+      <p>{% if keyword %}No published articles matched "{{ keyword }}". Try a different search term.{% else %}Start with a keyword, topic, or title.{% endif %}</p>
       <a href="{% url 'home' %}" class="btn btn-warning">Back to homepage</a>
     </div>
     {% endif %}

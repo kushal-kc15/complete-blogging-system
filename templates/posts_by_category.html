@@ -2,6 +2,12 @@
 
 {% block title %}{{ category }} Articles | InkSpire{% endblock %}
 {% block meta_description %}Read the latest {{ category }} articles on InkSpire.{% endblock %}
+{% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}
+{% block og_title %}{{ category }} Articles | InkSpire{% endblock %}
+{% block og_description %}Read the latest {{ category }} articles on InkSpire.{% endblock %}
+{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
+{% block twitter_title %}{{ category }} Articles | InkSpire{% endblock %}
+{% block twitter_description %}Read the latest {{ category }} articles on InkSpire.{% endblock %}
 
 {% block content %}
 <section class="archive-header">
