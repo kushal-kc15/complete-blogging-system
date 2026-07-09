@@ -19,6 +19,7 @@ from django.urls import path, include
 from . import views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
 from blogs import views as BlogsView
 from django.contrib.sitemaps.views import sitemap
 from .sitemaps import BlogSitemap, StaticViewSitemap
@@ -36,6 +37,22 @@ urlpatterns = [
     path('register/', views.Register, name='register'),
     path('login/', views.Login, name='login'),
     path('logout/', views.Logout, name='logout'),
+    path('password-reset/', auth_views.PasswordResetView.as_view(
+        template_name='password_reset_form.html',
+        email_template_name='password_reset_email.html',
+        subject_template_name='password_reset_subject.txt',
+        success_url='/password-reset/done/'
+    ), name='password_reset'),
+    path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(
+        template_name='password_reset_done.html'
+    ), name='password_reset_done'),
+    path('password-reset-confirm/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
+        template_name='password_reset_confirm.html',
+        success_url='/password-reset/complete/'
+    ), name='password_reset_confirm'),
+    path('password-reset/complete/', auth_views.PasswordResetCompleteView.as_view(
+        template_name='password_reset_complete.html'
+    ), name='password_reset_complete'),
     path('dashboard/', include('dashboard.urls')),
     path('about/', views.about, name='about'),
     path('contact/', BlogsView.contact, name='contact'),

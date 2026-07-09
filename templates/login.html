@@ -1,43 +1,48 @@
 {% extends 'base.html' %}
 
+{% block title %}Login | InkSpire{% endblock %}
+{% block meta_description %}Login to your InkSpire account.{% endblock %}
+
 {% block content %}
+<section class="auth-page">
+  <div class="container">
+    <div class="auth-card">
+      <div class="auth-intro">
+        <span class="eyebrow">Welcome back</span>
+        <h1>Log in to InkSpire</h1>
+        <p>Continue reading, bookmarking, and joining the conversation.</p>
+      </div>
 
-<div class="row justify-content-center mt-5">
-    <div class="col-md-5">
-        <div class="card shadow-sm">
-            <div class="card-header bg-warning text-center">
-                <h4 class="mb-0"><i class="fa fa-sign-in"></i> Login</h4>
-            </div>
-            <div class="card-body p-4">
-                {% if form.errors %}
-                <div class="alert alert-danger">
-                    <p class="mb-0">Invalid username or password</p>
-                </div>
-                {% endif %}
+      {% if form.errors %}
+      <div class="alert alert-danger">
+        <strong>We couldn’t log you in.</strong>
+        <p class="mb-0">Please check your username and password.</p>
+      </div>
+      {% endif %}
 
-                <form action="{% url 'login' %}" method="POST">
-                    {% csrf_token %}
-
-                    <div class="form-group mb-3">
-                        <label for="id_username" class="form-label font-weight-bold">Username</label>
-                        <input type="text" name="username" class="form-control" required>
-                    </div>
-
-                    <div class="form-group mb-4">
-                        <label for="id_password" class="form-label font-weight-bold">Password</label>
-                        <input type="password" name="password" class="form-control" required>
-                    </div>
-
-                    <button type="submit" class="btn btn-warning btn-block w-100"><i class="fa fa-sign-in"></i>
-                        Login</button>
-                </form>
-
-                <hr>
-                <p class="text-center mb-0">Don't have an account? <a href="{% url 'register' %}"
-                        class="text-warning">Register here</a></p>
-            </div>
+      <form action="{% url 'login' %}" method="POST" class="auth-form">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="id_username" class="form-label">Username</label>
+          <input type="text" name="username" id="id_username" class="form-control" autocomplete="username" required>
         </div>
-    </div>
-</div>
 
+        <div class="mb-2">
+          <label for="id_password" class="form-label">Password</label>
+          <input type="password" name="password" id="id_password" class="form-control" autocomplete="current-password" required>
+        </div>
+
+        <div class="auth-helper text-end mb-4">
+          <a href="{% url 'password_reset' %}">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn btn-warning w-100">
+          <i class="fa fa-sign-in"></i> Login
+        </button>
+      </form>
+
+      <p class="auth-switch">Don’t have an account? <a href="{% url 'register' %}">Create one</a></p>
+    </div>
+  </div>
+</section>
 {% endblock %}

@@ -1,82 +1,75 @@
 {% extends 'base.html' %}
 
+{% block title %}My Profile | InkSpire{% endblock %}
+{% block meta_description %}Manage your InkSpire profile.{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-8">
-    <div class="card shadow-sm mt-4">
-      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-        <h4 class="mb-0"><i class="fa fa-user"></i> My Profile</h4>
-        <a href="{% url 'edit_profile' %}" class="btn btn-light btn-sm">
-          <i class="fa fa-edit"></i> Edit Profile
-        </a>
-      </div>
-      <div class="card-body">
-        <div class="row">
-          <!-- Avatar Section -->
-          <div class="col-md-4 text-center mb-4">
-            {% if profile.avatar %}
-            <img src="{{ profile.avatar.url }}" alt="Avatar" class="rounded-circle mb-3"
-              style="width: 150px; height: 150px; object-fit: cover;">
-            {% else %}
-            <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3"
-              style="width: 150px; height: 150px;">
-              <i class="fa fa-user text-white" style="font-size: 4rem;"></i>
-            </div>
-            {% endif %}
-            <h5>{{ user.username }}</h5>
-            <p class="text-muted">{{ user.email }}</p>
-          </div>
-
-          <!-- Profile Info -->
-          <div class="col-md-8">
-            <table class="table table-borderless">
-              <tr>
-                <th width="30%"><i class="fa fa-user"></i> Full Name:</th>
-                <td>{{ user.first_name }} {{ user.last_name }}{% if not user.first_name and not user.last_name %}<span
-                    class="text-muted">Not set</span>{% endif %}</td>
-              </tr>
-              <tr>
-                <th><i class="fa fa-envelope"></i> Email:</th>
-                <td>{{ user.email }}</td>
-              </tr>
-              <tr>
-                <th><i class="fa fa-map-marker"></i> Location:</th>
-                <td>{{ profile.location|default:"<span class='text-muted'>Not set</span>" }}</td>
-              </tr>
-              <tr>
-                <th><i class="fa fa-globe"></i> Website:</th>
-                <td>
-                  {% if profile.website %}
-                  <a href="{{ profile.website }}" target="_blank">{{ profile.website }}</a>
-                  {% else %}
-                  <span class="text-muted">Not set</span>
-                  {% endif %}
-                </td>
-              </tr>
-              <tr>
-                <th><i class="fa fa-calendar"></i> Joined:</th>
-                <td>{{ user.date_joined|date:"F d, Y" }}</td>
-              </tr>
-            </table>
-
-            <hr>
-
-            <h6><i class="fa fa-info-circle"></i> Bio</h6>
-            <p class="text-muted">{{ profile.bio|default:"No bio yet." }}</p>
-          </div>
+<section class="account-page">
+  <div class="container">
+    <div class="profile-shell">
+      <div class="profile-summary">
+        {% if profile.avatar %}
+        <img src="{{ profile.avatar.url }}" alt="{{ user.username }} avatar" class="profile-avatar">
+        {% else %}
+        <div class="profile-avatar profile-avatar-fallback">
+          <i class="fa fa-user"></i>
+        </div>
+        {% endif %}
+        <h1>{{ user.username }}</h1>
+        <p>{{ user.email|default:"No email set" }}</p>
+        <div class="d-grid gap-2">
+          <a href="{% url 'edit_profile' %}" class="btn btn-warning"><i class="fa fa-edit"></i> Edit profile</a>
+          <a href="{% url 'change_password' %}" class="btn btn-outline-dark"><i class="fa fa-key"></i> Change password</a>
         </div>
       </div>
-      <div class="card-footer bg-light">
-        <div class="d-flex gap-2">
-          <a href="{% url 'change_password' %}" class="btn btn-outline-dark">
-            <i class="fa fa-key"></i> Change Password
-          </a>
+
+      <div class="profile-details">
+        <div class="section-heading">
+          <span>Account</span>
+          <h2>Profile details</h2>
+        </div>
+
+        <dl class="profile-list">
+          <dt><i class="fa fa-user"></i> Full name</dt>
+          <dd>
+            {% if user.first_name or user.last_name %}
+            {{ user.first_name }} {{ user.last_name }}
+            {% else %}
+            <span class="text-muted">Not set</span>
+            {% endif %}
+          </dd>
+
+          <dt><i class="fa fa-envelope"></i> Email</dt>
+          <dd>{{ user.email|default:"Not set" }}</dd>
+
+          <dt><i class="fa fa-map-marker"></i> Location</dt>
+          <dd>{{ profile.location|default:"Not set" }}</dd>
+
+          <dt><i class="fa fa-globe"></i> Website</dt>
+          <dd>
+            {% if profile.website %}
+            <a href="{{ profile.website }}" target="_blank" rel="noopener">{{ profile.website }}</a>
+            {% else %}
+            <span class="text-muted">Not set</span>
+            {% endif %}
+          </dd>
+
+          <dt><i class="fa fa-calendar"></i> Joined</dt>
+          <dd>{{ user.date_joined|date:"F d, Y" }}</dd>
+        </dl>
+
+        <div class="profile-bio">
+          <h3><i class="fa fa-info-circle"></i> Bio</h3>
+          <p>{{ profile.bio|default:"No bio yet." }}</p>
+        </div>
+
+        <div class="profile-actions">
           <a href="{% url 'my_bookmarks' %}" class="btn btn-outline-primary">
-            <i class="fa fa-bookmark"></i> My Bookmarks
+            <i class="fa fa-bookmark"></i> My bookmarks
           </a>
         </div>
       </div>
     </div>
   </div>
-</div>
+</section>
 {% endblock %}
