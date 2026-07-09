@@ -29,7 +29,7 @@ class BlogForm(forms.ModelForm):
                 'class': 'form-control'
             }),
             'featured_image': forms.ClearableFileInput(attrs={
-                'class': 'form-control-file'
+                'class': 'form-control'
             }),
             'short_description': forms.Textarea(attrs={
                 'class': 'form-control',

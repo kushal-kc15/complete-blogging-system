@@ -635,6 +635,106 @@ h1, h2, h3, h4, h5, h6 {
   color: #687079;
 }
 
+/* Dashboard post editor */
+.post-editor-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.editor-panel {
+  padding: 1.5rem;
+  border: 1px solid #e6e8eb;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(20, 24, 28, .05);
+}
+
+.editor-panel-header {
+  margin-bottom: 1rem;
+}
+
+.editor-panel-header h2 {
+  margin: .2rem 0 0;
+  font-size: 1.45rem;
+}
+
+.editor-field {
+  margin-bottom: 1rem;
+}
+
+.editor-field:last-child {
+  margin-bottom: 0;
+}
+
+.editor-field .form-label {
+  font-weight: 800;
+}
+
+.field-help {
+  margin: -.25rem 0 .55rem;
+  color: #687079;
+  font-size: .9rem;
+}
+
+.editor-check {
+  padding-top: .35rem;
+}
+
+.editor-panel-content .django-ckeditor-widget,
+.editor-panel-content .ck-editor,
+.editor-panel-content .ck-editor__editable {
+  width: 100% !important;
+}
+
+.editor-panel-content .ck-editor__editable {
+  min-height: 380px;
+}
+
+.editor-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: flex-end;
+  gap: .75rem;
+  padding: 1rem;
+  border: 1px solid #e6e8eb;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 -10px 30px rgba(20, 24, 28, .08);
+  backdrop-filter: blur(8px);
+}
+
+.editor-errors ul,
+.editor-field .errorlist {
+  padding-left: 1.15rem;
+}
+
+.editor-field .errorlist {
+  margin: .5rem 0 0;
+  color: #dc3545;
+  font-size: .9rem;
+}
+
+.current-image {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  margin-bottom: 1rem;
+  padding: .75rem;
+  border-radius: 12px;
+  background: #f8f9fa;
+  color: #687079;
+  font-size: .9rem;
+}
+
+.current-image img {
+  width: 96px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
 /* Article detail */
 .article-page { padding-top: 3.5rem; }
 .article-column { padding-right: 3rem; }
@@ -752,6 +852,15 @@ h1, h2, h3, h4, h5, h6 {
 
   .profile-list dd {
     margin-bottom: .9rem;
+  }
+
+  .editor-panel {
+    padding: 1.15rem;
+  }
+
+  .editor-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
   }
 
   .article-page { padding-top: 2rem; }

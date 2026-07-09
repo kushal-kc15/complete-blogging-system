@@ -153,6 +153,7 @@ def edit_post(request, id):
         form = BlogForm(instance=post)
     context = {
         'form': form,
+        'post': post,
     }
     return render(request, 'dashboard/edit_post.html', context)
 

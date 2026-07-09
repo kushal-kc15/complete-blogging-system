@@ -1,87 +1,141 @@
 {% extends 'base.html' %}
 
-{% block content %}
+{% block title %}Edit Post | InkSpire{% endblock %}
 
-<div class="row">
+{% block content %}
+<div class="row dashboard-shell">
     {% include 'dashboard/sidebar.html' %}
 
     <div class="col-md-9">
-        <div class="card shadow-sm">
-            <div class="card-header bg-warning">
-                <h4 class="mb-0"><i class="fa fa-edit"></i> Edit Post</h4>
+        <div class="dashboard-header">
+            <div>
+                <span class="eyebrow">Editor</span>
+                <h1>Edit post</h1>
+                <p>Update post content, publishing status, media, and SEO metadata.</p>
             </div>
-            <div class="card-body">
-                {% if form.errors %}
-                <div class="alert alert-danger">
-                    {% for field in form %}
-                    {% for error in field.errors %}
-                    <p><strong>{{ field.label }}:</strong> {{ error }}</p>
-                    {% endfor %}
-                    {% endfor %}
-                    {% for error in form.non_field_errors %}
-                    <p>{{ error }}</p>
-                    {% endfor %}
-                </div>
+            <div class="dashboard-actions">
+                {% if post.status == 'published' %}
+                <a href="{% url 'Blog_detail' post.slug %}" class="btn btn-outline-secondary">
+                    <i class="fa fa-eye"></i> View post
+                </a>
                 {% endif %}
-
-                <form method="POST" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    {{ form.media }}
-
-                    <div class="form-group mb-3">
-                        <label for="id_title" class="form-label font-weight-bold">Title</label>
-                        {{ form.title }}
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label for="id_category" class="form-label font-weight-bold">Category</label>
-                                {{ form.category }}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label for="id_status" class="form-label font-weight-bold">Status</label>
-                                {{ form.status }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label for="id_featured_image" class="form-label font-weight-bold">Featured Image</label>
-                        {{ form.featured_image }}
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label for="id_short_description" class="form-label font-weight-bold">Short Description</label>
-                        {{ form.short_description }}
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label for="id_blog_body" class="form-label font-weight-bold">Content</label>
-                        {{ form.blog_body }}
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label for="id_meta_description" class="form-label font-weight-bold">SEO Meta
-                            Description</label>
-                        {{ form.meta_description }}
-                    </div>
-
-                    <div class="form-group form-check mb-4">
-                        {{ form.is_featured }}
-                        <label class="form-check-label" for="id_is_featured">Mark as Featured Post</label>
-                    </div>
-
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'posts' %}" class="btn btn-secondary"><i class="fa fa-arrow-left"></i> Back</a>
-                        <button type="submit" class="btn btn-warning"><i class="fa fa-save"></i> Update Post</button>
-                    </div>
-                </form>
+                <a href="{% url 'posts' %}" class="btn btn-outline-secondary">
+                    <i class="fa fa-arrow-left"></i> Back to posts
+                </a>
             </div>
         </div>
+
+        {% if form.errors %}
+        <div class="alert alert-danger editor-errors">
+            <strong>Please fix the highlighted fields.</strong>
+            <ul class="mb-0 mt-2">
+                {% for field in form %}
+                {% for error in field.errors %}
+                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <form method="POST" enctype="multipart/form-data" class="post-editor-form">
+            {% csrf_token %}
+            {{ form.media }}
+
+            <div class="editor-panel">
+                <div class="editor-panel-header">
+                    <span class="eyebrow">Story basics</span>
+                    <h2>Title and summary</h2>
+                </div>
+                <div class="editor-field">
+                    <label for="{{ form.title.id_for_label }}" class="form-label">Title</label>
+                    {{ form.title }}
+                    {{ form.title.errors }}
+                </div>
+                <div class="editor-field">
+                    <label for="{{ form.short_description.id_for_label }}" class="form-label">Short description</label>
+                    <p class="field-help">Used on article cards and social previews.</p>
+                    {{ form.short_description }}
+                    {{ form.short_description.errors }}
+                </div>
+            </div>
+
+            <div class="editor-panel">
+                <div class="editor-panel-header">
+                    <span class="eyebrow">Publishing</span>
+                    <h2>Status and placement</h2>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 editor-field">
+                        <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
+                        {{ form.category }}
+                        {{ form.category.errors }}
+                    </div>
+                    <div class="col-md-6 editor-field">
+                        <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+                        {{ form.status }}
+                        {{ form.status.errors }}
+                    </div>
+                </div>
+                <div class="form-check editor-check">
+                    {{ form.is_featured }}
+                    <label class="form-check-label" for="{{ form.is_featured.id_for_label }}">Mark as featured post</label>
+                </div>
+            </div>
+
+            <div class="editor-panel">
+                <div class="editor-panel-header">
+                    <span class="eyebrow">Media</span>
+                    <h2>Featured image</h2>
+                </div>
+                {% if post.featured_image %}
+                <div class="current-image">
+                    <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
+                    <span>Current featured image</span>
+                </div>
+                {% endif %}
+                <div class="editor-field">
+                    <label for="{{ form.featured_image.id_for_label }}" class="form-label">Replace image</label>
+                    {{ form.featured_image }}
+                    {{ form.featured_image.errors }}
+                </div>
+            </div>
+
+            <div class="editor-panel editor-panel-content">
+                <div class="editor-panel-header">
+                    <span class="eyebrow">Article</span>
+                    <h2>Content</h2>
+                </div>
+                <div class="editor-field">
+                    <label for="{{ form.blog_body.id_for_label }}" class="form-label">Post body</label>
+                    {{ form.blog_body }}
+                    {{ form.blog_body.errors }}
+                </div>
+            </div>
+
+            <div class="editor-panel">
+                <div class="editor-panel-header">
+                    <span class="eyebrow">SEO</span>
+                    <h2>Search metadata</h2>
+                </div>
+                <div class="editor-field">
+                    <label for="{{ form.meta_description.id_for_label }}" class="form-label">SEO meta description</label>
+                    <p class="field-help">Keep this concise; around 160 characters works best.</p>
+                    {{ form.meta_description }}
+                    {{ form.meta_description.errors }}
+                </div>
+            </div>
+
+            <div class="editor-actions">
+                <a href="{% url 'posts' %}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-warning">
+                    <i class="fa fa-save"></i> Update post
+                </button>
+            </div>
+        </form>
     </div>
 </div>
-
 {% endblock %}
