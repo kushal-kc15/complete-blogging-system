@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Blog, Bookmark, Category, Comment, Like
+from .models import Blog, Bookmark, Category, Comment, Like, UserProfile
 
 
 class EngagementSecurityTests(TestCase):
@@ -61,3 +61,46 @@ class EngagementSecurityTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'The comment you tried to reply to is not valid.')
         self.assertFalse(Comment.objects.filter(comment='Invalid reply').exists())
+
+
+class PublicAuthorProfileTests(TestCase):
+    def setUp(self):
+        self.author = User.objects.create_user(
+            username='writer', first_name='Ink', last_name='Writer'
+        )
+        UserProfile.objects.create(
+            user=self.author,
+            bio='Writing thoughtful essays for curious readers.',
+            location='Kathmandu',
+            website='https://example.com',
+        )
+        self.category = Category.objects.create(name='Essays')
+        self.published_post = Blog.objects.create(
+            title='Public Story', slug='public-story', category=self.category,
+            author=self.author, short_description='Public description',
+            blog_body='<p>Public body</p>', status='published'
+        )
+        Blog.objects.create(
+            title='Draft Story', slug='draft-story', category=self.category,
+            author=self.author, short_description='Draft description',
+            blog_body='<p>Draft body</p>', status='draft'
+        )
+
+    def test_public_author_page_shows_profile_and_published_posts_only(self):
+        response = self.client.get(
+            reverse('author_profile', args=[self.author.username])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Ink Writer')
+        self.assertContains(response, 'Writing thoughtful essays')
+        self.assertContains(response, 'Public Story')
+        self.assertNotContains(response, 'Draft Story')
+
+    def test_article_byline_links_to_public_author_page(self):
+        response = self.client.get(
+            reverse('Blog_detail', args=[self.published_post.slug])
+        )
+        self.assertContains(
+            response,
+            reverse('author_profile', args=[self.author.username])
+        )

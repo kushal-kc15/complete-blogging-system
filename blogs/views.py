@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
-from .models import Blog, Category, Comment, Like, Bookmark, Contact
+from django.contrib.auth.models import User
+from .models import Blog, Category, Comment, Like, Bookmark, Contact, UserProfile
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
@@ -183,3 +184,23 @@ def Search(request):
         'keyword': keyword,
     }
     return render(request, 'search.html', context)
+
+
+def AuthorProfile(request, username):
+    author = get_object_or_404(User, username=username)
+    profile = UserProfile.objects.filter(user=author).first()
+    posts_list = Blog.objects.filter(
+        author=author,
+        status='published',
+    ).select_related('category', 'author').order_by('-created_at')
+
+    paginator = Paginator(posts_list, 6)
+    page = request.GET.get('page')
+    posts = paginator.get_page(page)
+
+    context = {
+        'author_profile_user': author,
+        'author_profile': profile,
+        'posts': posts,
+    }
+    return render(request, 'author_profile.html', context)

@@ -73,7 +73,11 @@
           <div class="article-meta">
             <div class="article-author-mark" aria-hidden="true"><i class="fa fa-user"></i></div>
             <div>
-              <strong>{{ post.author.get_full_name|default:post.author.username }}</strong>
+              <strong>
+                <a href="{% url 'author_profile' post.author.username %}" class="article-author-link">
+                  {{ post.author.get_full_name|default:post.author.username }}
+                </a>
+              </strong>
               <div class="article-meta-details">
                 <time datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|date:"F j, Y" }}</time>
                 <span aria-hidden="true">&middot;</span>
@@ -275,8 +279,14 @@
       <div class="card mb-4 p-3 border-0 bg-light">
         <h4 class="font-italic"><i class="fa fa-user"></i> Author</h4>
         <div class="card-body">
-          <p class="mb-1"><strong>{{ post.author.get_full_name|default:post.author.username }}</strong></p>
-          <small class="text-muted">{{ post.author.email }}</small>
+          <p class="mb-1">
+            <strong>
+              <a href="{% url 'author_profile' post.author.username %}" class="text-dark">
+                {{ post.author.get_full_name|default:post.author.username }}
+              </a>
+            </strong>
+          </p>
+          <a href="{% url 'author_profile' post.author.username %}" class="btn btn-outline-dark btn-sm mt-2">View profile</a>
         </div>
       </div>
 

@@ -66,6 +66,7 @@ urlpatterns = [
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps},
          name='django.contrib.sitemaps.views.sitemap'),
     path('feed/', LatestPostsFeed(), name='rss_feed'),
+    path('authors/<str:username>/', BlogsView.AuthorProfile, name='author_profile'),
     path('<slug:slug>/', BlogsView.BlogDetail, name='Blog_detail'),
     path('blogs/search/', BlogsView.Search, name='search'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

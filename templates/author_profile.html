@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ author_profile_user.get_full_name|default:author_profile_user.username }} | InkSpire Author{% endblock %}
+{% block meta_description %}Read published articles by {{ author_profile_user.get_full_name|default:author_profile_user.username }} on InkSpire.{% endblock %}
+{% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}
+{% block og_title %}{{ author_profile_user.get_full_name|default:author_profile_user.username }} | InkSpire Author{% endblock %}
+{% block og_description %}Read published articles by {{ author_profile_user.get_full_name|default:author_profile_user.username }} on InkSpire.{% endblock %}
+{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
+{% block twitter_title %}{{ author_profile_user.get_full_name|default:author_profile_user.username }} | InkSpire Author{% endblock %}
+{% block twitter_description %}Read published articles by {{ author_profile_user.get_full_name|default:author_profile_user.username }} on InkSpire.{% endblock %}
+{% block og_image %}
+{% if author_profile.avatar %}
+<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ author_profile.avatar.url }}">
+{% endif %}
+{% endblock %}
+{% block twitter_image %}
+{% if author_profile.avatar %}
+<meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{{ author_profile.avatar.url }}">
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="author-hero">
+  <div class="container">
+    <div class="author-profile-card">
+      {% if author_profile.avatar %}
+      <img src="{{ author_profile.avatar.url }}" alt="{{ author_profile_user.username }} avatar" class="author-avatar">
+      {% else %}
+      <div class="author-avatar author-avatar-fallback" aria-hidden="true">
+        <i class="fa fa-user"></i>
+      </div>
+      {% endif %}
+
+      <div class="author-profile-body">
+        <span class="eyebrow">Author</span>
+        <h1>{{ author_profile_user.get_full_name|default:author_profile_user.username }}</h1>
+        <p class="author-username">@{{ author_profile_user.username }}</p>
+        {% if author_profile.bio %}
+        <p class="author-bio">{{ author_profile.bio }}</p>
+        {% else %}
+        <p class="author-bio text-muted">This author has not added a bio yet.</p>
+        {% endif %}
+        <div class="author-meta">
+          <span><i class="fa fa-file-text-o"></i> {{ posts.paginator.count }} published post{{ posts.paginator.count|pluralize }}</span>
+          {% if author_profile.location %}
+          <span><i class="fa fa-map-marker"></i> {{ author_profile.location }}</span>
+          {% endif %}
+          {% if author_profile.website %}
+          <a href="{{ author_profile.website }}" target="_blank" rel="noopener"><i class="fa fa-globe"></i> Website</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="discovery-section">
+  <div class="container">
+    <div class="section-heading">
+      <span>Published work</span>
+      <h2>Articles by {{ author_profile_user.get_full_name|default:author_profile_user.username }}</h2>
+    </div>
+
+    {% if posts %}
+    <div class="row g-4">
+      {% for post in posts %}
+      <div class="col-md-6 col-xl-4">
+        {% include 'partials/post_card.html' with post=post %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if posts.has_other_pages %}
+    <nav aria-label="Author posts pagination" class="mt-5">
+      <ul class="pagination pagination-clean justify-content-center">
+        {% if posts.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ posts.previous_page_number }}">&laquo; Previous</a></li>
+        {% endif %}
+        {% for num in posts.paginator.page_range %}
+        {% if posts.number == num %}
+        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% elif num > posts.number|add:'-3' and num < posts.number|add:'3' %}
+        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+        {% endif %}
+        {% endfor %}
+        {% if posts.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ posts.next_page_number }}">Next &raquo;</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+      <h2>No published posts yet</h2>
+      <p>{{ author_profile_user.get_full_name|default:author_profile_user.username }} does not have any public posts right now.</p>
+      <a href="{% url 'home' %}" class="btn btn-warning">Explore latest posts</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

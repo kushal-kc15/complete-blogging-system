@@ -10,7 +10,7 @@
     <p>{{ post.short_description|truncatewords:20 }}</p>
     <div class="post-meta-line">
       <span>{{ post.created_at|timesince }} ago</span>
-      <span>{{ post.author }}</span>
+      <a href="{% url 'author_profile' post.author.username %}">{{ post.author.get_full_name|default:post.author.username }}</a>
       <span><i class="fa fa-clock-o"></i> {{ post.reading_time }} min</span>
     </div>
   </div>
