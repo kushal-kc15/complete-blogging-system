@@ -33,10 +33,10 @@ def robots_txt(request):
 
 
 def home(request):
-    featured_post = Blog.objects.filter(
-        is_featured=True, status='published').order_by('-updated_at')
-    posts_list = Blog.objects.filter(
-        is_featured=False, status='published').order_by('-updated_at')
+    featured_post = Blog.objects.published().filter(
+        is_featured=True).order_by('-updated_at')
+    posts_list = Blog.objects.published().filter(
+        is_featured=False).order_by('-updated_at')
 
     # Pagination
     paginator = Paginator(posts_list, 6)

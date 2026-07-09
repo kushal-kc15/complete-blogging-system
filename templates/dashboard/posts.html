@@ -58,11 +58,9 @@
                             </td>
                             <td class="text-end">
                                 <div class="dashboard-actions">
-                                    {% if post.status == 'published' %}
-                                    <a href="{% url 'Blog_detail' post.slug %}" class="btn btn-sm btn-outline-secondary" title="View post">
+                                    <a href="{% url 'Blog_detail' post.slug %}" class="btn btn-sm btn-outline-secondary" title="{% if post.status == 'published' %}View post{% else %}Preview draft{% endif %}">
                                         <i class="fa fa-eye"></i>
                                     </a>
-                                    {% endif %}
                                     {% if perms.blogs.change_blog %}
                                     <a href="{% url 'edit_post' post.id %}" class="btn btn-sm btn-outline-success" title="Edit post">
                                         <i class="fa fa-edit"></i>

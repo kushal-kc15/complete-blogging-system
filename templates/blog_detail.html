@@ -57,6 +57,11 @@
 
 <!-- Page content-->
 <div class="container article-page">
+  {% if is_preview %}
+  <div class="alert alert-warning" role="alert">
+    <strong>Draft preview:</strong> This post is not publicly published.
+  </div>
+  {% endif %}
   <div class="row">
     <div class="col-lg-8 article-column">
       <!-- Post content-->
@@ -89,6 +94,7 @@
           </div>
 
           <!-- Like, Bookmark, Share buttons -->
+          {% if not is_preview %}
           <div class="article-actions">
             <div class="article-engagement">
             {% if user.is_authenticated %}
@@ -130,6 +136,7 @@
               </a>
             </div>
           </div>
+          {% endif %}
         </header>
 
         <!-- Preview image figure-->
@@ -255,7 +262,9 @@
 
           <!-- Comment Form -->
           <div class="comment-composer">
-            {% if user.is_authenticated %}
+            {% if is_preview %}
+            <p class="text-muted mb-0">Comments are disabled in draft preview.</p>
+            {% elif user.is_authenticated %}
             <form action="{% url 'Blog_detail' post.slug %}" method="POST">
               {% csrf_token %}
               <div class="form-group">

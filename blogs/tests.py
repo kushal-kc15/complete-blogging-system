@@ -115,3 +115,71 @@ class PublicAuthorProfileTests(TestCase):
             response,
             reverse('author_profile', args=[self.author.username])
         )
+
+
+class PublishingVisibilityTests(TestCase):
+    def setUp(self):
+        self.author = User.objects.create_user(
+            username='publisher', password='test-password'
+        )
+        self.other_user = User.objects.create_user(
+            username='other', password='test-password'
+        )
+        self.staff_user = User.objects.create_user(
+            username='staff', password='test-password', is_staff=True
+        )
+        self.category = Category.objects.create(name='Publishing')
+        self.published_post = Blog.objects.create(
+            title='Visible Published Post',
+            slug='visible-published-post',
+            category=self.category,
+            author=self.author,
+            short_description='Visible summary',
+            blog_body='<p>Visible body</p>',
+            status='published',
+        )
+        self.draft_post = Blog.objects.create(
+            title='Private Draft Post',
+            slug='private-draft-post',
+            category=self.category,
+            author=self.author,
+            short_description='Private summary',
+            blog_body='<p>Private body</p>',
+            status='draft',
+        )
+
+    def test_drafts_hidden_from_public_home_search_category_and_author_pages(self):
+        checks = [
+            self.client.get(reverse('home')),
+            self.client.get(reverse('search'), {'keyword': 'Post'}),
+            self.client.get(reverse('posts_by_category', args=[self.category.id])),
+            self.client.get(reverse('author_profile', args=[self.author.username])),
+        ]
+        for response in checks:
+            with self.subTest(path=response.request['PATH_INFO']):
+                self.assertContains(response, 'Visible Published Post')
+                self.assertNotContains(response, 'Private Draft Post')
+
+    def test_author_can_preview_own_draft(self):
+        self.client.force_login(self.author)
+        response = self.client.get(reverse('Blog_detail', args=[self.draft_post.slug]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Draft preview')
+        self.assertContains(response, 'Private Draft Post')
+
+    def test_staff_can_preview_draft(self):
+        self.client.force_login(self.staff_user)
+        response = self.client.get(reverse('Blog_detail', args=[self.draft_post.slug]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Draft preview')
+
+    def test_other_users_cannot_preview_private_drafts(self):
+        self.assertEqual(
+            self.client.get(reverse('Blog_detail', args=[self.draft_post.slug])).status_code,
+            404,
+        )
+        self.client.force_login(self.other_user)
+        self.assertEqual(
+            self.client.get(reverse('Blog_detail', args=[self.draft_post.slug])).status_code,
+            404,
+        )

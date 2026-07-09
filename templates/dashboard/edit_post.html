@@ -14,11 +14,9 @@
                 <p>Update post content, publishing status, media, and SEO metadata.</p>
             </div>
             <div class="dashboard-actions">
-                {% if post.status == 'published' %}
                 <a href="{% url 'Blog_detail' post.slug %}" class="btn btn-outline-secondary">
-                    <i class="fa fa-eye"></i> View post
+                    <i class="fa fa-eye"></i> {% if post.status == 'published' %}View post{% else %}Preview draft{% endif %}
                 </a>
-                {% endif %}
                 <a href="{% url 'posts' %}" class="btn btn-outline-secondary">
                     <i class="fa fa-arrow-left"></i> Back to posts
                 </a>

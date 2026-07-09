@@ -9,7 +9,7 @@ class LatestPostsFeed(Feed):
     description = "Latest posts from InkSpire blogging platform"
 
     def items(self):
-        return Blog.objects.filter(status='published').order_by('-created_at')[:10]
+        return Blog.objects.published().order_by('-created_at')[:10]
 
     def item_title(self, item):
         return item.title

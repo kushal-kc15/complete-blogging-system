@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 from django_ckeditor_5.fields import CKEditor5Field
 
 
@@ -39,12 +40,17 @@ STATUS_CHOICES = (
 
 
 class Blog(models.Model):
+    class QuerySet(models.QuerySet):
+        def published(self):
+            return self.filter(status='published')
+
     title = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    published_at = models.DateTimeField(blank=True, null=True)
     featured_image = models.ImageField(
         upload_to='uploads/%Y/%m/%d', blank=True, null=True)
     blog_body = CKEditor5Field('Content', config_name='extends')
@@ -54,6 +60,7 @@ class Blog(models.Model):
     is_featured = models.BooleanField(default=False)
     views = models.PositiveIntegerField(default=0)
     meta_description = models.CharField(max_length=160, blank=True, null=True)
+    objects = QuerySet.as_manager()
 
     class Meta:
         verbose_name = "Blog"
@@ -61,6 +68,11 @@ class Blog(models.Model):
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        if self.status == 'published' and self.published_at is None:
+            self.published_at = timezone.now()
+        super().save(*args, **kwargs)
 
     def reading_time(self):
         """Calculate reading time based on average reading speed of 200 words per minute"""

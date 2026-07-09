@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.contrib.auth.models import User
 from .models import Blog, Category, Comment, Like, Bookmark, Contact, UserProfile
 from django.db.models import Q
@@ -15,8 +15,8 @@ from django.views.decorators.http import require_POST
 
 def Posts_by_category(request, category_id):
     # fetch the post that belongs to the category with the id category_id
-    posts_list = Blog.objects.filter(
-        status="published", category=category_id).order_by('-created_at')
+    posts_list = Blog.objects.published().filter(
+        category=category_id).order_by('-created_at')
     category = get_object_or_404(Category, id=category_id)
 
     # Pagination
@@ -32,11 +32,22 @@ def Posts_by_category(request, category_id):
 
 
 def BlogDetail(request, slug):
-    post = get_object_or_404(Blog, slug=slug, status="published")
+    post = get_object_or_404(Blog, slug=slug)
+    is_preview = post.status != 'published'
+    can_preview = (
+        request.user.is_authenticated and (
+            post.author_id == request.user.id or
+            request.user.is_staff or
+            request.user.has_perm('blogs.change_blog')
+        )
+    )
+    if is_preview and not can_preview:
+        raise Http404
 
     # Increment view count
-    post.views += 1
-    post.save(update_fields=['views'])
+    if not is_preview:
+        post.views += 1
+        post.save(update_fields=['views'])
 
     # Get comments (only parent comments, replies are fetched via related_name)
     visible_replies = Comment.objects.filter(is_visible=True).order_by('created_at')
@@ -59,13 +70,12 @@ def BlogDetail(request, slug):
             user=request.user, blog=post).exists()
 
     # Related posts (same category, excluding current post)
-    related_posts = Blog.objects.filter(
-        category=post.category,
-        status="published"
+    related_posts = Blog.objects.published().filter(
+        category=post.category
     ).exclude(id=post.id).order_by('-created_at')[:3]
 
     # Handle comment submission
-    if request.method == 'POST':
+    if request.method == 'POST' and not is_preview:
         if request.user.is_authenticated:
             comment_text = request.POST.get('comment')
             parent_id = request.POST.get('parent_id')
@@ -97,6 +107,7 @@ def BlogDetail(request, slug):
         'user_has_liked': user_has_liked,
         'user_has_bookmarked': user_has_bookmarked,
         'like_count': post.likes.count(),
+        'is_preview': is_preview,
     }
     return render(request, 'blog_detail.html', context)
 
@@ -104,7 +115,7 @@ def BlogDetail(request, slug):
 @login_required(login_url='login')
 @require_POST
 def like_post(request, slug):
-    post = get_object_or_404(Blog, slug=slug)
+    post = get_object_or_404(Blog.objects.published(), slug=slug)
     like, created = Like.objects.get_or_create(user=request.user, blog=post)
     if not created:
         like.delete()
@@ -114,7 +125,7 @@ def like_post(request, slug):
 @login_required(login_url='login')
 @require_POST
 def bookmark_post(request, slug):
-    post = get_object_or_404(Blog, slug=slug)
+    post = get_object_or_404(Blog.objects.published(), slug=slug)
     bookmark, created = Bookmark.objects.get_or_create(
         user=request.user, blog=post)
     if not created:
@@ -175,11 +186,10 @@ def contact(request):
 
 def Search(request):
     keyword = request.GET.get('keyword')
-    posts_list = Blog.objects.filter(
+    posts_list = Blog.objects.published().filter(
         Q(title__icontains=keyword) |
         Q(short_description__icontains=keyword) |
-        Q(blog_body__icontains=keyword),
-        status="published"
+        Q(blog_body__icontains=keyword)
     ).order_by('-created_at')
 
     paginator = Paginator(posts_list, 6)
@@ -196,9 +206,8 @@ def Search(request):
 def AuthorProfile(request, username):
     author = get_object_or_404(User, username=username)
     profile = UserProfile.objects.filter(user=author).first()
-    posts_list = Blog.objects.filter(
+    posts_list = Blog.objects.published().filter(
         author=author,
-        status='published',
     ).select_related('category', 'author').order_by('-created_at')
 
     paginator = Paginator(posts_list, 6)

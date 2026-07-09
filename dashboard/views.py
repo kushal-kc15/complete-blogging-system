@@ -47,7 +47,7 @@ def comment_change_required(view_func):
 def dashboard(request):
     blogs_count = Blog.objects.all().count()
     category_count = Category.objects.all().count()
-    published_count = Blog.objects.filter(status='published').count()
+    published_count = Blog.objects.published().count()
     draft_count = Blog.objects.filter(status='draft').count()
     featured_count = Blog.objects.filter(is_featured=True).count()
     recent_posts = Blog.objects.select_related(
@@ -159,10 +159,7 @@ def edit_post(request, id):
     if request.method == 'POST':
         form = BlogForm(request.POST, request.FILES, instance=post)
         if form.is_valid():
-            post = form.save()
-            title = form.cleaned_data['title']
-            post.slug = slugify(title)+'-' + str(int(time.time()))
-            post.save()
+            form.save()
             return redirect('posts')
         else:
             print(form.errors)
