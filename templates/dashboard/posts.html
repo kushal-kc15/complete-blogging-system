@@ -1,52 +1,98 @@
 {% extends 'base.html' %}
 
+{% block title %}Manage Posts | InkSpire{% endblock %}
 
 {% block content %}
-
-<div class="row">
-    <!-- Left sidebar -->
-    <!-- load the sidebar here -->
+<div class="row dashboard-shell">
     {% include 'dashboard/sidebar.html' %}
 
-    <!-- Right side content -->
     <div class="col-md-9">
-        <h2>All Posts</h2>
-        <a href="{% url 'add_post' %}" class="btn btn-dark text-light float-right mb-2">Add New</a>
-        <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Author</th>
-                <th>Status</th>
-                <th>Featured</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-            {% for post in posts %}
-              <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ post.title | truncatewords:5 }}</td>
-                <td>{{ post.category }}</td>
-                <td>{{ post.author }}</td>
-                <td>{{ post.status }}</td>
-                <td>{% if post.is_featured %}<i class="fa fa-check text-success"></i>{% else %}<i class="fa fa-times text-danger"></i>{% endif %}</td>
-                <td>
-                    <a href="{% url 'edit_post' post.id %}"><i class="fa fa-edit text-success"></i></a>
-                    &nbsp;
-                    <form action="{% url 'delete_post' post.id %}" method="POST" class="d-inline">
-                      {% csrf_token %}
-                      <button type="submit" class="btn btn-link p-0"><i class="fa fa-trash text-danger"></i></button>
-                    </form>
-                </td>
-              </tr>
-            {% endfor %}
-              
-            </tbody>
-          </table>
+        <div class="dashboard-header">
+            <div>
+                <span class="eyebrow">Content</span>
+                <h1>All posts</h1>
+                <p>Manage published and draft articles.</p>
+            </div>
+            {% if perms.blogs.add_blog %}
+            <a href="{% url 'add_post' %}" class="btn btn-warning">
+                <i class="fa fa-plus"></i> Add new
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="dashboard-panel">
+            {% if posts %}
+            <div class="table-responsive">
+                <table class="table dashboard-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Post</th>
+                            <th>Category</th>
+                            <th>Author</th>
+                            <th>Status</th>
+                            <th>Featured</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for post in posts %}
+                        <tr>
+                            <td>
+                                <strong>{{ post.title|truncatewords:8 }}</strong>
+                                <div class="text-muted small">
+                                    Updated {{ post.updated_at|timesince }} ago
+                                    {% if post.status == 'published' %}&middot; {{ post.views }} views{% endif %}
+                                </div>
+                            </td>
+                            <td>{{ post.category }}</td>
+                            <td>{{ post.author }}</td>
+                            <td>
+                                <span class="status-pill status-{{ post.status }}">{{ post.status|title }}</span>
+                            </td>
+                            <td>
+                                {% if post.is_featured %}
+                                <span class="badge text-bg-warning">Featured</span>
+                                {% else %}
+                                <span class="text-muted">No</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="dashboard-actions">
+                                    {% if post.status == 'published' %}
+                                    <a href="{% url 'Blog_detail' post.slug %}" class="btn btn-sm btn-outline-secondary" title="View post">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if perms.blogs.change_blog %}
+                                    <a href="{% url 'edit_post' post.id %}" class="btn btn-sm btn-outline-success" title="Edit post">
+                                        <i class="fa fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if perms.blogs.delete_blog %}
+                                    <form action="{% url 'delete_post' post.id %}" method="POST" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete post">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="dashboard-empty">
+                <h2>No posts found</h2>
+                <p>There are no posts in the dashboard yet.</p>
+                {% if perms.blogs.add_blog %}
+                <a href="{% url 'add_post' %}" class="btn btn-warning">Create first post</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
     </div>
 </div>
-
 {% endblock %}

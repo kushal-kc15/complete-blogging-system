@@ -30,9 +30,19 @@ def superuser_required(view_func):
 def dashboard(request):
     blogs_count = Blog.objects.all().count()
     category_count = Category.objects.all().count()
+    published_count = Blog.objects.filter(status='published').count()
+    draft_count = Blog.objects.filter(status='draft').count()
+    featured_count = Blog.objects.filter(is_featured=True).count()
+    recent_posts = Blog.objects.select_related(
+        'category', 'author'
+    ).order_by('-updated_at')[:5]
     context = {
         'blogs_count': blogs_count,
         'category_count': category_count,
+        'published_count': published_count,
+        'draft_count': draft_count,
+        'featured_count': featured_count,
+        'recent_posts': recent_posts,
     }
     return render(request, 'dashboard/dashboard.html', context)
 
@@ -93,7 +103,7 @@ def delete_category(request, id):
 @login_required(login_url='login')
 @permission_required('blogs.view_blog', raise_exception=True)
 def posts(request):
-    posts = Blog.objects.all()
+    posts = Blog.objects.select_related('category', 'author').order_by('-updated_at')
     context = {
         'posts': posts
     }
