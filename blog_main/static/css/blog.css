@@ -12,13 +12,9 @@
   width: min(100%, 420px);
 }
 
-.category-nav {
-  gap: .25rem;
-  -webkit-overflow-scrolling: touch;
-}
-
-.category-nav .nav-link {
-  white-space: nowrap;
+.main-nav .nav-link {
+  color: #495057;
+  font-weight: 700;
 }
 
 .site-messages {
@@ -171,6 +167,52 @@ h1, h2, h3, h4, h5, h6 {
 
 .discovery-section {
   padding: 2.75rem 0 1rem;
+}
+
+.category-strip {
+  padding: 1.5rem 0 .5rem;
+}
+
+.category-strip-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.35rem;
+  border: 1px solid #e6e8eb;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 34px rgba(20, 24, 28, .05);
+}
+
+.category-strip-card h2 {
+  margin: .2rem 0 0;
+  font-size: 1.5rem;
+}
+
+.category-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: .55rem;
+}
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: .45rem .8rem;
+  border: 1px solid #e0e3e6;
+  border-radius: 999px;
+  color: #495057;
+  font-size: .88rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.category-chip:hover {
+  border-color: #ffc107;
+  background: #fff8e1;
+  color: #8a5a00;
 }
 
 .post-card,
@@ -884,6 +926,15 @@ h1, h2, h3, h4, h5, h6 {
 
   .discovery-sidebar {
     position: static;
+  }
+
+  .category-strip-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .category-chip-list {
+    justify-content: flex-start;
   }
 
   .profile-shell {

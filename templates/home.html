@@ -41,6 +41,24 @@
   </div>
 </section>
 
+{% if categories %}
+<section class="category-strip" aria-labelledby="category-strip-title">
+  <div class="container">
+    <div class="category-strip-card">
+      <div>
+        <span class="eyebrow">Explore by topic</span>
+        <h2 id="category-strip-title">Popular categories</h2>
+      </div>
+      <div class="category-chip-list" aria-label="Featured categories">
+        {% for category in categories|slice:":8" %}
+        <a class="category-chip" href="{% url 'posts_by_category' category.id %}">{{ category.name }}</a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
 <section class="discovery-section">
   <div class="container">
     <div class="section-heading">
@@ -66,7 +84,7 @@
   </div>
 </section>
 
-<section class="discovery-section">
+<section class="discovery-section" id="latest-stories">
   <div class="container">
     <div class="row g-5">
       <div class="col-lg-8">

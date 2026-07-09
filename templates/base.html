@@ -40,6 +40,21 @@
         </button>
 
         <div class="collapse navbar-collapse" id="siteNavbar">
+          <ul class="navbar-nav main-nav ms-lg-4 me-lg-4">
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'home' %}">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'home' %}#latest-stories">Explore</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'about' %}">About</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'contact' %}">Contact</a>
+            </li>
+          </ul>
+
           <form action="{% url 'search' %}" method="GET" class="site-search d-flex my-3 my-lg-0 mx-lg-auto" role="search">
             <input class="form-control me-2" type="search" name="keyword" value="{{ keyword }}"
               placeholder="Search InkSpire" aria-label="Search InkSpire">
@@ -76,17 +91,6 @@
         </div>
       </div>
     </nav>
-
-    <div class="nav-scroller py-1">
-      <div class="container">
-        <nav class="nav category-nav flex-nowrap overflow-auto" aria-label="Categories">
-          {% for category in categories %}
-          <a class="nav-link px-0 me-4 text-muted" href="{% url 'posts_by_category' category.id %}">{{ category.name }}</a>
-          {% endfor %}
-          <a class="nav-link px-0 text-muted" href="{% url 'about' %}">About Us</a>
-        </nav>
-      </div>
-    </div>
   </header>
 
   <main class="site-main">
