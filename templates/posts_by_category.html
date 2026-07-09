@@ -1,38 +1,54 @@
 {% extends 'base.html' %}
+
+{% block title %}{{ category }} Articles | InkSpire{% endblock %}
+{% block meta_description %}Read the latest {{ category }} articles on InkSpire.{% endblock %}
+
 {% block content %}
-{% for post in featured_post %}
-{% if forloop.first %}
-<div class="jumbotron p-3 p-md-5 text-white rounded bg-dark"
-  style="background-image: url({{post.featured_image.url}});background-blend-mode: overlay;background-size:cover;">
-  <div class="col-md-8 px-0">
-    <h1 class="display-4 font-italic">{{post.title}}</h1>
-    <p class="lead my-3">{{post.short_description | truncatewords:10}}</p>
-    <p class="lead mb-0"><a href="{% url 'Blog_detail' post.slug %}" class="text-white font-weight-bold">Continue
-        reading...</a></p>
+<section class="archive-header">
+  <div class="container">
+    <span class="eyebrow">Category</span>
+    <h1>{{ category }}</h1>
+    <p>Browse the latest published stories in {{ category }}.</p>
   </div>
-</div>
-{% endif %}
-{% endfor %}
+</section>
 
-<!--featured post-->
-<h3 class="text-uppercase text-warning" style="letter-spacing: 2px;"> category -{{ category }}</h3>
-<div class="row mb-2">
-  {% if posts %}
-  {% for post in posts %}
-  <div class="col-md-6">
-    <div class="card border-0">
-      <div class="card-body">
-        <h3> <a href="{% url 'Blog_detail' post.slug %}" class="text-dark">{{post.title}}</a></h3>
-        <small class="mb-1 text-muted">{{post.created_at | timesince}} ago | {{post.author}}</small>
-        <p class="card-text">{{post.short_description | truncatewords:15}}</p>
+<section class="discovery-section">
+  <div class="container">
+    {% if posts %}
+    <div class="row g-4">
+      {% for post in posts %}
+      <div class="col-md-6 col-xl-4">
+        {% include 'partials/post_card.html' with post=post %}
       </div>
+      {% endfor %}
     </div>
-  </div>
-  {% endfor %}
-  {% else %}
-  <p>No posts found</p>
-  {% endif %}
-</div>
 
-</div>
+    {% if posts.has_other_pages %}
+    <nav aria-label="{{ category }} posts pagination" class="mt-5">
+      <ul class="pagination pagination-clean justify-content-center">
+        {% if posts.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ posts.previous_page_number }}">&laquo; Previous</a></li>
+        {% endif %}
+        {% for num in posts.paginator.page_range %}
+        {% if posts.number == num %}
+        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% elif num > posts.number|add:'-3' and num < posts.number|add:'3' %}
+        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+        {% endif %}
+        {% endfor %}
+        {% if posts.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ posts.next_page_number }}">Next &raquo;</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+      <h2>No posts found</h2>
+      <p>There are no published articles in {{ category }} yet.</p>
+      <a href="{% url 'home' %}" class="btn btn-warning">Back to homepage</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
 {% endblock %}

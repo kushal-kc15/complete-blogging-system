@@ -1,125 +1,126 @@
 {% extends 'base.html' %}
-{% block content %}
-{% for post in featured_post %}
-{% if forloop.first %}
-<div class="jumbotron p-3 p-md-5 text-white rounded bg-dark"
-  style="background-image: url({{post.featured_image.url}});background-blend-mode: overlay;background-size:cover;">
-  <div class="col-md-8 px-0">
-    <h1 class="display-4 font-italic">{{post.title}}</h1>
-    <p class="lead my-3">{{post.short_description | truncatewords:10}}</p>
-    <p class="lead mb-0"><a href="{% url 'Blog_detail' post.slug %}" class="text-white font-weight-bold">Continue
-        reading...</a></p>
-  </div>
-</div>
-{% endif %}
-{% endfor %}
 
-<!--featured post-->
-<h3 class="text-uppercase text-warning mt-4" style="letter-spacing: 2px;">Featured Posts</h3>
-<div class="row mb-2">
-  {% for post in featured_post %}
-  {% if not forloop.first %}
-  <div class="col-md-6">
-    <div class="card border-0">
-      <div class="card-body">
-        <h3><a href="{% url 'Blog_detail' post.slug %}" class="text-dark">{{post.title}}</a></h3>
-        <small class="mb-1 text-muted">
-          {{post.created_at | timesince}} ago | {{post.author}}
-          <span class="mx-1">|</span>
-          <i class="fa fa-eye"></i> {{ post.views }}
-          <span class="mx-1">|</span>
-          <i class="fa fa-clock-o"></i> {{ post.reading_time }} min
-        </small>
-        <p class="card-text">{{post.short_description | truncatewords:15}}</p>
+{% block title %}InkSpire - Modern Blogging Platform{% endblock %}
+
+{% block content %}
+<section class="discovery-hero">
+  <div class="container">
+    {% for post in featured_post %}
+    {% if forloop.first %}
+    <div class="hero-card {% if post.featured_image %}hero-card--image{% endif %}"
+      {% if post.featured_image %}style="background-image: linear-gradient(90deg, rgba(15, 18, 22, .88), rgba(15, 18, 22, .42)), url('{{ post.featured_image.url }}');"{% endif %}>
+      <div class="hero-content">
+        <span class="eyebrow">Featured story</span>
+        <h1>{{ post.title }}</h1>
+        <p>{{ post.short_description|truncatewords:24 }}</p>
+        <div class="post-meta-line text-white-50">
+          <span>{{ post.created_at|timesince }} ago</span>
+          <span>{{ post.author }}</span>
+          <span><i class="fa fa-clock-o"></i> {{ post.reading_time }} min read</span>
+        </div>
+        <a href="{% url 'Blog_detail' post.slug %}" class="btn btn-warning mt-4">Continue reading</a>
       </div>
     </div>
+    {% endif %}
+    {% empty %}
+    <div class="hero-card">
+      <div class="hero-content">
+        <span class="eyebrow">InkSpire</span>
+        <h1>Stories, ideas, and practical writing in one place.</h1>
+        <p>Fresh articles will appear here as soon as they are published.</p>
+      </div>
+    </div>
+    {% endfor %}
   </div>
-  {% endif %}
-  {% endfor %}
-</div>
+</section>
 
-<h3 class="text-uppercase text-warning mt-4" style="letter-spacing: 2px;">Latest Posts</h3>
-<main role="main" class="container p-0">
-  <div class="row">
-    <div class="col-md-8 blog-main">
-      {% for post in posts %}
-      <div class="card border-0 mb-3">
-        <div class="card-body">
-          <h3><a href="{% url 'Blog_detail' post.slug %}" class="text-dark">{{post.title}}</a></h3>
-          <small class="mb-1 text-muted">
-            {{post.created_at | timesince}} ago | {{post.author}}
-            <span class="mx-1">|</span>
-            <i class="fa fa-eye"></i> {{ post.views }}
-            <span class="mx-1">|</span>
-            <i class="fa fa-clock-o"></i> {{ post.reading_time }} min
-            <span class="mx-1">|</span>
-            <i class="fa fa-heart"></i> {{ post.likes.count }}
-          </small>
-          <p class="card-text">{{post.short_description | truncatewords:25}}</p>
+<section class="discovery-section">
+  <div class="container">
+    <div class="section-heading">
+      <span>Editors' picks</span>
+      <h2>Featured posts</h2>
+    </div>
+    <div class="row g-4">
+      {% for post in featured_post %}
+      {% if not forloop.first %}
+      <div class="col-md-6 col-xl-4">
+        {% include 'partials/post_card.html' with post=post %}
+      </div>
+      {% endif %}
+      {% empty %}
+      <div class="col-12">
+        <div class="empty-state">
+          <h3>No featured posts yet</h3>
+          <p>Mark published posts as featured to highlight them here.</p>
         </div>
       </div>
-      {% empty %}
-      <p class="text-muted">No posts yet.</p>
       {% endfor %}
+    </div>
+  </div>
+</section>
 
-      <!-- Pagination -->
-      {% if posts.has_other_pages %}
-      <nav aria-label="Page navigation" class="mt-4">
-        <ul class="pagination">
-          {% if posts.has_previous %}
-          <li class="page-item">
-            <a class="page-link" href="?page={{ posts.previous_page_number }}">&laquo; Previous</a>
-          </li>
-          {% endif %}
+<section class="discovery-section">
+  <div class="container">
+    <div class="row g-5">
+      <div class="col-lg-8">
+        <div class="section-heading">
+          <span>Latest</span>
+          <h2>Recently published</h2>
+        </div>
 
-          {% for num in posts.paginator.page_range %}
-          {% if posts.number == num %}
-          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-          {% elif num > posts.number|add:'-3' and num < posts.number|add:'3' %} <li class="page-item"><a
-              class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+        <div class="post-list">
+          {% for post in posts %}
+          {% include 'partials/post_list_item.html' with post=post %}
+          {% empty %}
+          <div class="empty-state">
+            <h3>No posts yet</h3>
+            <p>Published articles will appear here.</p>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if posts.has_other_pages %}
+        <nav aria-label="Latest posts pagination" class="mt-4">
+          <ul class="pagination pagination-clean">
+            {% if posts.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ posts.previous_page_number }}">&laquo; Previous</a></li>
+            {% endif %}
+            {% for num in posts.paginator.page_range %}
+            {% if posts.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > posts.number|add:'-3' and num < posts.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
             {% endif %}
             {% endfor %}
-
             {% if posts.has_next %}
-            <li class="page-item">
-              <a class="page-link" href="?page={{ posts.next_page_number }}">Next &raquo;</a>
-            </li>
+            <li class="page-item"><a class="page-link" href="?page={{ posts.next_page_number }}">Next &raquo;</a></li>
             {% endif %}
-        </ul>
-      </nav>
-      {% endif %}
+          </ul>
+        </nav>
+        {% endif %}
+      </div>
 
+      <aside class="col-lg-4">
+        <div class="discovery-sidebar">
+          <div class="sidebar-card">
+            <span class="eyebrow">Explore</span>
+            <h3>Find your next read</h3>
+            <p>Browse the latest essays, tutorials, opinions, and updates from InkSpire writers.</p>
+          </div>
+          <div class="sidebar-card">
+            <h3>Quick links</h3>
+            <ul class="link-list">
+              <li><a href="{% url 'about' %}"><i class="fa fa-info-circle"></i> About InkSpire</a></li>
+              <li><a href="{% url 'contact' %}"><i class="fa fa-envelope"></i> Contact us</a></li>
+              {% if user.is_authenticated %}
+              <li><a href="{% url 'my_bookmarks' %}"><i class="fa fa-bookmark"></i> My bookmarks</a></li>
+              {% endif %}
+              <li><a href="{% url 'rss_feed' %}"><i class="fa fa-rss"></i> RSS feed</a></li>
+            </ul>
+          </div>
+        </div>
+      </aside>
     </div>
-    <!-- /.blog-main -->
-
-    <aside class="col-md-4 blog-sidebar">
-      <div class="p-3 mb-3 bg-light rounded">
-        <h4 class="font-italic"><a href="{% url 'about' %}" class="text-dark"><i class="fa fa-info-circle"></i> About
-            Us</a></h4>
-      </div>
-
-      <div class="p-3 mb-3 bg-light rounded">
-        <h4 class="font-italic"><a href="{% url 'contact' %}" class="text-dark"><i class="fa fa-envelope"></i> Contact
-            Us</a></h4>
-      </div>
-
-      {% if user.is_authenticated %}
-      <div class="p-3 mb-3 bg-light rounded">
-        <h4 class="font-italic"><a href="{% url 'my_bookmarks' %}" class="text-dark"><i class="fa fa-bookmark"></i> My
-            Bookmarks</a></h4>
-      </div>
-      {% endif %}
-
-      <div class="p-3 bg-light rounded">
-        <h4 class="font-italic"><i class="fa fa-rss"></i> Subscribe</h4>
-        <a href="{% url 'rss_feed' %}" class="btn btn-warning btn-sm mt-2">
-          <i class="fa fa-rss"></i> RSS Feed
-        </a>
-      </div>
-    </aside><!-- /.blog-sidebar -->
-
-  </div><!-- /.row -->
-
-</main><!-- /.container -->
-
+  </div>
+</section>
 {% endblock %}
