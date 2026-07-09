@@ -123,3 +123,72 @@ class AuthProfileCoreTests(TestCase):
         self.assertContains(response, 'Upload a JPEG, PNG, or WebP avatar image.')
         self.user.profile.refresh_from_db()
         self.assertFalse(self.user.profile.avatar)
+
+    def test_register_normalizes_email_and_rejects_case_duplicate(self):
+        response = self.client.post(
+            reverse('register'),
+            {
+                'username': 'newreader',
+                'email': 'NewReader@Example.COM',
+                'password1': 'StrongPass12345!',
+                'password2': 'StrongPass12345!',
+            },
+        )
+        self.assertRedirects(response, reverse('login'))
+        self.assertEqual(
+            User.objects.get(username='newreader').email,
+            'newreader@example.com',
+        )
+
+        response = self.client.post(
+            reverse('register'),
+            {
+                'username': 'duplicate',
+                'email': 'NEWREADER@example.com',
+                'password1': 'StrongPass12345!',
+                'password2': 'StrongPass12345!',
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'This email is already registered.')
+        self.assertFalse(User.objects.filter(username='duplicate').exists())
+
+    def test_profile_email_update_normalizes_and_rejects_case_duplicate(self):
+        other_user = User.objects.create_user(
+            username='other',
+            email='other@example.com',
+            password='test-password',
+        )
+        UserProfile.objects.create(user=other_user)
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse('edit_profile'),
+            {
+                'first_name': 'Reader',
+                'last_name': 'One',
+                'email': 'ReaderNew@Example.COM',
+                'bio': '',
+                'website': '',
+                'location': '',
+            },
+        )
+        self.assertRedirects(response, reverse('profile'))
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, 'readernew@example.com')
+
+        response = self.client.post(
+            reverse('edit_profile'),
+            {
+                'first_name': 'Reader',
+                'last_name': 'One',
+                'email': 'OTHER@EXAMPLE.COM',
+                'bio': '',
+                'website': '',
+                'location': '',
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'This email is already registered.')
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, 'readernew@example.com')

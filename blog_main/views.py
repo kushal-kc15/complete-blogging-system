@@ -130,17 +130,18 @@ def edit_profile(request):
 
     if request.method == 'POST':
         form = UserProfileForm(
-            request.POST, request.FILES, instance=user.profile)
+            request.POST, request.FILES, instance=user.profile, user=user)
         if form.is_valid():
             # Update user fields
-            user.first_name = request.POST.get('first_name', '')
-            user.last_name = request.POST.get('last_name', '')
+            user.first_name = form.cleaned_data.get('first_name', '')
+            user.last_name = form.cleaned_data.get('last_name', '')
+            user.email = form.cleaned_data.get('email', '')
             user.save()
             form.save()
             messages.success(request, 'Profile updated successfully!')
             return redirect('profile')
     else:
-        form = UserProfileForm(instance=user.profile)
+        form = UserProfileForm(instance=user.profile, user=user)
 
     context = {
         'form': form,
