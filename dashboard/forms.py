@@ -17,9 +17,13 @@ class CategoryForm(forms.ModelForm):
 
 
 class BlogForm(forms.ModelForm):
+    MAX_FEATURED_IMAGE_SIZE = 3 * 1024 * 1024
+    ALLOWED_FEATURED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
+    ALLOWED_FEATURED_IMAGE_FORMATS = {'JPEG', 'PNG', 'WEBP'}
+
     class Meta:
         model = Blog
-        fields = ('title', 'category', 'featured_image',
+        fields = ('title', 'category', 'featured_image', 'featured_image_alt',
                   'short_description', 'blog_body', 'status', 'is_featured', 'meta_description')
         widgets = {
             'title': forms.TextInput(attrs={
@@ -29,7 +33,12 @@ class BlogForm(forms.ModelForm):
                 'class': 'form-control'
             }),
             'featured_image': forms.ClearableFileInput(attrs={
-                'class': 'form-control'
+                'class': 'form-control',
+                'accept': 'image/jpeg,image/png,image/webp',
+            }),
+            'featured_image_alt': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Describe the image for readers using assistive technology',
             }),
             'short_description': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -53,8 +62,31 @@ class BlogForm(forms.ModelForm):
             'blog_body': 'Content',
             'short_description': 'Short Description',
             'is_featured': 'Featured Post',
+            'featured_image_alt': 'Featured Image Alt Text',
             'meta_description': 'SEO Description (160 chars)',
         }
+
+    def clean_featured_image(self):
+        image = self.cleaned_data.get('featured_image')
+        if not image or isinstance(image, str):
+            return image
+
+        content_type = getattr(image, 'content_type', '')
+        image_format = getattr(getattr(image, 'image', None), 'format', '')
+        if (
+            content_type not in self.ALLOWED_FEATURED_IMAGE_TYPES or
+            image_format not in self.ALLOWED_FEATURED_IMAGE_FORMATS
+        ):
+            raise forms.ValidationError(
+                'Upload a JPEG, PNG, or WebP image.'
+            )
+
+        if image.size > self.MAX_FEATURED_IMAGE_SIZE:
+            raise forms.ValidationError(
+                'Featured image must be 3 MB or smaller.'
+            )
+
+        return image
 
 
 class AddUserForm(UserCreationForm):

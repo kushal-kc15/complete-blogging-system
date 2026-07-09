@@ -1,7 +1,7 @@
 <article class="post-card">
   {% if post.featured_image %}
   <a href="{% url 'Blog_detail' post.slug %}" class="post-card-image">
-    <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
+    <img src="{{ post.featured_image.url }}" alt="{{ post.featured_image_alt|default:post.title }}">
   </a>
   {% endif %}
   <div class="post-card-body">

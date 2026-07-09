@@ -53,6 +53,7 @@ class Blog(models.Model):
     published_at = models.DateTimeField(blank=True, null=True)
     featured_image = models.ImageField(
         upload_to='uploads/%Y/%m/%d', blank=True, null=True)
+    featured_image_alt = models.CharField(max_length=200, blank=True)
     blog_body = CKEditor5Field('Content', config_name='extends')
     short_description = models.TextField(max_length=500)
     status = models.CharField(

@@ -1,9 +1,12 @@
 from django.contrib.auth.models import Permission, User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from io import BytesIO
+from PIL import Image
 from django.urls import reverse
 
 from blogs.models import Blog, Category, Comment, Contact
-from dashboard.forms import AddUserForm, EditUserForm
+from dashboard.forms import AddUserForm, BlogForm, EditUserForm
 
 
 class DashboardSecurityTests(TestCase):
@@ -121,3 +124,41 @@ class DashboardSecurityTests(TestCase):
         self.staff_user.user_permissions.add(permission)
         self.client.force_login(self.staff_user)
         self.assertEqual(self.client.get(reverse('contact_messages')).status_code, 200)
+
+
+class BlogFormImageValidationTests(TestCase):
+    def setUp(self):
+        self.category = Category.objects.create(name='Images')
+        self.valid_data = {
+            'title': 'Image post',
+            'category': self.category.id,
+            'short_description': 'Short description',
+            'blog_body': '<p>Body</p>',
+            'status': 'draft',
+            'featured_image_alt': 'Useful image description',
+            'meta_description': '',
+        }
+
+    def image_bytes(self, image_format='PNG'):
+        image = Image.new('RGB', (1, 1), color='white')
+        buffer = BytesIO()
+        image.save(buffer, format=image_format)
+        return buffer.getvalue()
+
+    def test_rejects_unsupported_featured_image_type(self):
+        upload = SimpleUploadedFile(
+            'article.gif', self.image_bytes('GIF'), content_type='image/gif'
+        )
+        form = BlogForm(data=self.valid_data, files={'featured_image': upload})
+        self.assertFalse(form.is_valid())
+        self.assertIn('Upload a JPEG, PNG, or WebP image.', form.errors['featured_image'])
+
+    def test_rejects_oversized_featured_image(self):
+        upload = SimpleUploadedFile(
+            'article.jpg',
+            self.image_bytes('JPEG') + b'x' * BlogForm.MAX_FEATURED_IMAGE_SIZE,
+            content_type='image/jpeg',
+        )
+        form = BlogForm(data=self.valid_data, files={'featured_image': upload})
+        self.assertFalse(form.is_valid())
+        self.assertIn('Featured image must be 3 MB or smaller.', form.errors['featured_image'])

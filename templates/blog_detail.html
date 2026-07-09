@@ -142,7 +142,7 @@
         <!-- Preview image figure-->
         {% if post.featured_image %}
         <figure class="article-hero"><img src="{{ post.featured_image.url }}"
-            alt="{{ post.title }}" /></figure>
+            alt="{{ post.featured_image_alt|default:post.title }}" /></figure>
         {% endif %}
 
         <!-- Post content-->
@@ -161,7 +161,7 @@
               <div class="col-md-4 mb-3">
                 <article class="related-card">
                   {% if related.featured_image %}
-                  <a href="{% url 'Blog_detail' related.slug %}" tabindex="-1"><img src="{{ related.featured_image.url }}" alt=""></a>
+                  <a href="{% url 'Blog_detail' related.slug %}" tabindex="-1"><img src="{{ related.featured_image.url }}" alt="{{ related.featured_image_alt|default:related.title }}"></a>
                   {% endif %}
                   <div class="related-card-body">
                     <h3><a href="{% url 'Blog_detail' related.slug %}">{{ related.title|truncatewords:8 }}</a></h3>
