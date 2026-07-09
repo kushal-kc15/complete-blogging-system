@@ -32,6 +32,7 @@ sitemaps = {
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('robots.txt', views.robots_txt, name='robots_txt'),
     path('', views.home, name='home'),
     path('category/', include('blogs.urls')),
     path('register/', views.Register, name='register'),

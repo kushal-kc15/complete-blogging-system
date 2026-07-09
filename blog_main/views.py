@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .forms import RegisterForm, UserProfileForm, ChangePasswordForm
@@ -10,6 +11,27 @@ from django.views.decorators.http import require_POST
 
 
 # from django.http import HttpResponse
+def robots_txt(request):
+    lines = [
+        'User-agent: *',
+        'Allow: /',
+        'Allow: /sitemap.xml',
+        'Allow: /feed/',
+        'Disallow: /admin/',
+        'Disallow: /dashboard/',
+        'Disallow: /login/',
+        'Disallow: /register/',
+        'Disallow: /logout/',
+        'Disallow: /profile/',
+        'Disallow: /password-reset/',
+        'Disallow: /password-reset-confirm/',
+        'Disallow: /blogs/search/',
+        'Disallow: /category/my-bookmarks/',
+        'Sitemap: {}://{}/sitemap.xml'.format(request.scheme, request.get_host()),
+    ]
+    return HttpResponse('\n'.join(lines), content_type='text/plain')
+
+
 def home(request):
     featured_post = Blog.objects.filter(
         is_featured=True, status='published').order_by('-updated_at')
