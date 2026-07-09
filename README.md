@@ -1,71 +1,157 @@
-DEMO:-https://complete-blogging-system.onrender.com
+# InkSpire
 
-# ✨ InkSpire - Modern Blogging Platform
+InkSpire is a Django blogging and publishing platform built as a portfolio-grade project. It started as a simple blog and has been improved into a cleaner, safer publishing system with public discovery pages, author profiles, an editorial dashboard, SEO foundations, comment moderation, and a more professional writing workflow.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Django-6.0-green?style=for-the-badge&logo=django" alt="Django">
-  <img src="https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python" alt="Python">
-  <img src="https://img.shields.io/badge/Bootstrap-5.0-purple?style=for-the-badge&logo=bootstrap" alt="Bootstrap">
-  <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License">
-</p>
+Live demo: https://complete-blogging-system.onrender.com
 
-<p align="center">
-  <strong>A feature-rich, production-ready blogging platform built with Django</strong>
-</p>
+## What it does
 
----
+- Publishes articles with categories, featured posts, rich text content, featured images, alt text, and reading time.
+- Provides public homepage, category archive, search results, article detail, author profile, about, and contact pages.
+- Supports registration, login, logout, profile editing, password change, and password reset.
+- Includes reader engagement: comments/replies, likes, bookmarks, RSS feed, and social sharing.
+- Gives staff/editor users a dashboard for posts, categories, contact messages, and comment moderation.
 
-## 🚀 Features
+## Key features
 
-### Core Features
-- ✅ **Rich Text Editor** - CKEditor 5 with image uploads, code blocks, and formatting
-- ✅ **User Authentication** - Registration, login, logout, password change
-- ✅ **User Profiles** - Customizable profiles with avatars, bio, and social links
-- ✅ **Categories** - Organize posts by categories
-- ✅ **Featured Posts** - Highlight important content
+### Publishing
 
-### Engagement Features
-- ❤️ **Likes** - Users can like posts
-- 🔖 **Bookmarks** - Save posts for later reading
-- 💬 **Nested Comments** - Threaded comment system with replies
-- 👁️ **View Count** - Track post popularity
-- ⏱️ **Reading Time** - Automatic reading time calculation
+- Draft/published workflow
+- Safe draft preview for the author, staff, or users with edit permission
+- Central published-query helper to avoid draft leakage
+- Stable article URLs after editing
+- `published_at` timestamp
+- Featured image validation: JPEG, PNG, WebP only; 3 MB limit
+- Featured image alt text
 
-### SEO & Marketing
-- 🔍 **SEO Meta Tags** - Custom meta descriptions for each post
-- 📡 **RSS Feed** - Syndicate your content
-- 🗺️ **XML Sitemap** - Search engine friendly
-- 🔗 **Social Sharing** - Share to Twitter, Facebook, LinkedIn, WhatsApp
-- 📧 **Contact Form** - Built-in contact form with dashboard management
+### Security and permissions
 
-### Dashboard
-- 📊 **Admin Dashboard** - Manage posts, categories, users, and messages
-- 👥 **User Management** - Create, edit, delete users with permissions
-- 📝 **Post Management** - Draft/publish workflow with featured images
-- 📬 **Message Center** - View and manage contact form submissions
+- Dashboard routes protected by login and permission checks
+- Ordinary users blocked from dashboard/admin-like pages
+- User management restricted to superusers
+- Logout, delete, like/bookmark, comment delete, and moderation actions are POST-only with CSRF
+- Contact messages restricted to permitted staff
+- Comment reply parent validation prevents cross-post replies
+- Public article pages show only visible comments
 
----
+### SEO and discovery
 
+- Reusable title, meta description, canonical, Open Graph, Twitter card, and JSON-LD blocks
+- Article JSON-LD
+- Public-only sitemap
+- Published-only RSS feed
+- `robots.txt` rules for public/private areas
+- Search results marked `noindex,follow`
+- Public author pages with SEO metadata
 
+## Tech stack
 
-## 🛠️ Tech Stack
+- Python 3.12
+- Django 5.1.4
+- SQLite for local development
+- Bootstrap 5
+- CKEditor 5
+- django-crispy-forms + crispy-bootstrap5
+- Pillow
+- WhiteNoise + Gunicorn for production-style deployment
 
-| Technology | Purpose |
-|------------|---------|
-| **Django 6.0** | Web framework |
-| **Python 3.12** | Programming language |
-| **SQLite/PostgreSQL** | Database |
-| **Bootstrap 5** | Frontend styling |
-| **CKEditor 5** | Rich text editor |
-| **Crispy Forms** | Form rendering |
----
+## Setup
 
+```bash
+git clone https://github.com/kushal-kc15/complete-blogging-system.git
+cd complete-blogging-system
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+```
 
+On macOS/Linux, activate the environment with:
 
-<p align="center">
-  Made with ❤️ using Django
-</p>
+```bash
+source venv/bin/activate
+```
 
-<p align="center">
-  <a href="#-inkspire---modern-blogging-platform">Back to Top ⬆️</a>
-</p>
+## Environment variables
+
+Create a `.env` file for local settings if needed.
+
+```env
+SECRET_KEY=replace-me
+DEBUG=True
+ALLOWED_HOSTS=127.0.0.1,localhost
+```
+
+For production, set:
+
+```env
+DEBUG=False
+SECRET_KEY=your-production-secret
+ALLOWED_HOSTS=your-domain.com,www.your-domain.com
+DJANGO_SETTINGS_MODULE=blog_main.settings_prod
+```
+
+Local password reset uses Django's console email backend, so reset links are printed in the terminal during development.
+
+## Useful commands
+
+```bash
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py migrate
+python manage.py test
+python manage.py runserver
+```
+
+Production/static files:
+
+```bash
+python manage.py collectstatic --noinput
+```
+
+## Screenshots
+
+Add screenshots here before sharing widely:
+
+- Homepage / discovery page
+- Article detail page
+- Public author profile
+- Login/register flow
+- Dashboard overview
+- Post editor
+- Comment moderation page
+
+## Project notes
+
+This project focuses on practical publishing-platform fundamentals rather than oversized startup features. The current version emphasizes:
+
+- safe role-based dashboard access;
+- clean public reading experience;
+- stable publishing semantics;
+- SEO-ready public pages;
+- minimal, test-covered moderation and editorial tooling.
+
+## Future improvements
+
+- Dashboard filters and pagination for posts/comments/messages
+- Richer author pages with selected social links
+- Better image handling, thumbnails, and responsive image variants
+- Production database and media storage configuration
+- More accessibility pass coverage
+- Deployment hardening checklist and CI pipeline
+
+## Portfolio / CV bullet
+
+Built InkSpire, a Django publishing platform with secure editorial workflows, public author pages, SEO-ready metadata, RSS/sitemap/robots support, image validation, comment moderation, and 26 automated tests covering security and publishing behavior.
+
+## LinkedIn project description
+
+InkSpire is a Django-based publishing platform I improved from a basic blog into a more professional content system. I focused on security containment, editorial dashboard UX, public reading experience, SEO metadata, RSS/sitemap/robots support, author profiles, image validation, comment moderation, and test coverage.
+
+## 60-second interview explanation
+
+InkSpire is a Django publishing platform that I evolved from a simple blogging app into a more complete editorial system. The main work was not just adding UI polish, but tightening the product foundations: protecting dashboard access, making state-changing actions POST-only, separating public and private profile views, adding password reset, improving SEO metadata, and ensuring drafts cannot leak into public lists, search, sitemap, RSS, or author pages.
+
+On the publishing side, I added safer draft previews, stable slugs after editing, a `published_at` field, featured image validation, alt text, and comment moderation. I also redesigned the public reading and discovery pages and improved the dashboard overview, post list, and editor workflow. The project now has automated tests covering the important security and publishing rules, so it is a much stronger portfolio example than a normal CRUD blog.
