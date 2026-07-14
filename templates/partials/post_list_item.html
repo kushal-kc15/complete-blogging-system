@@ -9,7 +9,7 @@
     <h3><a href="{% url 'Blog_detail' post.slug %}">{{ post.title }}</a></h3>
     <p>{{ post.short_description|truncatewords:28 }}</p>
     <div class="post-meta-line">
-      <span>{{ post.created_at|timesince }} ago</span>
+      <span>{{ post.effective_published_at|timesince }} ago</span>
       <a href="{% url 'author_profile' post.author.username %}">{{ post.author.get_full_name|default:post.author.username }}</a>
       <span><i class="fa fa-eye"></i> {{ post.views }}</span>
       <span><i class="fa fa-clock-o"></i> {{ post.reading_time }} min</span>

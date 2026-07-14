@@ -10,5 +10,4 @@ urlpatterns = [
     path("comment/delete/<int:comment_id>/",
          views.delete_comment, name="delete_comment"),
     path("my-bookmarks/", views.my_bookmarks, name="my_bookmarks"),
-    path("contact/", views.contact, name="contact"),
 ]

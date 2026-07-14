@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.utils.text import slugify
 from django_ckeditor_5.fields import CKEditor5Field
 
 
@@ -46,8 +47,8 @@ class Blog(models.Model):
 
     title = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.PROTECT)
+    author = models.ForeignKey(User, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     published_at = models.DateTimeField(blank=True, null=True)
@@ -69,6 +70,25 @@ class Blog(models.Model):
 
     def __str__(self):
         return self.title
+
+    @classmethod
+    def generate_unique_slug(cls, title):
+        max_length = cls._meta.get_field('slug').max_length
+        base_slug = slugify(title) or 'post'
+        base_slug = base_slug[:max_length]
+        candidate = base_slug
+        suffix = 2
+
+        while cls.objects.filter(slug=candidate).exists():
+            suffix_text = f'-{suffix}'
+            candidate = f'{base_slug[:max_length - len(suffix_text)]}{suffix_text}'
+            suffix += 1
+
+        return candidate
+
+    @property
+    def effective_published_at(self):
+        return self.published_at or self.created_at
 
     def save(self, *args, **kwargs):
         if self.status == 'published' and self.published_at is None:

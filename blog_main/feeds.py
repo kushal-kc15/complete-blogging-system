@@ -21,7 +21,7 @@ class LatestPostsFeed(Feed):
         return reverse('Blog_detail', args=[item.slug])
 
     def item_pubdate(self, item):
-        return item.created_at
+        return item.effective_published_at
 
     def item_author_name(self, item):
         return item.author.get_full_name() or item.author.username

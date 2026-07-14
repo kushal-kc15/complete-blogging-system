@@ -60,6 +60,12 @@
         <hr>
 
         <div class="d-flex gap-2">
+          {% if not message.is_read %}
+          <form action="{% url 'mark_message_read' message.id %}" method="POST" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success"><i class="fa fa-check"></i> Mark as read</button>
+          </form>
+          {% endif %}
           <a href="mailto:{{ message.email }}?subject=Re: {{ message.subject }}" class="btn btn-primary">
             <i class="fa fa-reply"></i> Reply via Email
           </a>

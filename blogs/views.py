@@ -2,12 +2,14 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import Http404, HttpResponse, JsonResponse
 from django.contrib.auth.models import User
 from .models import Blog, Category, Comment, Like, Bookmark, Contact, UserProfile
-from django.db.models import Q
+from django.db.models import F, Q
 from django.db.models import Prefetch
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.http import require_POST
+from django.urls import reverse
+from .forms import CommentForm, ContactForm
 
 
 # Create your views here.
@@ -46,8 +48,8 @@ def BlogDetail(request, slug):
 
     # Increment view count
     if not is_preview:
-        post.views += 1
-        post.save(update_fields=['views'])
+        Blog.objects.filter(pk=post.pk).update(views=F('views') + 1)
+        post.refresh_from_db(fields=['views'])
 
     # Get comments (only parent comments, replies are fetched via related_name)
     visible_replies = Comment.objects.filter(is_visible=True).order_by('created_at')
@@ -74,29 +76,34 @@ def BlogDetail(request, slug):
         category=post.category
     ).exclude(id=post.id).order_by('-created_at')[:3]
 
-    # Handle comment submission
+    comment_form = CommentForm()
     if request.method == 'POST' and not is_preview:
-        if request.user.is_authenticated:
-            comment_text = request.POST.get('comment')
-            parent_id = request.POST.get('parent_id')
-            if comment_text:
-                parent = None
-                if parent_id:
+        if not request.user.is_authenticated:
+            return redirect(f"{reverse('login')}?next={request.path}")
+
+        comment_form = CommentForm(request.POST)
+        if comment_form.is_valid():
+            parent = None
+            parent_id = (request.POST.get('parent_id') or '').strip()
+            if parent_id:
+                try:
+                    parent_id = int(parent_id)
+                except ValueError:
+                    parent = None
+                else:
                     parent = Comment.objects.filter(
                         id=parent_id, blog=post, is_visible=True
                     ).first()
-                    if parent is None:
-                        messages.error(
-                            request,
-                            'The comment you tried to reply to is not valid.'
-                        )
-                        return redirect('Blog_detail', slug=slug)
-                Comment.objects.create(
-                    user=request.user,
-                    blog=post,
-                    parent=parent,
-                    comment=comment_text
-                )
+                if parent is None:
+                    comment_form.add_error(
+                        None, 'The comment you tried to reply to is not valid.'
+                    )
+            if comment_form.is_valid():
+                comment = comment_form.save(commit=False)
+                comment.user = request.user
+                comment.blog = post
+                comment.parent = parent
+                comment.save()
                 return redirect('Blog_detail', slug=slug)
 
     context = {
@@ -108,6 +115,7 @@ def BlogDetail(request, slug):
         'user_has_bookmarked': user_has_bookmarked,
         'like_count': post.likes.count(),
         'is_preview': is_preview,
+        'comment_form': comment_form,
     }
     return render(request, 'blog_detail.html', context)
 
@@ -169,28 +177,28 @@ def my_bookmarks(request):
 
 def contact(request):
     if request.method == 'POST':
-        name = request.POST.get('name')
-        email = request.POST.get('email')
-        subject = request.POST.get('subject')
-        message = request.POST.get('message')
-        if name and email and subject and message:
-            Contact.objects.create(
-                name=name,
-                email=email,
-                subject=subject,
-                message=message
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request, "Thank you for your message! We'll get back to you soon."
             )
-            return render(request, 'contact.html', {'success': True})
-    return render(request, 'contact.html')
+            return redirect('contact')
+    else:
+        form = ContactForm()
+    return render(request, 'contact.html', {'form': form})
 
 
 def Search(request):
-    keyword = request.GET.get('keyword')
-    posts_list = Blog.objects.published().filter(
-        Q(title__icontains=keyword) |
-        Q(short_description__icontains=keyword) |
-        Q(blog_body__icontains=keyword)
-    ).order_by('-created_at')
+    keyword = (request.GET.get('keyword') or '').strip()
+    if keyword:
+        posts_list = Blog.objects.published().filter(
+            Q(title__icontains=keyword) |
+            Q(short_description__icontains=keyword) |
+            Q(blog_body__icontains=keyword)
+        ).order_by('-created_at')
+    else:
+        posts_list = Blog.objects.published().none()
 
     paginator = Paginator(posts_list, 6)
     page = request.GET.get('page')

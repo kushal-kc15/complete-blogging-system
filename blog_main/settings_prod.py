@@ -5,21 +5,147 @@ Import this in production by setting DJANGO_SETTINGS_MODULE=blog_main.settings_p
 
 import os
 from pathlib import Path
+from urllib.parse import urlparse
+
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.core.validators import validate_email
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
-# SECURITY: Get secret key from environment variable
-SECRET_KEY = os.environ.get('SECRET_KEY')
-if not SECRET_KEY:
-    raise ValueError(
-        "SECRET_KEY environment variable is required in production")
+
+def _required_environment_value(name):
+    value = os.environ.get(name, '').strip()
+    if not value:
+        raise ImproperlyConfigured(f'{name} environment variable is required in production.')
+    return value
+
+
+def _comma_separated_environment_value(name, *, required=False):
+    values = [
+        value.strip()
+        for value in os.environ.get(name, '').split(',')
+        if value.strip() and value.strip() != '*'
+    ]
+    if required and not values:
+        raise ImproperlyConfigured(f'{name} environment variable is required in production.')
+    return values
+
+
+def _csrf_trusted_origins():
+    origins = _comma_separated_environment_value('DJANGO_CSRF_TRUSTED_ORIGINS')
+    for origin in origins:
+        parsed = urlparse(origin)
+        if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
+            raise ImproperlyConfigured(
+                'DJANGO_CSRF_TRUSTED_ORIGINS entries must include http:// or https://.'
+            )
+    return origins
+
+
+def _required_integer_environment_value(name, *, minimum, maximum):
+    value = _required_environment_value(name)
+    try:
+        integer_value = int(value)
+    except ValueError as exc:
+        raise ImproperlyConfigured(
+            f'{name} environment variable must be an integer.'
+        ) from exc
+    if not minimum <= integer_value <= maximum:
+        raise ImproperlyConfigured(
+            f'{name} environment variable must be between {minimum} and {maximum}.'
+        )
+    return integer_value
+
+
+def _non_negative_integer_environment_value(name, *, default):
+    value = os.environ.get(name, '').strip()
+    if not value:
+        return default
+    try:
+        integer_value = int(value)
+    except ValueError as exc:
+        raise ImproperlyConfigured(
+            f'{name} environment variable must be a non-negative integer.'
+        ) from exc
+    if integer_value < 0:
+        raise ImproperlyConfigured(
+            f'{name} environment variable must be a non-negative integer.'
+        )
+    return integer_value
+
+
+def _postgres_sslmode():
+    sslmode = os.environ.get('POSTGRES_SSLMODE', '').strip() or 'require'
+    allowed_ssl_modes = {
+        'disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full',
+    }
+    if sslmode not in allowed_ssl_modes:
+        raise ImproperlyConfigured(
+            'POSTGRES_SSLMODE environment variable must be a supported PostgreSQL SSL mode.'
+        )
+    return sslmode
+
+
+def _boolean_environment_value(name, *, default):
+    value = os.environ.get(name, '').strip().lower()
+    if not value:
+        return default
+    values = {
+        'true': True, '1': True, 'yes': True, 'on': True,
+        'false': False, '0': False, 'no': False, 'off': False,
+    }
+    if value not in values:
+        raise ImproperlyConfigured(
+            f'{name} environment variable must be a boolean value.'
+        )
+    return values[value]
+
+
+def _positive_integer_environment_value(name, *, default):
+    value = os.environ.get(name, '').strip()
+    if not value:
+        return default
+    try:
+        integer_value = int(value)
+    except ValueError as exc:
+        raise ImproperlyConfigured(
+            f'{name} environment variable must be a positive integer.'
+        ) from exc
+    if integer_value <= 0:
+        raise ImproperlyConfigured(
+            f'{name} environment variable must be a positive integer.'
+        )
+    return integer_value
+
+
+def _email_environment_value(name, *, default=None):
+    value = os.environ.get(name, '').strip() if default is None else (
+        os.environ.get(name, '').strip() or default
+    )
+    if not value:
+        raise ImproperlyConfigured(f'{name} environment variable is required in production.')
+    try:
+        validate_email(value)
+    except ValidationError as exc:
+        raise ImproperlyConfigured(
+            f'{name} environment variable must be a valid email address.'
+        ) from exc
+    return value
+
+# SECURITY: no production fallback secret is permitted.
+SECRET_KEY = _required_environment_value('DJANGO_SECRET_KEY')
 
 # SECURITY: Never run with debug in production
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+DEBUG = False
 
 # SECURITY: Set allowed hosts from environment
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS = _comma_separated_environment_value(
+    'DJANGO_ALLOWED_HOSTS', required=True
+)
+CSRF_TRUSTED_ORIGINS = _csrf_trusted_origins()
 
 # Application definition
 INSTALLED_APPS = [
@@ -126,20 +252,43 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'blog_main.wsgi.application'
 
-# Database - Use PostgreSQL in production (recommended)
-# You can also use dj-database-url for easier configuration
+# Database - PostgreSQL is required in production.
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': _required_environment_value('POSTGRES_DB'),
+        'USER': _required_environment_value('POSTGRES_USER'),
+        'PASSWORD': _required_environment_value('POSTGRES_PASSWORD'),
+        'HOST': _required_environment_value('POSTGRES_HOST'),
+        'PORT': _required_integer_environment_value(
+            'POSTGRES_PORT', minimum=1, maximum=65535
+        ),
+        'CONN_MAX_AGE': _non_negative_integer_environment_value(
+            'POSTGRES_CONN_MAX_AGE', default=60
+        ),
+        'CONN_HEALTH_CHECKS': True,
+        'OPTIONS': {
+            'sslmode': _postgres_sslmode(),
+        },
     }
 }
 
-# If using PostgreSQL, uncomment below and set DATABASE_URL:
-# import dj_database_url
-# DATABASES = {
-#     'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
-# }
+# Email - SMTP is required in production. Development retains the console backend.
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = _required_environment_value('EMAIL_HOST')
+EMAIL_PORT = _required_integer_environment_value(
+    'EMAIL_PORT', minimum=1, maximum=65535
+)
+EMAIL_HOST_USER = _required_environment_value('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = _required_environment_value('EMAIL_HOST_PASSWORD')
+EMAIL_USE_TLS = _boolean_environment_value('EMAIL_USE_TLS', default=True)
+EMAIL_USE_SSL = _boolean_environment_value('EMAIL_USE_SSL', default=False)
+if EMAIL_USE_TLS and EMAIL_USE_SSL:
+    raise ImproperlyConfigured('EMAIL_USE_TLS and EMAIL_USE_SSL cannot both be enabled.')
+EMAIL_TIMEOUT = _positive_integer_environment_value('EMAIL_TIMEOUT', default=10)
+DEFAULT_FROM_EMAIL = _email_environment_value('DEFAULT_FROM_EMAIL')
+SERVER_EMAIL = _email_environment_value('SERVER_EMAIL', default=DEFAULT_FROM_EMAIL)
+EMAIL_SUBJECT_PREFIX = os.environ.get('EMAIL_SUBJECT_PREFIX', '').strip() or '[InkSpire]'
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

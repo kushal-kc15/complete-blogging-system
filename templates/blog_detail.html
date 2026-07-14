@@ -22,7 +22,7 @@
 {% endif %}
 {% endblock %}
 {% block extra_head %}
-<meta property="article:published_time" content="{{ post.created_at|date:'c' }}">
+<meta property="article:published_time" content="{{ post.effective_published_at|date:'c' }}">
 <meta property="article:modified_time" content="{{ post.updated_at|date:'c' }}">
 <meta property="article:author" content="{{ post.author.get_full_name|default:post.author.username }}">
 <meta property="article:section" content="{{ post.category }}">
@@ -34,7 +34,7 @@
   "@type": "Article",
   "headline": "{{ post.title|escapejs }}",
   "description": "{% if post.meta_description %}{{ post.meta_description|escapejs }}{% else %}{{ post.short_description|truncatewords:25|escapejs }}{% endif %}",
-  "datePublished": "{{ post.created_at|date:'c' }}",
+  "datePublished": "{{ post.effective_published_at|date:'c' }}",
   "dateModified": "{{ post.updated_at|date:'c' }}",
   "author": {
     "@type": "Person",
@@ -84,7 +84,7 @@
                 </a>
               </strong>
               <div class="article-meta-details">
-                <time datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|date:"F j, Y" }}</time>
+                <time datetime="{{ post.effective_published_at|date:'c' }}">{{ post.effective_published_at|date:"F j, Y" }}</time>
                 <span aria-hidden="true">&middot;</span>
                 <span>{{ post.reading_time }} min read</span>
                 <span aria-hidden="true">&middot;</span>
@@ -165,7 +165,7 @@
                   {% endif %}
                   <div class="related-card-body">
                     <h3><a href="{% url 'Blog_detail' related.slug %}">{{ related.title|truncatewords:8 }}</a></h3>
-                    <small class="text-muted">{{ related.created_at|timesince }} ago</small>
+                    <small class="text-muted">{{ related.effective_published_at|timesince }} ago</small>
                   </div>
                 </article>
               </div>
@@ -225,7 +225,8 @@
                   style="display: none;" class="mt-2">
                   {% csrf_token %}
                   <input type="hidden" name="parent_id" value="{{ comment.id }}">
-                  <textarea name="comment" class="form-control mb-2" rows="2" placeholder="Write a reply..."></textarea>
+                  <textarea name="{{ comment_form.comment.html_name }}" class="form-control mb-2" rows="2"
+                    placeholder="Write a reply..." aria-label="Reply to {{ comment.user.username }}">{{ comment_form.comment.value|default_if_none:'' }}</textarea>
                   <button type="submit" class="btn btn-sm btn-warning">Reply</button>
                   <button type="button" class="btn btn-sm btn-secondary"
                     onclick="toggleReplyForm({{ comment.id }})">Cancel</button>
@@ -268,8 +269,14 @@
             <form action="{% url 'Blog_detail' post.slug %}" method="POST">
               {% csrf_token %}
               <div class="form-group">
-                <textarea name="comment" class="form-control" rows="3" placeholder="Write your comment"
-                  required></textarea>
+                {% if comment_form.non_field_errors %}
+                <div class="text-danger small mb-2">{{ comment_form.non_field_errors }}</div>
+                {% endif %}
+                <label for="{{ comment_form.comment.id_for_label }}" class="visually-hidden">Comment</label>
+                {{ comment_form.comment }}
+                {% for error in comment_form.comment.errors %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
                 <button type="submit" class="btn btn-warning mt-2"><i class="fa fa-comment"></i> Submit</button>
               </div>
             </form>

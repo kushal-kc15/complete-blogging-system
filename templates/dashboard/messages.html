@@ -59,6 +59,22 @@
         {% endfor %}
       </tbody>
     </table>
+
+    {% if messages.paginator.num_pages > 1 %}
+    <nav class="mt-4" aria-label="Contact message pagination">
+      <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+        <span class="text-muted small">Page {{ messages.number }} of {{ messages.paginator.num_pages }}</span>
+        <div class="d-flex gap-2">
+          {% if messages.has_previous %}
+          <a class="btn btn-sm btn-outline-secondary" href="?page={{ messages.previous_page_number }}">Previous</a>
+          {% endif %}
+          {% if messages.has_next %}
+          <a class="btn btn-sm btn-outline-secondary" href="?page={{ messages.next_page_number }}">Next</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+    {% endif %}
   </div>
 </div>
 

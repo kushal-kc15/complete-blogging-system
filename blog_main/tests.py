@@ -1,11 +1,117 @@
+import importlib
+import os
+import sys
 from django.contrib.auth.models import User
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
+from datetime import timedelta
 from io import BytesIO
+from pathlib import Path
 from PIL import Image
+from unittest.mock import patch
 
-from blogs.models import Blog, Category, UserProfile
+from blogs.forms import ContactForm
+from blogs.models import Blog, Category, Contact, UserProfile
+from .feeds import LatestPostsFeed
+
+
+class Custom404Tests(TestCase):
+    @override_settings(DEBUG=False)
+    def test_custom_404_page_uses_readable_navigation_text(self):
+        response = self.client.get('/route-that-does-not-exist-404/')
+
+        self.assertEqual(response.status_code, 404)
+        self.assertContains(response, 'Go back home', status_code=404)
+        self.assertNotContains(response, 'youâ€™re', status_code=404)
+
+
+class ContactRouteTests(TestCase):
+    def test_contact_name_resolves_to_canonical_route(self):
+        self.assertEqual(reverse('contact'), '/contact/')
+
+    def test_canonical_contact_page_uses_existing_template(self):
+        response = self.client.get(reverse('contact'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'contact.html')
+        self.assertIsInstance(response.context['form'], ContactForm)
+
+    def test_accidental_category_contact_route_is_not_available(self):
+        response = self.client.get('/category/contact/')
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_contact_submission_still_works_on_canonical_route(self):
+        response = self.client.post(
+            reverse('contact'),
+            {
+                'name': 'Reader',
+                'email': 'reader@example.com',
+                'subject': 'Hello',
+                'message': 'A contact message',
+            },
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse('contact'))
+        self.assertContains(response, "Thank you for your message")
+        self.assertEqual(Contact.objects.count(), 1)
+        contact = Contact.objects.get()
+        self.assertEqual(contact.name, 'Reader')
+        self.assertEqual(contact.email, 'reader@example.com')
+        self.assertEqual(contact.subject, 'Hello')
+        self.assertEqual(contact.message, 'A contact message')
+
+    def test_invalid_email_is_rejected_without_creating_contact(self):
+        response = self.client.post(
+            reverse('contact'),
+            {
+                'name': 'Reader',
+                'email': 'invalid-email',
+                'subject': 'Question',
+                'message': 'Please help.',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Enter a valid email address.')
+        self.assertContains(response, 'value="Reader"')
+        self.assertContains(response, 'value="Question"')
+        self.assertEqual(Contact.objects.count(), 0)
+
+    def test_missing_required_field_is_rejected_without_creating_contact(self):
+        response = self.client.post(
+            reverse('contact'),
+            {
+                'name': 'Reader',
+                'email': 'reader@example.com',
+                'subject': '',
+                'message': 'Please help.',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'This field is required.')
+        self.assertEqual(Contact.objects.count(), 0)
+
+    def test_whitespace_only_required_fields_are_rejected(self):
+        valid_data = {
+            'name': 'Reader',
+            'email': 'reader@example.com',
+            'subject': 'Question',
+            'message': 'Please help.',
+        }
+        for field_name in ('name', 'subject', 'message'):
+            data = valid_data.copy()
+            data[field_name] = '   '
+            with self.subTest(field=field_name):
+                response = self.client.post(reverse('contact'), data)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'This field is required.')
+                self.assertEqual(Contact.objects.count(), 0)
 
 
 class SEOOperationsTests(TestCase):
@@ -56,6 +162,17 @@ class SEOOperationsTests(TestCase):
         content = response.content.decode()
         self.assertIn('Published SEO Post', content)
         self.assertNotIn('Draft SEO Post', content)
+
+    def test_feed_uses_effective_published_date(self):
+        published_at = timezone.now() - timedelta(days=4)
+        Blog.objects.filter(pk=self.published_post.pk).update(
+            published_at=published_at
+        )
+        self.published_post.refresh_from_db()
+
+        self.assertEqual(
+            LatestPostsFeed().item_pubdate(self.published_post), published_at
+        )
 
 
 class AuthProfileCoreTests(TestCase):
@@ -204,3 +321,262 @@ class AuthProfileCoreTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Continue with Google')
         self.assertContains(response, '/accounts/google/login/')
+
+
+class ProductionSettingsTests(SimpleTestCase):
+    def load_production_settings(self, environment=None, remove=()):
+        values = {
+            'DJANGO_SECRET_KEY': 'test-production-secret',
+            'DJANGO_ALLOWED_HOSTS': 'example.com',
+            'POSTGRES_DB': 'inkspire',
+            'POSTGRES_USER': 'inkspire_user',
+            'POSTGRES_PASSWORD': 'test-password',
+            'POSTGRES_HOST': 'db.example.com',
+            'POSTGRES_PORT': '5432',
+            'EMAIL_HOST': 'smtp.example.com',
+            'EMAIL_PORT': '587',
+            'EMAIL_HOST_USER': 'smtp-user',
+            'EMAIL_HOST_PASSWORD': 'test-password',
+            'DEFAULT_FROM_EMAIL': 'no-reply@example.com',
+        }
+        values.update(environment or {})
+        for name in remove:
+            values.pop(name, None)
+        with patch.dict(os.environ, values, clear=True), patch(
+            'dotenv.load_dotenv', return_value=False
+        ):
+            sys.modules.pop('blog_main.settings_prod', None)
+            return importlib.import_module('blog_main.settings_prod')
+
+    def test_production_debug_is_disabled_and_uses_environment_secret(self):
+        production = self.load_production_settings(
+            {'DJANGO_SECRET_KEY': 'distinct-production-secret'}
+        )
+        development = importlib.import_module('blog_main.settings')
+
+        self.assertFalse(production.DEBUG)
+        self.assertEqual(production.SECRET_KEY, 'distinct-production-secret')
+        self.assertNotEqual(production.SECRET_KEY, development.SECRET_KEY)
+
+    def test_missing_or_blank_production_secret_is_rejected(self):
+        for value in (None, ''):
+            environment = {}
+            if value is not None:
+                environment['DJANGO_SECRET_KEY'] = value
+            else:
+                environment['DJANGO_ALLOWED_HOSTS'] = 'example.com'
+            with self.subTest(value=value), self.assertRaises(ImproperlyConfigured):
+                if value is None:
+                    with patch.dict(
+                        os.environ,
+                        {'DJANGO_ALLOWED_HOSTS': 'example.com'},
+                        clear=True,
+                    ), patch('dotenv.load_dotenv', return_value=False):
+                        sys.modules.pop('blog_main.settings_prod', None)
+                        importlib.import_module('blog_main.settings_prod')
+                else:
+                    self.load_production_settings(environment)
+
+    def test_allowed_hosts_are_cleaned_and_required(self):
+        production = self.load_production_settings(
+            {'DJANGO_ALLOWED_HOSTS': ' example.com, ,*, www.example.com '}
+        )
+        self.assertEqual(production.ALLOWED_HOSTS, ['example.com', 'www.example.com'])
+        self.assertNotIn('*', production.ALLOWED_HOSTS)
+
+        for value in ('', ' , '):
+            with self.subTest(value=value), self.assertRaises(ImproperlyConfigured):
+                self.load_production_settings({'DJANGO_ALLOWED_HOSTS': value})
+
+    def test_csrf_origins_are_parsed_and_must_include_a_scheme(self):
+        production = self.load_production_settings(
+            {
+                'DJANGO_CSRF_TRUSTED_ORIGINS': (
+                    ' https://example.com, ,https://www.example.com '
+                )
+            }
+        )
+        self.assertEqual(
+            production.CSRF_TRUSTED_ORIGINS,
+            ['https://example.com', 'https://www.example.com'],
+        )
+        with self.assertRaises(ImproperlyConfigured):
+            self.load_production_settings(
+                {'DJANGO_CSRF_TRUSTED_ORIGINS': 'example.com'}
+            )
+
+    def test_existing_production_security_settings_remain_enabled(self):
+        production = self.load_production_settings()
+        self.assertTrue(production.SECURE_SSL_REDIRECT)
+        self.assertTrue(production.SESSION_COOKIE_SECURE)
+        self.assertTrue(production.CSRF_COOKIE_SECURE)
+        self.assertTrue(production.SECURE_HSTS_SECONDS)
+        self.assertTrue(production.SECURE_HSTS_INCLUDE_SUBDOMAINS)
+        self.assertTrue(production.SECURE_HSTS_PRELOAD)
+        self.assertTrue(production.SECURE_CONTENT_TYPE_NOSNIFF)
+        self.assertEqual(production.X_FRAME_OPTIONS, 'DENY')
+
+    def test_development_uses_sqlite_and_production_requires_postgresql(self):
+        development = importlib.import_module('blog_main.settings')
+        production = self.load_production_settings()
+
+        self.assertEqual(development.DATABASES['default']['ENGINE'], 'django.db.backends.sqlite3')
+        self.assertEqual(production.DATABASES['default']['ENGINE'], 'django.db.backends.postgresql')
+        self.assertNotEqual(production.DATABASES['default']['ENGINE'], 'django.db.backends.sqlite3')
+
+    def test_postgresql_settings_map_trimmed_required_environment_values(self):
+        production = self.load_production_settings(
+            {
+                'POSTGRES_DB': ' inkspire_db ',
+                'POSTGRES_USER': ' inkspire_user ',
+                'POSTGRES_PASSWORD': ' secure-password ',
+                'POSTGRES_HOST': ' db.example.com ',
+                'POSTGRES_PORT': ' 5433 ',
+            }
+        )
+        database = production.DATABASES['default']
+
+        self.assertEqual(database['NAME'], 'inkspire_db')
+        self.assertEqual(database['USER'], 'inkspire_user')
+        self.assertEqual(database['PASSWORD'], 'secure-password')
+        self.assertEqual(database['HOST'], 'db.example.com')
+        self.assertEqual(database['PORT'], 5433)
+        self.assertTrue(database['CONN_HEALTH_CHECKS'])
+
+    def test_missing_or_blank_postgresql_values_are_rejected(self):
+        required_names = (
+            'POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD',
+            'POSTGRES_HOST', 'POSTGRES_PORT',
+        )
+        for name in required_names:
+            with self.subTest(name=name, state='missing'), self.assertRaises(ImproperlyConfigured):
+                self.load_production_settings(remove=(name,))
+            with self.subTest(name=name, state='blank'), self.assertRaises(ImproperlyConfigured):
+                self.load_production_settings({name: '   '})
+
+    def test_postgresql_port_validation(self):
+        for value in ('not-a-port', '0', '65536'):
+            with self.subTest(value=value), self.assertRaises(ImproperlyConfigured):
+                self.load_production_settings({'POSTGRES_PORT': value})
+
+    def test_connection_age_and_sslmode_validation(self):
+        production = self.load_production_settings()
+        self.assertEqual(production.DATABASES['default']['CONN_MAX_AGE'], 60)
+        self.assertEqual(production.DATABASES['default']['OPTIONS']['sslmode'], 'require')
+
+        production = self.load_production_settings(
+            {'POSTGRES_CONN_MAX_AGE': '120', 'POSTGRES_SSLMODE': 'verify-full'}
+        )
+        self.assertEqual(production.DATABASES['default']['CONN_MAX_AGE'], 120)
+        self.assertEqual(production.DATABASES['default']['OPTIONS']['sslmode'], 'verify-full')
+
+        for value in ('-1', 'invalid'):
+            with self.subTest(connection_age=value), self.assertRaises(ImproperlyConfigured):
+                self.load_production_settings({'POSTGRES_CONN_MAX_AGE': value})
+        for sslmode in ('disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full'):
+            with self.subTest(sslmode=sslmode):
+                self.assertEqual(
+                    self.load_production_settings({'POSTGRES_SSLMODE': sslmode})
+                    .DATABASES['default']['OPTIONS']['sslmode'],
+                    sslmode,
+                )
+        with self.assertRaises(ImproperlyConfigured):
+            self.load_production_settings({'POSTGRES_SSLMODE': 'invalid'})
+
+    def test_development_uses_console_email_and_production_uses_smtp(self):
+        development = importlib.import_module('blog_main.settings')
+        production = self.load_production_settings()
+
+        self.assertEqual(
+            development.EMAIL_BACKEND,
+            'django.core.mail.backends.console.EmailBackend',
+        )
+        self.assertEqual(
+            production.EMAIL_BACKEND,
+            'django.core.mail.backends.smtp.EmailBackend',
+        )
+
+    def test_production_smtp_settings_map_trimmed_required_values(self):
+        production = self.load_production_settings(
+            {
+                'EMAIL_HOST': ' smtp.example.com ',
+                'EMAIL_PORT': ' 465 ',
+                'EMAIL_HOST_USER': ' smtp-user ',
+                'EMAIL_HOST_PASSWORD': ' smtp-password ',
+                'DEFAULT_FROM_EMAIL': ' no-reply@example.com ',
+                'SERVER_EMAIL': ' errors@example.com ',
+                'EMAIL_USE_TLS': 'off',
+                'EMAIL_USE_SSL': 'yes',
+                'EMAIL_TIMEOUT': ' 20 ',
+                'EMAIL_SUBJECT_PREFIX': ' [InkSpire Production] ',
+            }
+        )
+
+        self.assertEqual(production.EMAIL_HOST, 'smtp.example.com')
+        self.assertEqual(production.EMAIL_PORT, 465)
+        self.assertEqual(production.EMAIL_HOST_USER, 'smtp-user')
+        self.assertEqual(production.EMAIL_HOST_PASSWORD, 'smtp-password')
+        self.assertEqual(production.DEFAULT_FROM_EMAIL, 'no-reply@example.com')
+        self.assertEqual(production.SERVER_EMAIL, 'errors@example.com')
+        self.assertFalse(production.EMAIL_USE_TLS)
+        self.assertTrue(production.EMAIL_USE_SSL)
+        self.assertEqual(production.EMAIL_TIMEOUT, 20)
+        self.assertEqual(production.EMAIL_SUBJECT_PREFIX, '[InkSpire Production]')
+
+    def test_missing_or_blank_smtp_values_are_rejected(self):
+        required_names = (
+            'EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_HOST_USER',
+            'EMAIL_HOST_PASSWORD', 'DEFAULT_FROM_EMAIL',
+        )
+        for name in required_names:
+            with self.subTest(name=name, state='missing'), self.assertRaises(ImproperlyConfigured):
+                self.load_production_settings(remove=(name,))
+            with self.subTest(name=name, state='blank'), self.assertRaises(ImproperlyConfigured):
+                self.load_production_settings({name: '   '})
+
+    def test_smtp_port_boolean_timeout_and_sender_validation(self):
+        for value in ('invalid', '0', '-1', '65536'):
+            with self.subTest(port=value), self.assertRaises(ImproperlyConfigured):
+                self.load_production_settings({'EMAIL_PORT': value})
+        for value, expected in (
+            ('true', True), ('1', True), ('yes', True), ('on', True),
+            ('false', False), ('0', False), ('no', False), ('off', False),
+        ):
+            with self.subTest(tls=value):
+                self.assertEqual(
+                    self.load_production_settings({'EMAIL_USE_TLS': value}).EMAIL_USE_TLS,
+                    expected,
+                )
+        for value in ('invalid', 'maybe'):
+            with self.subTest(boolean=value), self.assertRaises(ImproperlyConfigured):
+                self.load_production_settings({'EMAIL_USE_TLS': value})
+        with self.assertRaises(ImproperlyConfigured):
+            self.load_production_settings({'EMAIL_USE_TLS': 'true', 'EMAIL_USE_SSL': 'true'})
+
+        production = self.load_production_settings()
+        self.assertTrue(production.EMAIL_USE_TLS)
+        self.assertFalse(production.EMAIL_USE_SSL)
+        self.assertEqual(production.EMAIL_TIMEOUT, 10)
+        self.assertEqual(production.SERVER_EMAIL, production.DEFAULT_FROM_EMAIL)
+        self.assertEqual(production.EMAIL_SUBJECT_PREFIX, '[InkSpire]')
+        for value in ('0', '-1', 'invalid'):
+            with self.subTest(timeout=value), self.assertRaises(ImproperlyConfigured):
+                self.load_production_settings({'EMAIL_TIMEOUT': value})
+        for name in ('DEFAULT_FROM_EMAIL', 'SERVER_EMAIL'):
+            with self.subTest(address=name), self.assertRaises(ImproperlyConfigured):
+                self.load_production_settings({name: 'not-an-email'})
+
+    def test_entry_points_default_to_production_and_manage_defaults_to_development(self):
+        project_root = Path(__file__).resolve().parent.parent
+        for filename in ('wsgi.py', 'asgi.py'):
+            with self.subTest(filename=filename):
+                source = (project_root / 'blog_main' / filename).read_text()
+                self.assertIn(
+                    "os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'blog_main.settings_prod')",
+                    source,
+                )
+        manage_source = (project_root / 'manage.py').read_text()
+        self.assertIn(
+            "os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'blog_main.settings')",
+            manage_source,
+        )

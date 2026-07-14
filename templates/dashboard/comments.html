@@ -99,6 +99,22 @@
                 <p>Reader comments will appear here once posts receive replies.</p>
             </div>
             {% endif %}
+
+            {% if comments.paginator.num_pages > 1 %}
+            <nav class="mt-4" aria-label="Comment moderation pagination">
+                <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                    <span class="text-muted small">Page {{ comments.number }} of {{ comments.paginator.num_pages }}</span>
+                    <div class="d-flex gap-2">
+                        {% if comments.has_previous %}
+                        <a class="btn btn-sm btn-outline-secondary" href="?page={{ comments.previous_page_number }}">Previous</a>
+                        {% endif %}
+                        {% if comments.has_next %}
+                        <a class="btn btn-sm btn-outline-secondary" href="?page={{ comments.next_page_number }}">Next</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </nav>
+            {% endif %}
         </div>
     </div>
 </div>

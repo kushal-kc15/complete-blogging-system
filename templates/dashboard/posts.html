@@ -90,6 +90,22 @@
                 {% endif %}
             </div>
             {% endif %}
+
+            {% if posts.paginator.num_pages > 1 %}
+            <nav class="mt-4" aria-label="Post list pagination">
+                <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                    <span class="text-muted small">Page {{ posts.number }} of {{ posts.paginator.num_pages }}</span>
+                    <div class="d-flex gap-2">
+                        {% if posts.has_previous %}
+                        <a class="btn btn-sm btn-outline-secondary" href="?page={{ posts.previous_page_number }}">Previous</a>
+                        {% endif %}
+                        {% if posts.has_next %}
+                        <a class="btn btn-sm btn-outline-secondary" href="?page={{ posts.next_page_number }}">Next</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </nav>
+            {% endif %}
         </div>
     </div>
 </div>

@@ -24,5 +24,6 @@ urlpatterns = [
     # Contact Messages Management
     path('messages/', views.contact_messages, name='contact_messages'),
     path('messages/view/<int:id>/', views.view_message, name='view_message'),
+    path('messages/read/<int:id>/', views.mark_message_read, name='mark_message_read'),
     path('messages/delete/<int:id>/', views.delete_message, name='delete_message'),
 ]

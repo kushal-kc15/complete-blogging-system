@@ -21,7 +21,7 @@
         <h1>{{ post.title }}</h1>
         <p>{{ post.short_description|truncatewords:24 }}</p>
         <div class="post-meta-line text-white-50">
-          <span>{{ post.created_at|timesince }} ago</span>
+          <span>{{ post.effective_published_at|timesince }} ago</span>
           <a href="{% url 'author_profile' post.author.username %}" class="text-white-50">{{ post.author.get_full_name|default:post.author.username }}</a>
           <span><i class="fa fa-clock-o"></i> {{ post.reading_time }} min read</span>
         </div>

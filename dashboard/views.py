@@ -1,6 +1,8 @@
 from django.contrib.auth.models import User
 from .forms import AddUserForm, EditUserForm
-import time
+from django.db import IntegrityError
+from django.core.paginator import Paginator
+from django.db.models.deletion import ProtectedError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from blogs.models import Blog, Category, Comment, Contact
@@ -8,7 +10,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import permission_required, user_passes_test
 from django.views.decorators.http import require_POST
 from .forms import CategoryForm, BlogForm
-from django.template.defaultfilters import slugify
 # Create your views here.
 
 
@@ -113,16 +114,24 @@ def edit_category(request, id):
 @require_POST
 def delete_category(request, id):
     category = get_object_or_404(Category, id=id)
-    category.delete()
+    try:
+        category.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            'This category cannot be deleted because it is being used by one or more posts.',
+        )
     return redirect('categories')
 
 
 @login_required(login_url='login')
 @permission_required('blogs.view_blog', raise_exception=True)
 def posts(request):
-    posts = Blog.objects.select_related('category', 'author').order_by('-updated_at')
+    post_list = Blog.objects.select_related('category', 'author').order_by('-updated_at')
+    paginator = Paginator(post_list, 6)
+    posts = paginator.get_page(request.GET.get('page'))
     context = {
-        'posts': posts
+        'posts': posts,
     }
     return render(request, 'dashboard/posts.html', context)
 
@@ -136,11 +145,16 @@ def add_post(request):
             post = form.save(commit=False)
             post.author = request.user
             title = form.cleaned_data['title']
-            # Create a unique slug using title and timestamp
-            import time
-            post.slug = slugify(title) + '-' + str(int(time.time()))
-            post.save()
-            return redirect('posts')
+            for _ in range(5):
+                post.slug = Blog.generate_unique_slug(title)
+                try:
+                    post.save()
+                except IntegrityError:
+                    if Blog.objects.filter(slug=post.slug).exists():
+                        continue
+                    raise
+                return redirect('posts')
+            form.add_error(None, 'Unable to create a unique post URL. Please try again.')
         else:
             print(form.errors)
     else:
@@ -184,9 +198,11 @@ def delete_post(request, id):
 @login_required(login_url='login')
 @comment_moderator_required
 def comments(request):
-    comments = Comment.objects.select_related(
+    comment_list = Comment.objects.select_related(
         'user', 'blog', 'blog__category'
     ).order_by('-created_at')
+    paginator = Paginator(comment_list, 10)
+    comments = paginator.get_page(request.GET.get('page'))
     context = {
         'comments': comments,
         'visible_count': Comment.objects.filter(is_visible=True).count(),
@@ -210,7 +226,9 @@ def toggle_comment_visibility(request, id):
 @login_required(login_url='login')
 @superuser_required
 def users(request):
-    users = User.objects.all()
+    user_list = User.objects.all().order_by('id')
+    paginator = Paginator(user_list, 10)
+    users = paginator.get_page(request.GET.get('page'))
     context = {
         'users': users,
     }
@@ -256,7 +274,13 @@ def edit_user(request, id):
 @require_POST
 def delete_user(request, id):
     user = get_object_or_404(User, id=id)
-    user.delete()
+    try:
+        user.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            'This user cannot be deleted because they are the author of one or more posts.',
+        )
     return redirect('users')
 
 
@@ -264,7 +288,9 @@ def delete_user(request, id):
 @login_required
 @permission_required('blogs.view_contact', raise_exception=True)
 def contact_messages(request):
-    messages = Contact.objects.all().order_by('-created_at')
+    message_list = Contact.objects.all().order_by('-created_at')
+    paginator = Paginator(message_list, 10)
+    messages = paginator.get_page(request.GET.get('page'))
     unread_count = Contact.objects.filter(is_read=False).count()
     context = {
         'messages': messages,
@@ -277,14 +303,22 @@ def contact_messages(request):
 @permission_required('blogs.view_contact', raise_exception=True)
 def view_message(request, id):
     message = get_object_or_404(Contact, id=id)
-    # Mark as read when viewed
-    if not message.is_read:
-        message.is_read = True
-        message.save()
     context = {
         'message': message,
     }
     return render(request, 'dashboard/view_message.html', context)
+
+
+@login_required
+@permission_required('blogs.view_contact', raise_exception=True)
+@require_POST
+def mark_message_read(request, id):
+    message = get_object_or_404(Contact, id=id)
+    if not message.is_read:
+        message.is_read = True
+        message.save(update_fields=['is_read'])
+    messages.success(request, 'Message marked as read.')
+    return redirect('view_message', id=message.id)
 
 
 @login_required
