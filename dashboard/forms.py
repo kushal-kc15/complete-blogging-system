@@ -3,6 +3,7 @@ from blogs.models import Blog, Category
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django_ckeditor_5.widgets import CKEditor5Widget
+from blogs.forms import RichTextSanitizingFormMixin
 
 
 class CategoryForm(forms.ModelForm):
@@ -16,7 +17,7 @@ class CategoryForm(forms.ModelForm):
         }
 
 
-class BlogForm(forms.ModelForm):
+class BlogForm(RichTextSanitizingFormMixin, forms.ModelForm):
     MAX_FEATURED_IMAGE_SIZE = 3 * 1024 * 1024
     ALLOWED_FEATURED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
     ALLOWED_FEATURED_IMAGE_FORMATS = {'JPEG', 'PNG', 'WEBP'}

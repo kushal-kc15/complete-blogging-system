@@ -1,6 +1,23 @@
 from django import forms
 
-from .models import Comment, Contact
+from .models import Blog, Comment, Contact
+from .sanitizers import has_meaningful_rich_text, sanitize_rich_text
+
+
+class RichTextSanitizingFormMixin:
+    def clean_blog_body(self):
+        sanitized = sanitize_rich_text(self.cleaned_data.get('blog_body'))
+        if not has_meaningful_rich_text(sanitized):
+            raise forms.ValidationError(
+                'Content must include text or an image with meaningful alt text.'
+            )
+        return sanitized
+
+
+class BlogAdminForm(RichTextSanitizingFormMixin, forms.ModelForm):
+    class Meta:
+        model = Blog
+        fields = '__all__'
 
 
 class ContactForm(forms.ModelForm):

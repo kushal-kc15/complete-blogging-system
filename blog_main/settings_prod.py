@@ -185,9 +185,9 @@ CKEDITOR_5_CONFIGS = {
             'blockQuote',
         ],
         'toolbar': ['heading', '|', 'outdent', 'indent', '|', 'bold', 'italic', 'link', 'underline', 'strikethrough',
-                    'code', 'subscript', 'superscript', 'highlight', '|', 'codeBlock', 'insertImage',
-                    'bulletedList', 'numberedList', 'todoList', '|', 'blockQuote', 'imageUpload', '|',
-                    'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', 'mediaEmbed', 'removeFormat',
+                    'code', 'subscript', 'superscript', '|', 'codeBlock', 'insertImage',
+                    'bulletedList', 'numberedList', '|', 'blockQuote', 'imageUpload', '|',
+                    'removeFormat',
                     'insertTable',],
         'image': {
             'toolbar': ['imageTextAlternative', '|', 'imageStyle:alignLeft',
@@ -201,8 +201,7 @@ CKEDITOR_5_CONFIGS = {
             ]
         },
         'table': {
-            'contentToolbar': ['tableColumn', 'tableRow', 'mergeTableCells',
-                               'tableProperties', 'tableCellProperties'],
+            'contentToolbar': ['tableColumn', 'tableRow', 'mergeTableCells'],
         },
         'heading': {
             'options': [
@@ -270,6 +269,25 @@ DATABASES = {
         'OPTIONS': {
             'sslmode': _postgres_sslmode(),
         },
+    }
+}
+
+# Cache - Redis is required in production so every application worker shares it.
+REDIS_URL = _required_environment_value('REDIS_URL')
+if not REDIS_URL.startswith(('redis://', 'rediss://')):
+    raise ImproperlyConfigured(
+        'REDIS_URL environment variable must use redis:// or rediss://.'
+    )
+CACHE_DEFAULT_TIMEOUT = _positive_integer_environment_value(
+    'CACHE_DEFAULT_TIMEOUT', default=300
+)
+CACHE_KEY_PREFIX = os.environ.get('CACHE_KEY_PREFIX', '').strip() or 'inkspire'
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': REDIS_URL,
+        'TIMEOUT': CACHE_DEFAULT_TIMEOUT,
+        'KEY_PREFIX': CACHE_KEY_PREFIX,
     }
 }
 

@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Category, Blog, Comment, Like, Bookmark, Contact, UserProfile
+from .forms import BlogAdminForm
 
 
 # Register your models here.
@@ -21,6 +22,7 @@ admin.site.register(Category, CategoryAdmin)
 
 
 class BlogAdmin(admin.ModelAdmin):
+    form = BlogAdminForm
     list_display = ['title', 'category', 'author', 'views',
                     'created_at', 'updated_at', 'is_featured', 'status']
     prepopulated_fields = {'slug': ('title',)}

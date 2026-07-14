@@ -3,9 +3,11 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from datetime import timedelta
+from pathlib import Path
 
-from .forms import CommentForm
+from .forms import BlogAdminForm, CommentForm
 from .models import Blog, Bookmark, Category, Comment, Like, UserProfile
+from .sanitizers import sanitize_rich_text
 
 
 class EngagementSecurityTests(TestCase):
@@ -410,3 +412,94 @@ class PublishingVisibilityTests(TestCase):
         )
         self.draft_post.refresh_from_db()
         self.assertEqual(self.draft_post.views, 0)
+
+
+class RichTextSanitizationTests(TestCase):
+    def setUp(self):
+        self.author = User.objects.create_user(
+            username='rich-writer', password='test-password'
+        )
+        self.category = Category.objects.create(name='Rich text')
+
+    def test_sanitizer_preserves_safe_ck_editor_content(self):
+        content = (
+            '<h2>Heading</h2><p><strong>Bold</strong> and <em>italic</em>.</p>'
+            '<blockquote>Quote</blockquote><ul><li>One</li><li>Two</li></ul>'
+            '<pre><code>print(1)</code></pre>'
+            '<a href="https://example.com">Example</a>'
+            '<figure class="image image-style-align-left"><img src="/media/uploads/example.jpg" alt="Example">'
+            '<figcaption>Caption</figcaption></figure>'
+            '<table><tbody><tr><td colspan="2">Cell</td></tr></tbody></table>'
+        )
+        sanitized = sanitize_rich_text(content)
+
+        for expected in (
+            '<h2>Heading</h2>', '<strong>Bold</strong>', '<em>italic</em>',
+            '<blockquote>Quote</blockquote>', '<ul><li>One</li><li>Two</li></ul>',
+            '<pre><code>print(1)</code></pre>', 'href="https://example.com"',
+            'src="/media/uploads/example.jpg"', 'alt="Example"',
+            'class="image image-style-align-left"', 'colspan="2"',
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, sanitized)
+
+    def test_sanitizer_removes_executable_html_attributes_and_urls(self):
+        content = (
+            '<script>alert(1)</script><p onclick="alert(1)">Text</p>'
+            '<img src="x" ONERROR="alert(1)">'
+            '<a href="JaVaScRiPt:alert(1)">Bad</a>'
+            '<a href="&#106;avascript:alert(1)">Encoded</a>'
+            '<img src="data:image/svg+xml;base64,evil" alt="Bad">'
+            '<iframe src="https://example.com">frame</iframe><svg onload="alert(1)"></svg>'
+            '<p style="color:red">Styled</p>'
+        )
+        sanitized = sanitize_rich_text(content)
+        lowered = sanitized.lower()
+
+        for unsafe in ('<script', 'alert(1)', 'onclick', 'onerror', 'javascript:', 'data:', '<iframe', '<svg', 'style='):
+            with self.subTest(unsafe=unsafe):
+                self.assertNotIn(unsafe, lowered)
+        self.assertIn('<p>Text</p>', sanitized)
+        self.assertIn('>Bad</a>', sanitized)
+        self.assertIn('>Encoded</a>', sanitized)
+
+    def test_legacy_article_html_is_sanitized_at_render_time(self):
+        post = Blog.objects.create(
+            title='Legacy unsafe post', slug='legacy-unsafe-post',
+            category=self.category, author=self.author,
+            short_description='Legacy summary',
+            blog_body='<p>Safe text</p><script>alert(1)</script><img src="x" onerror="alert(1)">',
+            status='published',
+        )
+        response = self.client.get(reverse('Blog_detail', args=[post.slug]))
+        content = response.content.decode().lower()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('<p>safe text</p>', content)
+        self.assertNotIn('<script>alert(1)</script>', content)
+        self.assertNotIn('onerror=', content)
+        self.assertNotIn('alert(1)', content)
+
+    def test_article_template_uses_sanitizing_filter_not_raw_safe(self):
+        template = (Path(__file__).resolve().parent.parent / 'templates' / 'blog_detail.html').read_text()
+        self.assertIn('post.blog_body|sanitize_rich_text', template)
+        self.assertNotIn('post.blog_body|safe', template)
+
+    def test_admin_form_uses_the_same_storage_sanitization_policy(self):
+        form = BlogAdminForm(data={
+            'title': 'Admin rich text',
+            'slug': 'admin-rich-text',
+            'category': self.category.id,
+            'author': self.author.id,
+            'short_description': 'Admin summary',
+            'blog_body': '<p>Admin content</p><script>alert(1)</script>',
+            'status': 'draft',
+            'is_featured': False,
+            'views': 0,
+            'featured_image_alt': '',
+            'meta_description': '',
+        })
+
+        self.assertTrue(form.is_valid(), form.errors)
+        post = form.save()
+        self.assertEqual(post.blog_body, '<p>Admin content</p>')

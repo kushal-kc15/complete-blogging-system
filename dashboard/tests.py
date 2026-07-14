@@ -195,6 +195,63 @@ class BlogFormImageValidationTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn('Featured image must be 3 MB or smaller.', form.errors['featured_image'])
 
+    def test_rejects_content_that_is_empty_after_sanitization(self):
+        data = self.valid_data | {'blog_body': '<script>alert(1)</script><p><br></p>'}
+        form = BlogForm(data=data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            'Content must include text or an image with meaningful alt text.',
+            form.errors['blog_body'],
+        )
+
+
+class DashboardRichTextStorageTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser(
+            username='rich-text-admin', email='rich-text-admin@example.com',
+            password='test-password',
+        )
+        self.category = Category.objects.create(name='Rich text dashboard')
+        self.client.force_login(self.user)
+
+    def post_data(self, title, body):
+        return {
+            'title': title,
+            'category': self.category.id,
+            'short_description': 'A rich-text test post.',
+            'blog_body': body,
+            'status': 'draft',
+            'featured_image_alt': '',
+            'meta_description': '',
+        }
+
+    def test_create_and_edit_store_sanitized_rich_text(self):
+        response = self.client.post(
+            reverse('add_post'),
+            self.post_data(
+                'Sanitized post',
+                '<p>Safe <strong>content</strong></p><script>alert(1)</script><img src="x" onerror="alert(1)">',
+            ),
+        )
+        self.assertRedirects(response, reverse('posts'))
+        post = Blog.objects.get(title='Sanitized post')
+        self.assertIn('<strong>content</strong>', post.blog_body)
+        self.assertNotIn('<script', post.blog_body)
+        self.assertNotIn('onerror', post.blog_body)
+
+        response = self.client.post(
+            reverse('edit_post', args=[post.id]),
+            self.post_data(
+                'Sanitized post',
+                '<h2>Edited</h2><a href="javascript:alert(1)">Unsafe link</a>',
+            ),
+        )
+        self.assertRedirects(response, reverse('posts'))
+        post.refresh_from_db()
+        self.assertIn('<h2>Edited</h2>', post.blog_body)
+        self.assertNotIn('javascript:', post.blog_body.lower())
+
 
 class PostSlugGenerationTests(TestCase):
     def setUp(self):

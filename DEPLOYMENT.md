@@ -1,5 +1,12 @@
 # InkSpire - Deployment Guide
 
+## Redis cache
+
+- Development uses Django's local-memory cache and does not require Redis.
+- Production requires a shared Redis cache for all application workers. Set `REDIS_URL` to a `redis://` or encrypted `rediss://` URL, along with optional `CACHE_DEFAULT_TIMEOUT` and `CACHE_KEY_PREFIX` values.
+- Redis is temporary cache storage, not permanent application storage. Production startup intentionally fails when `REDIS_URL` is absent.
+- A later task will use this shared cache for rate limiting.
+
 ## 🚀 Quick Deployment Checklist
 
 ### Before Deployment:

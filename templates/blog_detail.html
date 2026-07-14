@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load rich_text %}
 
 {% block title %}{{ post.title }} | InkSpire{% endblock %}
 
@@ -147,7 +148,7 @@
 
         <!-- Post content-->
         <section class="article-main">
-          <div class="article-content">{{ post.blog_body|safe }}</div>
+          <div class="article-content">{{ post.blog_body|sanitize_rich_text }}</div>
 
           <!-- Related Posts -->
           {% if related_posts %}

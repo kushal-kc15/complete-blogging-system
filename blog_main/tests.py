@@ -333,6 +333,7 @@ class ProductionSettingsTests(SimpleTestCase):
             'POSTGRES_PASSWORD': 'test-password',
             'POSTGRES_HOST': 'db.example.com',
             'POSTGRES_PORT': '5432',
+            'REDIS_URL': 'redis://cache.example.com:6379/1',
             'EMAIL_HOST': 'smtp.example.com',
             'EMAIL_PORT': '587',
             'EMAIL_HOST_USER': 'smtp-user',
@@ -423,6 +424,54 @@ class ProductionSettingsTests(SimpleTestCase):
         self.assertEqual(development.DATABASES['default']['ENGINE'], 'django.db.backends.sqlite3')
         self.assertEqual(production.DATABASES['default']['ENGINE'], 'django.db.backends.postgresql')
         self.assertNotEqual(production.DATABASES['default']['ENGINE'], 'django.db.backends.sqlite3')
+
+    def test_development_uses_local_memory_cache_and_production_uses_redis(self):
+        development = importlib.import_module('blog_main.settings')
+        production = self.load_production_settings()
+
+        self.assertEqual(
+            development.CACHES['default']['BACKEND'],
+            'django.core.cache.backends.locmem.LocMemCache',
+        )
+        self.assertEqual(
+            production.CACHES['default']['BACKEND'],
+            'django.core.cache.backends.redis.RedisCache',
+        )
+        self.assertEqual(
+            production.CACHES['default']['LOCATION'],
+            'redis://cache.example.com:6379/1',
+        )
+
+    def test_production_accepts_redis_and_rediss_urls(self):
+        for url in (
+            ' redis://cache.example.com:6379/1 ',
+            ' rediss://cache.example.com:6380/1 ',
+        ):
+            with self.subTest(url=url):
+                production = self.load_production_settings({'REDIS_URL': url})
+                self.assertEqual(production.REDIS_URL, url.strip())
+
+    def test_missing_blank_and_unsupported_redis_urls_are_rejected(self):
+        with self.assertRaises(ImproperlyConfigured):
+            self.load_production_settings(remove=('REDIS_URL',))
+        for url in ('   ', 'http://cache.example.com:6379/1'):
+            with self.subTest(url=url), self.assertRaises(ImproperlyConfigured):
+                self.load_production_settings({'REDIS_URL': url})
+
+    def test_production_cache_timeout_and_key_prefix_validation(self):
+        production = self.load_production_settings()
+        self.assertEqual(production.CACHE_DEFAULT_TIMEOUT, 300)
+        self.assertEqual(production.CACHE_KEY_PREFIX, 'inkspire')
+
+        production = self.load_production_settings(
+            {'CACHE_DEFAULT_TIMEOUT': ' 120 ', 'CACHE_KEY_PREFIX': ' blog '}
+        )
+        self.assertEqual(production.CACHE_DEFAULT_TIMEOUT, 120)
+        self.assertEqual(production.CACHE_KEY_PREFIX, 'blog')
+
+        for timeout in ('invalid', '0', '-1'):
+            with self.subTest(timeout=timeout), self.assertRaises(ImproperlyConfigured):
+                self.load_production_settings({'CACHE_DEFAULT_TIMEOUT': timeout})
 
     def test_postgresql_settings_map_trimmed_required_environment_values(self):
         production = self.load_production_settings(

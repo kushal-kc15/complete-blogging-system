@@ -1,5 +1,5 @@
 ﻿# Core Django
-Django==5.1.4
+Django==5.2.16
 asgiref==3.8.1
 sqlparse==0.5.3
 
@@ -10,6 +10,7 @@ django-allauth==65.3.1
 
 # Rich Text Editor
 django-ckeditor-5==0.2.15
+nh3==0.2.20
 
 # Image Processing
 pillow==11.0.0
@@ -21,6 +22,7 @@ tzdata==2024.2
 gunicorn==23.0.0
 whitenoise==6.8.2
 psycopg[binary]==3.2.3
+redis==8.0.1
 
 # Environment Variables
 python-dotenv==1.0.1

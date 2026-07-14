@@ -47,7 +47,7 @@ Live demo: https://complete-blogging-system.onrender.com
 ## Tech stack
 
 - Python 3.12
-- Django 5.1.4
+- Django 5.2.16 LTS
 - SQLite for local development
 - Bootstrap 5
 - django-allauth for Google authentication
@@ -142,6 +142,10 @@ This project focuses on practical publishing-platform fundamentals rather than o
 - stable publishing semantics;
 - SEO-ready public pages;
 - minimal, test-covered moderation and editorial tooling.
+
+### Rich-text security
+
+Article HTML is sanitized server-side with one shared allowlist. New and edited posts are cleaned before storage, while legacy content is sanitized again when rendered. CKEditor filtering is not a security boundary; raw `safe` rendering of article content is prohibited. Any allowed-tag or attribute expansion requires security review and tests.
 
 ## Future improvements
 
