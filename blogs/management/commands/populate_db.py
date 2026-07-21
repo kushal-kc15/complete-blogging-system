@@ -1,28 +1,61 @@
+import os
+import random
+
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from blogs.models import Category, Blog, UserProfile
 from django.utils.text import slugify
-import random
 
 
 class Command(BaseCommand):
-    help = 'Populate database with sample data'
+    help = (
+        'Populate the database with sample content: categories, sample '
+        'authors, and blog posts. This command never creates a default '
+        'admin account with a hardcoded password. To provision a superuser '
+        'for this sample data, set the DJANGO_ADMIN_USERNAME, '
+        'DJANGO_ADMIN_EMAIL, and DJANGO_ADMIN_PASSWORD environment '
+        'variables before running this command, or create one separately '
+        'with "python manage.py createsuperuser".'
+    )
 
     def handle(self, *args, **options):
         self.stdout.write('Creating sample data...')
 
-        # Create superuser if not exists
-        if not User.objects.filter(username='admin').exists():
-            admin = User.objects.create_superuser(
-                username='admin',
-                email='admin@example.com',
-                password='admin123',
-                first_name='Admin',
-                last_name='User'
+        # Optionally create a superuser, but only from credentials supplied
+        # via environment variables. No default/hardcoded admin account is
+        # created, and no password is ever printed to the console.
+        admin_username = os.environ.get('DJANGO_ADMIN_USERNAME', '').strip()
+        admin_email = os.environ.get('DJANGO_ADMIN_EMAIL', '').strip()
+        admin_password = os.environ.get('DJANGO_ADMIN_PASSWORD', '').strip()
+
+        admin = None
+        if admin_username and admin_email and admin_password:
+            admin, admin_created = User.objects.get_or_create(
+                username=admin_username,
+                defaults={'email': admin_email},
             )
-            UserProfile.objects.create(user=admin, bio='Site Administrator')
-            self.stdout.write(self.style.SUCCESS(
-                'Created admin user (admin/admin123)'))
+            if admin_created:
+                admin.set_password(admin_password)
+                admin.is_staff = True
+                admin.is_superuser = True
+                admin.save()
+                UserProfile.objects.get_or_create(
+                    user=admin, defaults={'bio': 'Site Administrator'})
+                self.stdout.write(self.style.SUCCESS(
+                    f'Created admin user "{admin_username}" from '
+                    'environment variables.'))
+            else:
+                self.stdout.write(
+                    f'Admin user "{admin_username}" already exists; '
+                    'skipping creation.'
+                )
+        else:
+            self.stdout.write(
+                'Skipping admin user creation: set DJANGO_ADMIN_USERNAME, '
+                'DJANGO_ADMIN_EMAIL, and DJANGO_ADMIN_PASSWORD environment '
+                'variables to create one here, or run '
+                '"python manage.py createsuperuser" separately.'
+            )
 
         # Create sample users
         users_data = [
@@ -52,9 +85,10 @@ class Command(BaseCommand):
                 self.stdout.write(f"Created user: {user_data['username']}")
             authors.append(user)
 
-        # Add admin to authors
-        admin = User.objects.get(username='admin')
-        authors.append(admin)
+        # Include the admin user as a potential author only if one was
+        # created above from environment-supplied credentials.
+        if admin is not None:
+            authors.append(admin)
 
         # Create Categories
         categories_data = [
@@ -492,6 +526,14 @@ Strict-Transport-Security: max-age=31536000</code></pre>
 
         self.stdout.write(self.style.SUCCESS(
             '\n✓ Sample data created successfully!'))
-        self.stdout.write(self.style.SUCCESS('Admin login: admin / admin123'))
         self.stdout.write(self.style.SUCCESS(
-            'User login: john_doe / password123'))
+            'Sample user accounts were created (e.g. "john_doe") with the '
+            'password "password123" for local development only. No '
+            'passwords are ever printed for admin accounts by this '
+            'command.'
+        ))
+        if admin is None:
+            self.stdout.write(
+                'No admin user was created. Run '
+                '"python manage.py createsuperuser" to create one.'
+            )
