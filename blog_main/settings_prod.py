@@ -11,6 +11,14 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.core.validators import validate_email
 from dotenv import load_dotenv
 
+from .settings import (
+    COMMENT_RATE_LIMIT,
+    CONTACT_RATE_LIMIT,
+    LOGIN_FAILURE_IDENTITY_RATE,
+    LOGIN_FAILURE_IP_RATE,
+    PASSWORD_RESET_RATE,
+)
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
@@ -218,9 +226,11 @@ CKEDITOR_5_CONFIGS = {
     },
 }
 CKEDITOR_5_FILE_UPLOAD_PERMISSION = "authenticated"
+CK_EDITOR_5_UPLOAD_FILE_VIEW_NAME = 'ck_editor_5_upload_file'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'blog_main.middleware.SecurityHeadersMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Serve static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -381,6 +391,9 @@ CSRF_COOKIE_HTTPONLY = True
 # XSS Protection
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
+SECURE_CROSS_ORIGIN_RESOURCE_POLICY = 'same-origin'
 
 # HSTS (HTTP Strict Transport Security)
 SECURE_HSTS_SECONDS = 31536000  # 1 year
@@ -389,6 +402,23 @@ SECURE_HSTS_PRELOAD = True
 
 # Clickjacking protection
 X_FRAME_OPTIONS = 'DENY'
+
+# Self-hosted CKEditor and Bootstrap require local scripts. The public layout
+# also loads Bootstrap, Google Fonts, and Font Awesome from the listed CDNs.
+# Inline styles remain necessary for the existing 404 page and template styles.
+CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; "
+    "base-uri 'self'; "
+    "object-src 'none'; "
+    "frame-ancestors 'none'; "
+    "script-src 'self' https://cdn.jsdelivr.net; "
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net "
+    "https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+    "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+    "img-src 'self' data: https:; "
+    "connect-src 'self'; "
+    "form-action 'self'"
+)
 
 # Logging for production
 LOGGING = {

@@ -6,6 +6,16 @@
 - Production requires a shared Redis cache for all application workers. Set `REDIS_URL` to a `redis://` or encrypted `rediss://` URL, along with optional `CACHE_DEFAULT_TIMEOUT` and `CACHE_KEY_PREFIX` values.
 - Redis is temporary cache storage, not permanent application storage. Production startup intentionally fails when `REDIS_URL` is absent.
 - A later task will use this shared cache for rate limiting.
+- Configure the production reverse proxy to securely set each client's address as `REMOTE_ADDR`; otherwise visitors may share the proxy's contact-form rate-limit bucket.
+- Failed local username/password logins are rate-limited through the shared production Redis cache; successful logins do not consume a failure limit. The trusted reverse proxy must set the real client address as `REMOTE_ADDR`; application code does not trust arbitrary `X-Forwarded-For` values. This basic control cannot fully stop distributed attacks using many IP addresses; consider CAPTCHA or risk-based controls only if real abuse appears.
+- Password-reset requests are rate-limited by `REMOTE_ADDR` through shared production Redis. Reset responses intentionally do not reveal whether an account exists or is active; the trusted reverse proxy must supply the real client address.
+- Featured images, avatars, and CKEditor uploads accept only JPEG, PNG, and WebP files up to 5 MB and 5000 × 5000 pixels. Uploads require matching extensions and verified Pillow image content; corrupted and decompression-bomb images are rejected.
+
+## HTTP security headers
+
+- Production enables HSTS, content-type protection, strict cross-origin referrer handling, frame denial, cross-origin opener/resource policies, and a restrictive Permissions Policy.
+- The CSP permits local resources plus the existing Bootstrap, Google Fonts, and Font Awesome CDNs. Inline styles remain temporarily permitted for the existing 404 page and template styles; scripts remain restricted to local files and jsDelivr.
+- Revisit and tighten the CSP whenever introducing a new third-party resource.
 
 ## 🚀 Quick Deployment Checklist
 

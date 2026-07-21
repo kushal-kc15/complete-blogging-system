@@ -14,7 +14,11 @@
         <p>Continue reading, bookmarking, and joining the conversation.</p>
       </div>
 
-      {% if form.errors %}
+      {% if login_rate_limited %}
+      <div class="alert alert-danger">
+        {{ form.non_field_errors }}
+      </div>
+      {% elif form.errors %}
       <div class="alert alert-danger">
         <strong>We couldn't log you in.</strong>
         <p class="mb-0">Please check your username and password.</p>
@@ -37,7 +41,7 @@
         {% endif %}
         <div class="mb-3">
           <label for="id_username" class="form-label">Username</label>
-          <input type="text" name="username" id="id_username" class="form-control" autocomplete="username" required>
+          <input type="text" name="username" id="id_username" class="form-control" autocomplete="username" value="{{ form.username.value|default_if_none:'' }}" required>
         </div>
 
         <div class="mb-2">

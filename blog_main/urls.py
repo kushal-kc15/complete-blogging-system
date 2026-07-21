@@ -39,7 +39,7 @@ urlpatterns = [
     path('login/', views.Login, name='login'),
     path('logout/', views.Logout, name='logout'),
     path('accounts/', include('allauth.urls')),
-    path('password-reset/', auth_views.PasswordResetView.as_view(
+    path('password-reset/', views.RateLimitedPasswordResetView.as_view(
         template_name='password_reset_form.html',
         email_template_name='password_reset_email.html',
         subject_template_name='password_reset_subject.txt',
@@ -64,7 +64,8 @@ urlpatterns = [
     path('profile/edit/', views.edit_profile, name='edit_profile'),
     path('profile/change-password/', views.change_password, name='change_password'),
 
-    path('ckeditor5/', include('django_ckeditor_5.urls')),
+    path('ckeditor5/image_upload/', views.ckeditor_image_upload,
+         name='ck_editor_5_upload_file'),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps},
          name='django.contrib.sitemaps.views.sitemap'),
     path('feed/', LatestPostsFeed(), name='rss_feed'),

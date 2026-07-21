@@ -100,6 +100,7 @@ CKEDITOR_5_CONFIGS = {
     },
 }
 CKEDITOR_5_FILE_UPLOAD_PERMISSION = "authenticated"
+CK_EDITOR_5_UPLOAD_FILE_VIEW_NAME = 'ck_editor_5_upload_file'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -150,6 +151,12 @@ CACHES = {
         'LOCATION': 'inkspire-development',
     }
 }
+
+CONTACT_RATE_LIMIT = '5/h'
+COMMENT_RATE_LIMIT = '10/m'
+LOGIN_FAILURE_IP_RATE = '20/15m'
+LOGIN_FAILURE_IDENTITY_RATE = '5/15m'
+PASSWORD_RESET_RATE = '5/h'
 
 
 # Password validation

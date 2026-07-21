@@ -2,9 +2,16 @@ import importlib
 import os
 import sys
 from django.contrib.auth.models import User
+from django.contrib.auth.forms import AuthenticationForm
+from django.core import mail
+from django.http import HttpResponse
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.cache import cache
+from django.middleware.clickjacking import XFrameOptionsMiddleware
+from django.middleware.security import SecurityMiddleware
 from django.test import SimpleTestCase, TestCase, override_settings
+from django.test.client import RequestFactory
 from django.urls import reverse
 from django.utils import timezone
 from datetime import timedelta
@@ -15,6 +22,7 @@ from unittest.mock import patch
 
 from blogs.forms import ContactForm
 from blogs.models import Blog, Category, Contact, UserProfile
+from blog_main.middleware import SecurityHeadersMiddleware
 from .feeds import LatestPostsFeed
 
 
@@ -29,6 +37,12 @@ class Custom404Tests(TestCase):
 
 
 class ContactRouteTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def tearDown(self):
+        cache.clear()
+
     def test_contact_name_resolves_to_canonical_route(self):
         self.assertEqual(reverse('contact'), '/contact/')
 
@@ -112,6 +126,52 @@ class ContactRouteTests(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'This field is required.')
                 self.assertEqual(Contact.objects.count(), 0)
+
+
+class ContactRateLimitTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.url = reverse('contact')
+        self.data = {
+            'name': 'Reader',
+            'email': 'reader@example.com',
+            'subject': 'Question',
+            'message': 'Please help.',
+        }
+
+    def tearDown(self):
+        cache.clear()
+
+    def test_get_does_not_consume_the_contact_limit(self):
+        for _ in range(3):
+            self.assertEqual(self.client.get(self.url).status_code, 200)
+        for _ in range(5):
+            self.assertEqual(self.client.post(self.url, self.data).status_code, 302)
+        self.assertEqual(self.client.post(self.url, self.data).status_code, 429)
+
+    def test_contact_limit_blocks_the_sixth_post_with_feedback(self):
+        for _ in range(5):
+            self.client.post(self.url, self.data)
+        response = self.client.post(self.url, self.data)
+
+        self.assertEqual(response.status_code, 429)
+        self.assertContains(
+            response, 'Too many contact submissions.', status_code=429
+        )
+        self.assertGreater(int(response['Retry-After']), 0)
+        self.assertEqual(Contact.objects.count(), 5)
+
+    def test_invalid_contact_submissions_count_and_ips_have_separate_buckets(self):
+        invalid_data = self.data | {'email': 'invalid-email'}
+        self.assertEqual(self.client.post(self.url, invalid_data).status_code, 200)
+        for _ in range(4):
+            self.client.post(self.url, self.data)
+        self.assertEqual(self.client.post(self.url, self.data).status_code, 429)
+
+        response = self.client.post(
+            self.url, self.data, REMOTE_ADDR='203.0.113.10'
+        )
+        self.assertEqual(response.status_code, 302)
 
 
 class SEOOperationsTests(TestCase):
@@ -237,7 +297,7 @@ class AuthProfileCoreTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Upload a JPEG, PNG, or WebP avatar image.')
+        self.assertContains(response, 'Upload a JPEG, PNG, or WebP image.')
         self.user.profile.refresh_from_db()
         self.assertFalse(self.user.profile.avatar)
 
@@ -321,6 +381,173 @@ class AuthProfileCoreTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Continue with Google')
         self.assertContains(response, '/accounts/google/login/')
+
+
+class LoginRateLimitTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user(
+            username='reader', password='test-password'
+        )
+        self.url = reverse('login')
+
+    def tearDown(self):
+        cache.clear()
+
+    def failed_login(self, username='reader', *, remote_addr=None):
+        extra = {'REMOTE_ADDR': remote_addr} if remote_addr else {}
+        return self.client.post(
+            self.url,
+            {'username': username, 'password': 'wrong-password'},
+            **extra,
+        )
+
+    def test_get_requests_do_not_consume_failure_limits(self):
+        for _ in range(3):
+            self.assertEqual(self.client.get(self.url).status_code, 200)
+        for _ in range(5):
+            self.assertEqual(self.failed_login().status_code, 200)
+        self.assertEqual(self.failed_login().status_code, 429)
+
+    def test_successful_login_does_not_consume_failure_limits_or_change_next(self):
+        response = self.client.post(
+            self.url,
+            {
+                'username': 'reader',
+                'password': 'test-password',
+                'next': reverse('profile'),
+            },
+        )
+        self.assertRedirects(response, reverse('profile'))
+        self.client.logout()
+        for _ in range(5):
+            self.assertEqual(self.failed_login().status_code, 200)
+        self.assertEqual(self.failed_login().status_code, 429)
+
+    def test_identity_limit_returns_429_without_authenticating_or_echoing_password(self):
+        for _ in range(5):
+            self.assertEqual(self.failed_login().status_code, 200)
+        self.assertEqual(self.failed_login().status_code, 429)
+        with patch.object(AuthenticationForm, 'is_valid') as is_valid:
+            response = self.failed_login()
+
+        self.assertEqual(response.status_code, 429)
+        self.assertFalse(is_valid.called)
+        self.assertNotIn('_auth_user_id', self.client.session)
+        self.assertContains(
+            response,
+            'Too many unsuccessful login attempts. Please wait and try again.',
+            status_code=429,
+        )
+        self.assertGreater(int(response['Retry-After']), 0)
+        self.assertNotContains(response, 'wrong-password', status_code=429)
+
+    def test_username_normalization_and_ip_scoping(self):
+        for username in (' Reader ', 'READER', 'reader', 'Reader', ' reader '):
+            self.assertEqual(self.failed_login(username).status_code, 200)
+        self.assertEqual(self.failed_login('READER').status_code, 429)
+        self.assertEqual(
+            self.failed_login('reader', remote_addr='203.0.113.10').status_code,
+            200,
+        )
+
+    def test_different_identities_and_ips_have_separate_buckets(self):
+        for _ in range(5):
+            self.assertEqual(self.failed_login('first').status_code, 200)
+        self.assertEqual(self.failed_login('second').status_code, 200)
+
+        cache.clear()
+        for number in range(20):
+            self.assertEqual(self.failed_login(f'ip-test-{number}').status_code, 200)
+        self.assertEqual(self.failed_login('ip-test-blocked').status_code, 429)
+        self.assertEqual(
+            self.failed_login('ip-test-blocked', remote_addr='203.0.113.20').status_code,
+            200,
+        )
+
+    def test_unsafe_next_and_generic_invalid_credentials_behavior_remain(self):
+        response = self.client.post(
+            self.url,
+            {
+                'username': 'unknown-user',
+                'password': 'wrong-password',
+                'next': 'https://evil.example/profile',
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Please check your username and password.")
+        self.assertNotContains(response, 'unknown-user does not exist')
+
+
+class PasswordResetRateLimitTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user(
+            username='reset-reader',
+            email='reader@example.com',
+            password='test-password',
+        )
+        self.inactive_user = User.objects.create_user(
+            username='inactive-reader',
+            email='inactive@example.com',
+            password='test-password',
+            is_active=False,
+        )
+        self.url = reverse('password_reset')
+
+    def tearDown(self):
+        cache.clear()
+
+    def request_reset(self, email, *, remote_addr=None):
+        extra = {'REMOTE_ADDR': remote_addr} if remote_addr else {}
+        return self.client.post(self.url, {'email': email}, **extra)
+
+    def test_get_requests_do_not_consume_the_reset_limit(self):
+        for _ in range(3):
+            self.assertEqual(self.client.get(self.url).status_code, 200)
+        for _ in range(5):
+            self.assertRedirects(
+                self.request_reset('unknown@example.com'),
+                reverse('password_reset_done'),
+            )
+        self.assertEqual(self.request_reset('unknown@example.com').status_code, 429)
+
+    def test_known_unknown_and_inactive_emails_have_identical_outward_behavior(self):
+        responses = [
+            self.request_reset('reader@example.com'),
+            self.request_reset('unknown@example.com'),
+            self.request_reset('inactive@example.com'),
+        ]
+        for response in responses:
+            self.assertRedirects(response, reverse('password_reset_done'))
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_sixth_reset_request_is_limited_without_leaking_account_existence(self):
+        for _ in range(5):
+            self.assertRedirects(
+                self.request_reset('unknown@example.com'),
+                reverse('password_reset_done'),
+            )
+
+        existing_response = self.request_reset('reader@example.com')
+        unknown_response = self.request_reset('unknown@example.com')
+        for response in (existing_response, unknown_response):
+            self.assertEqual(response.status_code, 429)
+            self.assertContains(
+                response,
+                'Too many password reset requests. Please wait and try again.',
+                status_code=429,
+            )
+            self.assertGreater(int(response['Retry-After']), 0)
+
+    def test_different_ips_have_separate_reset_buckets(self):
+        for _ in range(5):
+            self.request_reset('unknown@example.com')
+        self.assertEqual(self.request_reset('unknown@example.com').status_code, 429)
+        self.assertRedirects(
+            self.request_reset('unknown@example.com', remote_addr='203.0.113.30'),
+            reverse('password_reset_done'),
+        )
 
 
 class ProductionSettingsTests(SimpleTestCase):
@@ -416,6 +643,64 @@ class ProductionSettingsTests(SimpleTestCase):
         self.assertTrue(production.SECURE_HSTS_PRELOAD)
         self.assertTrue(production.SECURE_CONTENT_TYPE_NOSNIFF)
         self.assertEqual(production.X_FRAME_OPTIONS, 'DENY')
+
+    def test_production_security_header_settings_are_configured(self):
+        production = self.load_production_settings()
+
+        self.assertEqual(
+            production.SECURE_REFERRER_POLICY,
+            'strict-origin-when-cross-origin',
+        )
+        self.assertEqual(production.SECURE_CROSS_ORIGIN_OPENER_POLICY, 'same-origin')
+        self.assertEqual(production.SECURE_CROSS_ORIGIN_RESOURCE_POLICY, 'same-origin')
+        self.assertIn("default-src 'self'", production.CONTENT_SECURITY_POLICY)
+        self.assertIn("script-src 'self' https://cdn.jsdelivr.net", production.CONTENT_SECURITY_POLICY)
+
+    def test_development_does_not_enable_production_hsts_or_csp_middleware(self):
+        development = importlib.import_module('blog_main.settings')
+
+        self.assertEqual(getattr(development, 'SECURE_HSTS_SECONDS', 0), 0)
+        self.assertNotIn(
+            'blog_main.middleware.SecurityHeadersMiddleware',
+            development.MIDDLEWARE,
+        )
+
+    @override_settings(
+        SECURE_HSTS_SECONDS=31536000,
+        SECURE_HSTS_INCLUDE_SUBDOMAINS=True,
+        SECURE_HSTS_PRELOAD=True,
+        SECURE_CONTENT_TYPE_NOSNIFF=True,
+        SECURE_REFERRER_POLICY='strict-origin-when-cross-origin',
+        SECURE_CROSS_ORIGIN_OPENER_POLICY='same-origin',
+        SECURE_CROSS_ORIGIN_RESOURCE_POLICY='same-origin',
+        X_FRAME_OPTIONS='DENY',
+        CONTENT_SECURITY_POLICY=(
+            "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net"
+        ),
+    )
+    def test_production_security_headers_are_returned_and_hsts_is_secure_only(self):
+        handler = SecurityMiddleware(
+            XFrameOptionsMiddleware(SecurityHeadersMiddleware(HttpResponse))
+        )
+        factory = RequestFactory()
+
+        secure_response = handler(factory.get('/', secure=True))
+        insecure_response = handler(factory.get('/'))
+
+        self.assertEqual(secure_response['X-Frame-Options'], 'DENY')
+        self.assertEqual(secure_response['X-Content-Type-Options'], 'nosniff')
+        self.assertEqual(
+            secure_response['Referrer-Policy'], 'strict-origin-when-cross-origin'
+        )
+        self.assertEqual(
+            secure_response['Permissions-Policy'],
+            'geolocation=(), microphone=(), camera=(), payment=(), usb=()',
+        )
+        self.assertIn("default-src 'self'", secure_response['Content-Security-Policy'])
+        self.assertEqual(secure_response['Cross-Origin-Opener-Policy'], 'same-origin')
+        self.assertEqual(secure_response['Cross-Origin-Resource-Policy'], 'same-origin')
+        self.assertIn('Strict-Transport-Security', secure_response)
+        self.assertNotIn('Strict-Transport-Security', insecure_response)
 
     def test_development_uses_sqlite_and_production_requires_postgresql(self):
         development = importlib.import_module('blog_main.settings')

@@ -1,6 +1,10 @@
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
+from io import BytesIO
+from PIL import Image
 from django.utils import timezone
 from datetime import timedelta
 from pathlib import Path
@@ -8,6 +12,7 @@ from pathlib import Path
 from .forms import BlogAdminForm, CommentForm
 from .models import Blog, Bookmark, Category, Comment, Like, UserProfile
 from .sanitizers import sanitize_rich_text
+from blog_main.forms import UserProfileForm
 
 
 class EngagementSecurityTests(TestCase):
@@ -190,6 +195,113 @@ class EngagementSecurityTests(TestCase):
 
         self.assertRedirects(response, f'{reverse("login")}?next={detail_url}')
         self.assertFalse(Comment.objects.filter(comment='Anonymous comment').exists())
+
+
+class UploadEndpointSecurityTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='upload-user', password='test-password'
+        )
+        self.profile = UserProfile.objects.create(user=self.user)
+
+    def image_bytes(self, image_format):
+        image = Image.new('RGB', (1, 1), color='white')
+        buffer = BytesIO()
+        image.save(buffer, format=image_format)
+        return buffer.getvalue()
+
+    def test_avatar_uses_the_shared_validator(self):
+        spoofed_avatar = SimpleUploadedFile(
+            'avatar.jpg', self.image_bytes('PNG'), content_type='image/jpeg'
+        )
+        form = UserProfileForm(
+            data={'first_name': '', 'last_name': '', 'email': '', 'bio': '',
+                  'website': '', 'location': ''},
+            files={'avatar': spoofed_avatar},
+            instance=self.profile,
+            user=self.user,
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('avatar', form.errors)
+
+    def test_ckeditor_endpoint_rejects_invalid_image_before_storage(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse('ck_editor_5_upload_file'),
+            {'upload': SimpleUploadedFile(
+                'unsafe.svg', b'<svg></svg>', content_type='image/svg+xml'
+            )},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('JPEG, PNG, or WebP', response.json()['error']['message'])
+
+
+class CommentRateLimitTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user(username='commenter', password='test-password')
+        self.other_user = User.objects.create_user(username='other-commenter', password='test-password')
+        self.category = Category.objects.create(name='Rate limits')
+        self.post = Blog.objects.create(
+            title='Rate Limited Post', slug='rate-limited-post', category=self.category,
+            author=self.user, short_description='Summary', blog_body='<p>Body</p>',
+            status='published',
+        )
+        self.url = reverse('Blog_detail', args=[self.post.slug])
+        self.client.force_login(self.user)
+
+    def tearDown(self):
+        cache.clear()
+
+    def test_get_does_not_consume_the_comment_limit(self):
+        for _ in range(3):
+            self.assertEqual(self.client.get(self.url).status_code, 200)
+        for number in range(10):
+            self.assertEqual(
+                self.client.post(self.url, {'comment': f'Comment {number}'}).status_code,
+                302,
+            )
+        self.assertEqual(self.client.post(self.url, {'comment': 'Blocked'}).status_code, 429)
+
+    def test_comment_limit_blocks_the_eleventh_post_with_feedback(self):
+        for number in range(10):
+            self.client.post(self.url, {'comment': f'Comment {number}'})
+        response = self.client.post(self.url, {'comment': 'Blocked comment'})
+
+        self.assertEqual(response.status_code, 429)
+        self.assertContains(
+            response, 'Too many comment submissions.', status_code=429
+        )
+        self.assertContains(response, 'Blocked comment', status_code=429)
+        self.assertGreater(int(response['Retry-After']), 0)
+        self.assertFalse(Comment.objects.filter(comment='Blocked comment').exists())
+
+    def test_invalid_comment_and_parent_submissions_count(self):
+        self.assertEqual(self.client.post(self.url, {'comment': '   '}).status_code, 200)
+        for number in range(9):
+            self.client.post(
+                self.url,
+                {'comment': f'Invalid parent {number}', 'parent_id': 'not-an-id'},
+            )
+        self.assertEqual(self.client.post(self.url, {'comment': 'Blocked'}).status_code, 429)
+
+    def test_authenticated_users_have_separate_comment_buckets(self):
+        for number in range(10):
+            self.client.post(self.url, {'comment': f'Comment {number}'})
+        self.assertEqual(self.client.post(self.url, {'comment': 'Blocked'}).status_code, 429)
+
+        self.client.force_login(self.other_user)
+        self.assertEqual(
+            self.client.post(self.url, {'comment': 'Other user comment'}).status_code,
+            302,
+        )
+
+    def test_anonymous_post_redirects_without_consuming_a_user_bucket(self):
+        self.client.logout()
+        response = self.client.post(self.url, {'comment': 'Anonymous comment'})
+        self.assertRedirects(response, f'{reverse("login")}?next={self.url}')
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.post(self.url, {'comment': 'Authenticated'}).status_code, 302)
 
 
 class PublicationDateTests(TestCase):

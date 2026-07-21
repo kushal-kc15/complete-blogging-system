@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import Http404, HttpResponse, JsonResponse
+from django.conf import settings
 from django.contrib.auth.models import User
 from .models import Blog, Category, Comment, Like, Bookmark, Contact, UserProfile
 from django.db.models import F, Q
@@ -9,10 +10,30 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.urls import reverse
+from django_ratelimit.core import get_usage
+from math import ceil
 from .forms import CommentForm, ContactForm
 
 
 # Create your views here.
+
+
+def _rate_limit_usage(request, *, group, key, rate):
+    return get_usage(
+        request,
+        group=group,
+        key=key,
+        rate=rate,
+        method=('POST',),
+        increment=True,
+    )
+
+
+def _add_retry_after(response, usage):
+    time_left = usage.get('time_left') if usage else None
+    if time_left and time_left > 0:
+        response['Retry-After'] = str(max(1, ceil(time_left)))
+    return response
 
 
 def Posts_by_category(request, category_id):
@@ -77,12 +98,25 @@ def BlogDetail(request, slug):
     ).exclude(id=post.id).order_by('-created_at')[:3]
 
     comment_form = CommentForm()
+    rate_limited = False
+    rate_limit_usage = None
     if request.method == 'POST' and not is_preview:
         if not request.user.is_authenticated:
             return redirect(f"{reverse('login')}?next={request.path}")
 
         comment_form = CommentForm(request.POST)
-        if comment_form.is_valid():
+        rate_limit_usage = _rate_limit_usage(
+            request,
+            group='comment-submit',
+            key='user',
+            rate=settings.COMMENT_RATE_LIMIT,
+        )
+        if rate_limit_usage and rate_limit_usage['should_limit']:
+            comment_form.add_error(
+                None, 'Too many comment submissions. Please try again shortly.'
+            )
+            rate_limited = True
+        elif comment_form.is_valid():
             parent = None
             parent_id = (request.POST.get('parent_id') or '').strip()
             if parent_id:
@@ -117,7 +151,12 @@ def BlogDetail(request, slug):
         'is_preview': is_preview,
         'comment_form': comment_form,
     }
-    return render(request, 'blog_detail.html', context)
+    response = render(
+        request, 'blog_detail.html', context, status=429 if rate_limited else 200
+    )
+    if rate_limited:
+        return _add_retry_after(response, rate_limit_usage)
+    return response
 
 
 @login_required(login_url='login')
@@ -178,6 +217,18 @@ def my_bookmarks(request):
 def contact(request):
     if request.method == 'POST':
         form = ContactForm(request.POST)
+        rate_limit_usage = _rate_limit_usage(
+            request,
+            group='contact-submit',
+            key='ip',
+            rate=settings.CONTACT_RATE_LIMIT,
+        )
+        if rate_limit_usage and rate_limit_usage['should_limit']:
+            form.add_error(
+                None, 'Too many contact submissions. Please try again shortly.'
+            )
+            response = render(request, 'contact.html', {'form': form}, status=429)
+            return _add_retry_after(response, rate_limit_usage)
         if form.is_valid():
             form.save()
             messages.success(

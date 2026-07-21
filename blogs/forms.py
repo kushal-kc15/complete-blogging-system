@@ -2,6 +2,7 @@ from django import forms
 
 from .models import Blog, Comment, Contact
 from .sanitizers import has_meaningful_rich_text, sanitize_rich_text
+from .validators import validate_image_upload
 
 
 class RichTextSanitizingFormMixin:
@@ -18,6 +19,12 @@ class BlogAdminForm(RichTextSanitizingFormMixin, forms.ModelForm):
     class Meta:
         model = Blog
         fields = '__all__'
+
+    def clean_featured_image(self):
+        image = self.cleaned_data.get('featured_image')
+        if not image or isinstance(image, str):
+            return image
+        return validate_image_upload(image)
 
 
 class ContactForm(forms.ModelForm):

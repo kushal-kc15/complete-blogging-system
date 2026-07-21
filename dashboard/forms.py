@@ -4,6 +4,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django_ckeditor_5.widgets import CKEditor5Widget
 from blogs.forms import RichTextSanitizingFormMixin
+from blogs.validators import MAX_IMAGE_SIZE, validate_image_upload
 
 
 class CategoryForm(forms.ModelForm):
@@ -18,9 +19,7 @@ class CategoryForm(forms.ModelForm):
 
 
 class BlogForm(RichTextSanitizingFormMixin, forms.ModelForm):
-    MAX_FEATURED_IMAGE_SIZE = 3 * 1024 * 1024
-    ALLOWED_FEATURED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
-    ALLOWED_FEATURED_IMAGE_FORMATS = {'JPEG', 'PNG', 'WEBP'}
+    MAX_FEATURED_IMAGE_SIZE = MAX_IMAGE_SIZE
 
     class Meta:
         model = Blog
@@ -71,23 +70,7 @@ class BlogForm(RichTextSanitizingFormMixin, forms.ModelForm):
         image = self.cleaned_data.get('featured_image')
         if not image or isinstance(image, str):
             return image
-
-        content_type = getattr(image, 'content_type', '')
-        image_format = getattr(getattr(image, 'image', None), 'format', '')
-        if (
-            content_type not in self.ALLOWED_FEATURED_IMAGE_TYPES or
-            image_format not in self.ALLOWED_FEATURED_IMAGE_FORMATS
-        ):
-            raise forms.ValidationError(
-                'Upload a JPEG, PNG, or WebP image.'
-            )
-
-        if image.size > self.MAX_FEATURED_IMAGE_SIZE:
-            raise forms.ValidationError(
-                'Featured image must be 3 MB or smaller.'
-            )
-
-        return image
+        return validate_image_upload(image)
 
 
 class AddUserForm(UserCreationForm):

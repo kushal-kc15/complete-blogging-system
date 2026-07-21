@@ -1,12 +1,15 @@
 from django.contrib.auth.models import Permission, User
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.exceptions import ValidationError
 from django.db.models.deletion import PROTECT, ProtectedError
 from django.test import TestCase
 from io import BytesIO
 from PIL import Image
 from django.urls import reverse
+from unittest.mock import patch
 
 from blogs.models import Blog, Category, Comment, Contact
+from blogs.validators import validate_image_upload
 from dashboard.forms import AddUserForm, BlogForm, EditUserForm
 
 
@@ -183,7 +186,10 @@ class BlogFormImageValidationTests(TestCase):
         )
         form = BlogForm(data=self.valid_data, files={'featured_image': upload})
         self.assertFalse(form.is_valid())
-        self.assertIn('Upload a JPEG, PNG, or WebP image.', form.errors['featured_image'])
+        self.assertIn(
+            'Upload a JPEG, PNG, or WebP image with a valid extension.',
+            form.errors['featured_image'],
+        )
 
     def test_rejects_oversized_featured_image(self):
         upload = SimpleUploadedFile(
@@ -193,7 +199,87 @@ class BlogFormImageValidationTests(TestCase):
         )
         form = BlogForm(data=self.valid_data, files={'featured_image': upload})
         self.assertFalse(form.is_valid())
-        self.assertIn('Featured image must be 3 MB or smaller.', form.errors['featured_image'])
+        self.assertIn('Image must be 5 MB or smaller.', form.errors['featured_image'])
+
+    def test_accepts_each_allowed_image_format(self):
+        formats = (
+            ('article.jpg', 'JPEG', 'image/jpeg'),
+            ('article.png', 'PNG', 'image/png'),
+            ('article.webp', 'WEBP', 'image/webp'),
+        )
+        for name, image_format, content_type in formats:
+            with self.subTest(image_format=image_format):
+                upload = SimpleUploadedFile(
+                    name, self.image_bytes(image_format), content_type=content_type
+                )
+                form = BlogForm(data=self.valid_data, files={'featured_image': upload})
+                self.assertTrue(form.is_valid(), form.errors)
+
+    def test_rejects_invalid_and_spoofed_extensions(self):
+        invalid_extension = SimpleUploadedFile(
+            'article.gif', self.image_bytes('PNG'), content_type='image/png'
+        )
+        spoofed_extension = SimpleUploadedFile(
+            'article.jpg', self.image_bytes('PNG'), content_type='image/jpeg'
+        )
+        for upload in (invalid_extension, spoofed_extension):
+            with self.subTest(name=upload.name):
+                form = BlogForm(data=self.valid_data, files={'featured_image': upload})
+                self.assertFalse(form.is_valid())
+                self.assertIn('featured_image', form.errors)
+
+    def test_rejects_corrupted_and_excessive_dimension_images(self):
+        corrupted = SimpleUploadedFile(
+            'article.png', b'not an image', content_type='image/png'
+        )
+        form = BlogForm(data=self.valid_data, files={'featured_image': corrupted})
+        self.assertFalse(form.is_valid())
+        self.assertIn('featured_image', form.errors)
+
+        image = Image.new('RGB', (5001, 1), color='white')
+        buffer = BytesIO()
+        image.save(buffer, format='PNG')
+        oversized_dimensions = SimpleUploadedFile(
+            'wide.png', buffer.getvalue(), content_type='image/png'
+        )
+        form = BlogForm(
+            data=self.valid_data, files={'featured_image': oversized_dimensions}
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            'Image dimensions must not exceed 5000 × 5000 pixels.',
+            form.errors['featured_image'],
+        )
+
+    def test_decompression_bomb_warning_is_rejected(self):
+        upload = SimpleUploadedFile(
+            'article.png', self.image_bytes('PNG'), content_type='image/png'
+        )
+        with patch(
+            'blogs.validators.Image.open',
+            side_effect=Image.DecompressionBombWarning('bomb'),
+        ):
+            with self.assertRaisesMessage(
+                ValidationError, 'Image could not be processed safely.'
+            ):
+                validate_image_upload(upload)
+
+    def test_edit_form_accepts_a_valid_replacement_image(self):
+        author = User.objects.create_user(username='image-author')
+        post = Blog.objects.create(
+            title='Existing image post', slug='existing-image-post',
+            category=self.category, author=author, short_description='Description',
+            blog_body='<p>Body</p>', status='draft',
+        )
+        upload = SimpleUploadedFile(
+            'replacement.webp', self.image_bytes('WEBP'), content_type='image/webp'
+        )
+        form = BlogForm(
+            data=self.valid_data | {'title': post.title},
+            files={'featured_image': upload},
+            instance=post,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
 
     def test_rejects_content_that_is_empty_after_sanitization(self):
         data = self.valid_data | {'blog_body': '<script>alert(1)</script><p><br></p>'}

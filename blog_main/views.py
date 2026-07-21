@@ -1,14 +1,25 @@
+from math import ceil
+
+from django.conf import settings
 from django.http import HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .forms import RegisterForm, UserProfileForm, ChangePasswordForm
 from blogs.models import Category, Blog, UserProfile
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.views import PasswordResetView
 from django.contrib import auth
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.utils.http import url_has_allowed_host_and_scheme
+from django_ratelimit.core import get_usage
+from django.core.exceptions import ValidationError
+from django.views.decorators.http import require_POST
+from django_ckeditor_5.permissions import check_upload_permission
+from django_ckeditor_5.views import get_storage_class
+from blogs.validators import validate_image_upload
 
 
 # from django.http import HttpResponse
@@ -31,6 +42,22 @@ def robots_txt(request):
         'Sitemap: {}://{}/sitemap.xml'.format(request.scheme, request.get_host()),
     ]
     return HttpResponse('\n'.join(lines), content_type='text/plain')
+
+
+@require_POST
+@check_upload_permission
+def ckeditor_image_upload(request):
+    upload = request.FILES.get('upload')
+    if not upload:
+        return JsonResponse({'error': {'message': 'No image was uploaded.'}}, status=400)
+    try:
+        validate_image_upload(upload)
+    except ValidationError as exc:
+        return JsonResponse({'error': {'message': exc.messages[0]}}, status=400)
+
+    storage = get_storage_class()()
+    filename = storage.save(upload.name, upload)
+    return JsonResponse({'url': storage.url(filename)})
 
 
 def home(request):
@@ -73,10 +100,102 @@ def Register(request):
     return render(request, 'register.html', context)
 
 
+def _normalized_login_identifier(request):
+    value = request.POST.get('username', '')
+    try:
+        value = str(value)
+    except (TypeError, ValueError):
+        value = ''
+    return value.strip().casefold() or '<missing>'
+
+
+def _login_identity_key(group, request):
+    client_ip = request.META.get('REMOTE_ADDR', '')
+    return f'{client_ip}:{_normalized_login_identifier(request)}'
+
+
+def _login_rate_usage(request, *, group, key, rate, increment):
+    return get_usage(
+        request,
+        group=group,
+        key=key,
+        rate=rate,
+        method=('POST',),
+        increment=increment,
+    )
+
+
+def _login_rate_limited_response(request, form, next_url, usages):
+    form.add_error(
+        None, 'Too many unsuccessful login attempts. Please wait and try again.'
+    )
+    response = render(
+        request,
+        'login.html',
+        {'form': form, 'next': next_url, 'login_rate_limited': True},
+        status=429,
+    )
+    time_left = max(
+        (usage.get('time_left', 0) for usage in usages if usage), default=0
+    )
+    if time_left > 0:
+        response['Retry-After'] = str(max(1, ceil(time_left)))
+    return response
+
+
+class RateLimitedPasswordResetView(PasswordResetView):
+    def post(self, request, *args, **kwargs):
+        usage = get_usage(
+            request,
+            group='password-reset-request',
+            key='ip',
+            rate=settings.PASSWORD_RESET_RATE,
+            method=('POST',),
+            increment=True,
+        )
+        if usage and usage['should_limit']:
+            form = self.get_form()
+            form.add_error(
+                None, 'Too many password reset requests. Please wait and try again.'
+            )
+            response = self.render_to_response(
+                self.get_context_data(form=form), status=429
+            )
+            time_left = usage.get('time_left', 0)
+            if time_left > 0:
+                response['Retry-After'] = str(max(1, ceil(time_left)))
+            return response
+        return super().post(request, *args, **kwargs)
+
+
 def Login(request):
     next_url = request.POST.get('next') or request.GET.get('next') or ''
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
+        identifier = _normalized_login_identifier(request)
+        has_identifier = identifier != '<missing>'
+        has_password = bool(request.POST.get('password'))
+        usages = []
+
+        if has_identifier:
+            usages.append(_login_rate_usage(
+                request,
+                group='login-failure-ip',
+                key='ip',
+                rate=settings.LOGIN_FAILURE_IP_RATE,
+                increment=False,
+            ))
+        if has_identifier and has_password:
+            usages.append(_login_rate_usage(
+                request,
+                group='login-failure-identity',
+                key=_login_identity_key,
+                rate=settings.LOGIN_FAILURE_IDENTITY_RATE,
+                increment=False,
+            ))
+        if any(usage and usage['should_limit'] for usage in usages):
+            return _login_rate_limited_response(request, form, next_url, usages)
+
         if form.is_valid():
             user = form.get_user()
             if user is not None:
@@ -90,11 +209,32 @@ def Login(request):
                 return redirect('home')
             else:
                 messages.error(request, 'Invalid username or password')
+        elif has_identifier:
+            usages = [
+                _login_rate_usage(
+                    request,
+                    group='login-failure-ip',
+                    key='ip',
+                    rate=settings.LOGIN_FAILURE_IP_RATE,
+                    increment=True,
+                )
+            ]
+            if has_password:
+                usages.append(_login_rate_usage(
+                    request,
+                    group='login-failure-identity',
+                    key=_login_identity_key,
+                    rate=settings.LOGIN_FAILURE_IDENTITY_RATE,
+                    increment=True,
+                ))
+            if any(usage and usage['should_limit'] for usage in usages):
+                return _login_rate_limited_response(request, form, next_url, usages)
     else:
         form = AuthenticationForm()
     context = {
         'form': form,
         'next': next_url,
+        'login_rate_limited': False,
     }
     return render(request, 'login.html', context)
 
