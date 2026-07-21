@@ -1,0 +1,19 @@
+{% if page_obj.has_other_pages %}
+<nav aria-label="{% if aria_label_prefix %}{{ aria_label_prefix }} posts pagination{% else %}{{ aria_label }}{% endif %}" class="{{ nav_class }}">
+  <ul class="pagination pagination-clean{% if justify_center %} justify-content-center{% endif %}">
+    {% if page_obj.has_previous %}
+    <li class="page-item"><a class="page-link" href="?{% if keyword %}keyword={{ keyword|urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">&laquo; Previous</a></li>
+    {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+    {% if page_obj.number == num %}
+    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+    <li class="page-item"><a class="page-link" href="?{% if keyword %}keyword={{ keyword|urlencode }}&{% endif %}page={{ num }}">{{ num }}</a></li>
+    {% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}
+    <li class="page-item"><a class="page-link" href="?{% if keyword %}keyword={{ keyword|urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">Next &raquo;</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}

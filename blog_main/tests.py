@@ -20,9 +20,13 @@ from pathlib import Path
 from PIL import Image
 from unittest.mock import patch
 
+from django.test.utils import CaptureQueriesContext
+from django.db import connection
+
 from blogs.forms import ContactForm
 from blogs.models import Blog, Category, Contact, UserProfile
 from blog_main.middleware import SecurityHeadersMiddleware
+from blog_main.views import HOME_FEATURED_POST_LIMIT, HOME_TOP_CATEGORIES_LIMIT
 from .feeds import LatestPostsFeed
 
 
@@ -32,7 +36,7 @@ class Custom404Tests(TestCase):
         response = self.client.get('/route-that-does-not-exist-404/')
 
         self.assertEqual(response.status_code, 404)
-        self.assertContains(response, 'Go back home', status_code=404)
+        self.assertContains(response, 'Go to homepage', status_code=404)
         self.assertNotContains(response, 'youâ€™re', status_code=404)
 
 
@@ -126,6 +130,191 @@ class ContactRouteTests(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'This field is required.')
                 self.assertEqual(Contact.objects.count(), 0)
+
+
+class HomeViewTests(TestCase):
+    def setUp(self):
+        self.author = User.objects.create_user(
+            username='home-author', password='test-password'
+        )
+        self.category = Category.objects.create(name='Home Category')
+
+    def _create_post(self, *, slug, is_featured, status='published'):
+        return Blog.objects.create(
+            title=f'Post {slug}',
+            slug=slug,
+            category=self.category,
+            author=self.author,
+            short_description='A short description',
+            blog_body='<p>Body</p>',
+            status=status,
+            is_featured=is_featured,
+        )
+
+    def test_home_returns_200_when_empty(self):
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'home.html')
+        # Locked behavior: with zero featured posts, the hero and
+        # secondary-featured sections are omitted entirely rather than
+        # rendering an empty-state placeholder in their place.
+        self.assertNotContains(response, 'Featured story')
+        self.assertContains(response, 'No posts yet')
+
+    def test_home_shows_featured_and_latest_sections(self):
+        self._create_post(slug='featured-post', is_featured=True)
+        self._create_post(slug='latest-post', is_featured=False)
+        # A draft must never appear on the public homepage.
+        self._create_post(slug='draft-post', is_featured=False, status='draft')
+
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Post featured-post')
+        self.assertContains(response, 'Post latest-post')
+        self.assertNotContains(response, 'Post draft-post')
+
+    def test_home_featured_posts_are_limited(self):
+        for index in range(HOME_FEATURED_POST_LIMIT + 5):
+            self._create_post(slug=f'featured-{index}', is_featured=True)
+
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['featured_post']), HOME_FEATURED_POST_LIMIT)
+
+    def test_home_query_count_does_not_grow_with_post_count(self):
+        # Guard against N+1 queries on author/category access without
+        # asserting a brittle exact count: the number of queries for a
+        # larger set of posts should not exceed the count for a smaller
+        # set, which would indicate a per-row query.
+        for index in range(3):
+            self._create_post(slug=f'small-featured-{index}', is_featured=True)
+            self._create_post(slug=f'small-latest-{index}', is_featured=False)
+
+        with CaptureQueriesContext(connection) as small_queries:
+            response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+
+        for index in range(3, 15):
+            self._create_post(slug=f'big-featured-{index}', is_featured=True)
+            self._create_post(slug=f'big-latest-{index}', is_featured=False)
+
+        with CaptureQueriesContext(connection) as big_queries:
+            response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+
+        self.assertLessEqual(len(big_queries), len(small_queries) + 5)
+
+    def test_top_categories_present_in_homepage_context(self):
+        self._create_post(slug='top-category-post', is_featured=False)
+
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('top_categories', response.context)
+
+    def test_top_categories_ordered_by_published_post_count_descending(self):
+        busy_category = Category.objects.create(name='Busy Category')
+        quiet_category = Category.objects.create(name='Quiet Category')
+        for index in range(3):
+            Blog.objects.create(
+                title=f'Busy post {index}', slug=f'busy-post-{index}',
+                category=busy_category, author=self.author,
+                short_description='Summary', blog_body='<p>Body</p>',
+                status='published',
+            )
+        Blog.objects.create(
+            title='Quiet post', slug='quiet-post', category=quiet_category,
+            author=self.author, short_description='Summary',
+            blog_body='<p>Body</p>', status='published',
+        )
+
+        response = self.client.get(reverse('home'))
+        names = [category.name for category in response.context['top_categories']]
+
+        self.assertEqual(names, ['Busy Category', 'Quiet Category'])
+
+    def test_top_categories_alphabetical_tie_break_on_equal_count(self):
+        zebra_category = Category.objects.create(name='Zebra Category')
+        apple_category = Category.objects.create(name='Apple Category')
+        Blog.objects.create(
+            title='Zebra post', slug='zebra-post', category=zebra_category,
+            author=self.author, short_description='Summary',
+            blog_body='<p>Body</p>', status='published',
+        )
+        Blog.objects.create(
+            title='Apple post', slug='apple-post', category=apple_category,
+            author=self.author, short_description='Summary',
+            blog_body='<p>Body</p>', status='published',
+        )
+
+        response = self.client.get(reverse('home'))
+        names = [category.name for category in response.context['top_categories']]
+
+        # Both categories have exactly one published post; the alphabetical
+        # tie-break must place 'Apple Category' before 'Zebra Category'.
+        self.assertEqual(names, ['Apple Category', 'Zebra Category'])
+
+    def test_top_categories_excludes_draft_posts_from_count(self):
+        category = Category.objects.create(name='Mixed Status Category')
+        Blog.objects.create(
+            title='Published post', slug='mixed-published', category=category,
+            author=self.author, short_description='Summary',
+            blog_body='<p>Body</p>', status='published',
+        )
+        Blog.objects.create(
+            title='Draft post', slug='mixed-draft', category=category,
+            author=self.author, short_description='Summary',
+            blog_body='<p>Body</p>', status='draft',
+        )
+
+        response = self.client.get(reverse('home'))
+        top_categories = {
+            category.name: category.published_post_count
+            for category in response.context['top_categories']
+        }
+
+        self.assertEqual(top_categories['Mixed Status Category'], 1)
+
+    def test_top_categories_excludes_categories_with_zero_published_posts(self):
+        Category.objects.create(name='Draft Only Category')
+        published_category = Category.objects.create(name='Published Category')
+        Blog.objects.create(
+            title='Draft only post', slug='draft-only-post',
+            category=Category.objects.get(name='Draft Only Category'),
+            author=self.author, short_description='Summary',
+            blog_body='<p>Body</p>', status='draft',
+        )
+        Blog.objects.create(
+            title='Published post', slug='published-post-only',
+            category=published_category, author=self.author,
+            short_description='Summary', blog_body='<p>Body</p>',
+            status='published',
+        )
+
+        response = self.client.get(reverse('home'))
+        names = [category.name for category in response.context['top_categories']]
+
+        self.assertIn('Published Category', names)
+        self.assertNotIn('Draft Only Category', names)
+
+    def test_top_categories_limited_to_eight(self):
+        for index in range(HOME_TOP_CATEGORIES_LIMIT + 5):
+            category = Category.objects.create(name=f'Category {index:02d}')
+            Blog.objects.create(
+                title=f'Post {index}', slug=f'category-post-{index}',
+                category=category, author=self.author,
+                short_description='Summary', blog_body='<p>Body</p>',
+                status='published',
+            )
+
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(
+            len(response.context['top_categories']), HOME_TOP_CATEGORIES_LIMIT
+        )
 
 
 class ContactRateLimitTests(TestCase):
@@ -297,7 +486,9 @@ class AuthProfileCoreTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Upload a JPEG, PNG, or WebP image.')
+        self.assertContains(
+            response, 'Upload a JPEG, PNG, or WebP image with a valid extension.'
+        )
         self.user.profile.refresh_from_db()
         self.assertFalse(self.user.profile.avatar)
 

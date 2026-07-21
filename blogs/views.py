@@ -3,7 +3,7 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.conf import settings
 from django.contrib.auth.models import User
 from .models import Blog, Category, Comment, Like, Bookmark, Contact, UserProfile
-from django.db.models import F, Q
+from django.db.models import Count, F, Q
 from django.db.models import Prefetch
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
@@ -37,9 +37,13 @@ def _add_retry_after(response, usage):
 
 
 def Posts_by_category(request, category_id):
-    # fetch the post that belongs to the category with the id category_id
+    # fetch the post that belongs to the category with the id category_id.
+    # partials/post_card.html renders post.author.username and post.category
+    # for every post in the list, so select_related avoids a query per post
+    # per relation instead of a query per row.
     posts_list = Blog.objects.published().filter(
-        category=category_id).order_by('-created_at')
+        category=category_id
+    ).select_related('author', 'category').order_by('-created_at')
     category = get_object_or_404(Category, id=category_id)
 
     # Pagination
@@ -54,8 +58,31 @@ def Posts_by_category(request, category_id):
     return render(request, 'posts_by_category.html', context)
 
 
+def category_index(request):
+    # Every category, alphabetically, each annotated with a count of its
+    # published posts. The filtered Count only counts related Blog rows
+    # with status='published', so draft posts never inflate a category's
+    # displayed count. No select_related/prefetch_related is needed here:
+    # the template only renders each category's own fields (name) plus the
+    # annotated count, with no other related object accessed per row.
+    categories = Category.objects.annotate(
+        published_post_count=Count(
+            'blog', filter=Q(blog__status='published')
+        )
+    ).order_by('name')
+
+    context = {
+        'categories': categories,
+    }
+    return render(request, 'categories.html', context)
+
+
 def BlogDetail(request, slug):
-    post = get_object_or_404(Blog, slug=slug)
+    # The template renders post.author and post.category (name, id, url)
+    # directly, so select_related avoids a separate query for each.
+    post = get_object_or_404(
+        Blog.objects.select_related('author', 'category'), slug=slug
+    )
     is_preview = post.status != 'published'
     can_preview = (
         request.user.is_authenticated and (
@@ -72,11 +99,17 @@ def BlogDetail(request, slug):
         Blog.objects.filter(pk=post.pk).update(views=F('views') + 1)
         post.refresh_from_db(fields=['views'])
 
-    # Get comments (only parent comments, replies are fetched via related_name)
-    visible_replies = Comment.objects.filter(is_visible=True).order_by('created_at')
+    # Get comments (only parent comments, replies are fetched via related_name).
+    # The template renders comment.user.username and reply.user.username for
+    # every comment and reply, so select_related('user') on both querysets
+    # avoids a query per comment/reply. Replies are still fetched in a single
+    # extra query via prefetch_related rather than per-parent-comment queries.
+    visible_replies = Comment.objects.filter(
+        is_visible=True
+    ).select_related('user').order_by('created_at')
     comments = Comment.objects.filter(
         blog=post, parent=None, is_visible=True
-    ).prefetch_related(
+    ).select_related('user').prefetch_related(
         Prefetch('replies', queryset=visible_replies, to_attr='visible_replies')
     ).order_by('-created_at')
     comment_count = Comment.objects.filter(
@@ -92,10 +125,15 @@ def BlogDetail(request, slug):
         user_has_bookmarked = Bookmark.objects.filter(
             user=request.user, blog=post).exists()
 
-    # Related posts (same category, excluding current post)
+    # Related posts (same category, excluding current post). The related
+    # card only renders fields on the post itself today, but select_related
+    # keeps this queryset consistent with other post listings and avoids a
+    # query per related post if the card ever renders author/category.
     related_posts = Blog.objects.published().filter(
         category=post.category
-    ).exclude(id=post.id).order_by('-created_at')[:3]
+    ).exclude(id=post.id).select_related(
+        'author', 'category'
+    ).order_by('-created_at')[:3]
 
     comment_form = CommentForm()
     rate_limited = False

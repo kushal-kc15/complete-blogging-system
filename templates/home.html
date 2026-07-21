@@ -10,142 +10,82 @@
 {% block twitter_description %}Read thoughtful stories, practical guides, and fresh perspectives from InkSpire writers.{% endblock %}
 
 {% block content %}
-<section class="discovery-hero">
+
+{% if featured_post %}
+<section class="discovery-section">
   <div class="container">
-    {% for post in featured_post %}
-    {% if forloop.first %}
-    <div class="hero-card {% if post.featured_image %}hero-card--image{% endif %}"
-      {% if post.featured_image %}style="background-image: linear-gradient(90deg, rgba(15, 18, 22, .88), rgba(15, 18, 22, .42)), url('{{ post.featured_image.url }}');"{% endif %}>
-      <div class="hero-content">
-        <span class="eyebrow">Featured story</span>
-        <h1>{{ post.title }}</h1>
-        <p>{{ post.short_description|truncatewords:24 }}</p>
-        <div class="post-meta-line text-white-50">
-          <span>{{ post.effective_published_at|timesince }} ago</span>
-          <a href="{% url 'author_profile' post.author.username %}" class="text-white-50">{{ post.author.get_full_name|default:post.author.username }}</a>
-          <span><i class="fa fa-clock-o"></i> {{ post.reading_time }} min read</span>
-        </div>
-        <a href="{% url 'Blog_detail' post.slug %}" class="btn btn-warning mt-4">Continue reading</a>
-      </div>
-    </div>
-    {% endif %}
-    {% empty %}
-    <div class="hero-card">
-      <div class="hero-content">
-        <span class="eyebrow">InkSpire</span>
-        <h1>Stories, ideas, and practical writing in one place.</h1>
-        <p>Fresh articles will appear here as soon as they are published.</p>
-      </div>
-    </div>
-    {% endfor %}
+    {% include 'partials/featured_story.html' with post=featured_post.0 %}
   </div>
 </section>
 
-{% if categories %}
-<section class="category-strip" aria-labelledby="category-strip-title">
-  <div class="container">
-    <div class="category-strip-card">
-      <div>
-        <span class="eyebrow">Explore by topic</span>
-        <h2 id="category-strip-title">Popular categories</h2>
-      </div>
-      <div class="category-chip-list" aria-label="Featured categories">
-        {% for category in categories|slice:":8" %}
-        <a class="category-chip" href="{% url 'posts_by_category' category.id %}">{{ category.name }}</a>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-</section>
-{% endif %}
-
+{% with secondary_featured=featured_post|slice:"1:" %}
+{% if secondary_featured %}
 <section class="discovery-section">
   <div class="container">
     <div class="section-heading">
       <span>Editors' picks</span>
-      <h2>Featured posts</h2>
+      <h2>More featured posts</h2>
     </div>
     <div class="row g-4">
-      {% for post in featured_post %}
-      {% if not forloop.first %}
+      {% for post in secondary_featured %}
       <div class="col-md-6 col-xl-4">
         {% include 'partials/post_card.html' with post=post %}
-      </div>
-      {% endif %}
-      {% empty %}
-      <div class="col-12">
-        <div class="empty-state">
-          <h3>No featured posts yet</h3>
-          <p>Mark published posts as featured to highlight them here.</p>
-        </div>
       </div>
       {% endfor %}
     </div>
   </div>
 </section>
+{% endif %}
+{% endwith %}
+{% endif %}
 
 <section class="discovery-section" id="latest-stories">
   <div class="container">
-    <div class="row g-5">
-      <div class="col-lg-8">
-        <div class="section-heading">
-          <span>Latest</span>
-          <h2>Recently published</h2>
-        </div>
-
-        <div class="post-list">
-          {% for post in posts %}
-          {% include 'partials/post_list_item.html' with post=post %}
-          {% empty %}
-          <div class="empty-state">
-            <h3>No posts yet</h3>
-            <p>Published articles will appear here.</p>
-          </div>
-          {% endfor %}
-        </div>
-
-        {% if posts.has_other_pages %}
-        <nav aria-label="Latest posts pagination" class="mt-4">
-          <ul class="pagination pagination-clean">
-            {% if posts.has_previous %}
-            <li class="page-item"><a class="page-link" href="?page={{ posts.previous_page_number }}">&laquo; Previous</a></li>
-            {% endif %}
-            {% for num in posts.paginator.page_range %}
-            {% if posts.number == num %}
-            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-            {% elif num > posts.number|add:'-3' and num < posts.number|add:'3' %}
-            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-            {% endif %}
-            {% endfor %}
-            {% if posts.has_next %}
-            <li class="page-item"><a class="page-link" href="?page={{ posts.next_page_number }}">Next &raquo;</a></li>
-            {% endif %}
-          </ul>
-        </nav>
-        {% endif %}
-      </div>
-
-      <aside class="col-lg-4">
-        <div class="discovery-sidebar">
-          <div class="sidebar-card">
-            <span class="eyebrow">Explore</span>
-            <h3>Find your next read</h3>
-            <p>Browse the latest essays, tutorials, opinions, and updates from InkSpire writers.</p>
-          </div>
-          <div class="sidebar-card">
-            <h3>Quick links</h3>
-            <ul class="link-list">
-              <li><a href="{% url 'about' %}"><i class="fa fa-info-circle"></i> About InkSpire</a></li>
-              <li><a href="{% url 'contact' %}"><i class="fa fa-envelope"></i> Contact us</a></li>
-              {% if user.is_authenticated %}
-              <li><a href="{% url 'my_bookmarks' %}"><i class="fa fa-bookmark"></i> My bookmarks</a></li>
-              {% endif %}
-              <li><a href="{% url 'rss_feed' %}"><i class="fa fa-rss"></i> RSS feed</a></li>
-            </ul>
-          </div>
-        </div>
-      </aside>
+    <div class="section-heading">
+      <span>Latest</span>
+      <h2>Recently published</h2>
     </div>
+
+    <div class="post-list">
+      {% for post in posts %}
+      {% include 'partials/post_list_item.html' with post=post %}
+      {% empty %}
+      <div class="empty-state">
+        <h3>No posts yet</h3>
+        <p>Published articles will appear here.</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% include 'partials/pagination.html' with page_obj=posts aria_label='Latest posts pagination' nav_class='mt-4' justify_center=False %}
   </div>
 </section>
+
+<section class="discovery-section">
+  <div class="container">
+    <div class="section-heading">
+      <span>Explore by topic</span>
+      <h2>Top categories</h2>
+    </div>
+
+    {% if top_categories %}
+    <div class="category-chip-list" aria-label="Top categories">
+      {% include 'partials/category_chips.html' with categories=top_categories %}
+    </div>
+    <p class="mt-3"><a href="{% url 'category_index' %}">View all categories</a></p>
+    {% else %}
+    <div class="empty-state">
+      <h3>No categories yet</h3>
+      <p>Categories will appear here once published posts are organized into them.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="discovery-section">
+  <div class="container">
+    {% include 'partials/newsletter_placeholder.html' %}
+  </div>
+</section>
+
 {% endblock %}

@@ -1,0 +1,26 @@
+<article class="featured-story">
+  <header>
+    <span class="eyebrow">Featured story</span>
+    <h1>{{ post.title }}</h1>
+  </header>
+
+  {% if post.featured_image %}
+  <img src="{{ post.featured_image.url }}" alt="{{ post.featured_image_alt|default:post.title }}" class="img-fluid rounded">
+  {% endif %}
+
+  {% if post.short_description %}
+  <p>{{ post.short_description|truncatewords:24 }}</p>
+  {% endif %}
+
+  <div class="post-meta-line">
+    <a href="{% url 'author_profile' post.author.username %}">{{ post.author.get_full_name|default:post.author.username }}</a>
+    <span aria-hidden="true">&middot;</span>
+    <time datetime="{{ post.effective_published_at|date:'c' }}">{{ post.effective_published_at|date:"F j, Y" }}</time>
+    {% if post.reading_time %}
+    <span aria-hidden="true">&middot;</span>
+    <span><i class="fa fa-clock-o"></i> {{ post.reading_time }} min read</span>
+    {% endif %}
+  </div>
+
+  <a href="{% url 'Blog_detail' post.slug %}" class="btn btn-warning">Continue reading</a>
+</article>

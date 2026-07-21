@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Categories | InkSpire{% endblock %}
+{% block meta_description %}Browse every InkSpire category and see how many published articles each one has.{% endblock %}
+{% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}
+{% block og_title %}Categories | InkSpire{% endblock %}
+{% block og_description %}Browse every InkSpire category and see how many published articles each one has.{% endblock %}
+{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
+{% block twitter_title %}Categories | InkSpire{% endblock %}
+{% block twitter_description %}Browse every InkSpire category and see how many published articles each one has.{% endblock %}
+
+{% block content %}
+<section class="archive-header">
+  <div class="container">
+    <span class="eyebrow">Categories</span>
+    <h1>All categories</h1>
+    <p>Every topic InkSpire publishes under, listed alphabetically with its published article count.</p>
+  </div>
+</section>
+
+<section class="discovery-section">
+  <div class="container">
+    {% if categories %}
+    <div class="category-chip-list" aria-label="All categories">
+      {% include 'partials/category_chips.html' with categories=categories %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <h2>No categories yet</h2>
+      <p>Categories will appear here once they are created.</p>
+      <a href="{% url 'home' %}" class="btn btn-warning">Back to homepage</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -1,6 +1,7 @@
 from math import ceil
 
 from django.conf import settings
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
@@ -60,20 +61,48 @@ def ckeditor_image_upload(request):
     return JsonResponse({'url': storage.url(filename)})
 
 
+HOME_FEATURED_POST_LIMIT = 7
+HOME_TOP_CATEGORIES_LIMIT = 8
+
+
 def home(request):
+    # home.html renders post.author and post.category for every featured
+    # and latest post, so select_related avoids a query per post for each
+    # of those foreign keys. The featured-post section previously rendered
+    # every featured post with no limit; it's capped here to a reasonable
+    # number (1 hero post + up to 6 cards) so a large number of featured
+    # posts can't turn the homepage into an unbounded listing page.
     featured_post = Blog.objects.published().filter(
-        is_featured=True).order_by('-updated_at')
+        is_featured=True
+    ).select_related('author', 'category').order_by('-updated_at')[:HOME_FEATURED_POST_LIMIT]
     posts_list = Blog.objects.published().filter(
-        is_featured=False).order_by('-updated_at')
+        is_featured=False
+    ).select_related('author', 'category').annotate(
+        total_likes=Count('likes', distinct=True)
+    ).order_by('-updated_at')
 
     # Pagination
     paginator = Paginator(posts_list, 6)
     page = request.GET.get('page')
     posts = paginator.get_page(page)
 
+    # Top categories for the homepage: annotate each category with a count
+    # of its published posts only (drafts never count via the filtered
+    # Count), drop categories with zero published posts, order by that
+    # count descending with category name as the alphabetical tie-break,
+    # and cap the result to a small, homepage-appropriate number.
+    top_categories = Category.objects.annotate(
+        published_post_count=Count(
+            'blog', filter=Q(blog__status='published')
+        )
+    ).filter(published_post_count__gt=0).order_by(
+        '-published_post_count', 'name'
+    )[:HOME_TOP_CATEGORIES_LIMIT]
+
     context = {
         'featured_post': featured_post,
         'posts': posts,
+        'top_categories': top_categories,
     }
     return render(request, "home.html", context)
 

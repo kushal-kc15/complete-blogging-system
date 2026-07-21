@@ -1,0 +1,5 @@
+{% for category in categories %}
+<a class="category-chip" href="{% url 'posts_by_category' category.id %}">
+  {{ category.name }}{% if category.published_post_count is not None %} <span class="text-muted">({{ category.published_post_count }})</span>{% endif %}
+</a>
+{% endfor %}
