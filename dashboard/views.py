@@ -155,8 +155,6 @@ def add_post(request):
                     raise
                 return redirect('posts')
             form.add_error(None, 'Unable to create a unique post URL. Please try again.')
-        else:
-            print(form.errors)
     else:
         form = BlogForm()
     context = {
@@ -175,8 +173,6 @@ def edit_post(request, id):
         if form.is_valid():
             form.save()
             return redirect('posts')
-        else:
-            print(form.errors)
     else:
         form = BlogForm(instance=post)
     context = {

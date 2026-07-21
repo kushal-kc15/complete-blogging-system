@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
 
-{% block title %}Page Not Found | InkSpire{% endblock %}
-{% block meta_description %}The page you're looking for doesn't exist or has been moved.{% endblock %}
+{% block title %}Server Error | InkSpire{% endblock %}
+{% block meta_description %}Something went wrong on our end.{% endblock %}
 {% block extra_head %}<meta name="robots" content="noindex,follow">{% endblock %}
 
 {% block content %}
 <section class="archive-header">
   <div class="container">
-    <span class="eyebrow">Error 404</span>
-    <h1>Page not found</h1>
-    <p>The page you're looking for doesn't exist or may have been moved.</p>
+    <span class="eyebrow">Error 500</span>
+    <h1>Something went wrong</h1>
+    <p>An unexpected error occurred while processing your request.</p>
   </div>
 </section>
 
@@ -17,7 +17,8 @@
   <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
       <p class="mb-4">
-        Double-check the address, or use the links below to get back on track.
+        This is on us, not you. Please try again in a moment. If the
+        problem continues, let us know what happened.
       </p>
       <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
         <a href="{% url 'home' %}" class="btn btn-warning">Go to homepage</a>

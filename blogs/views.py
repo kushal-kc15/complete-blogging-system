@@ -181,16 +181,20 @@ def bookmark_post(request, slug):
 
 
 @login_required(login_url='login')
+@require_POST
 def edit_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
     if comment.user != request.user:
         return redirect('Blog_detail', slug=comment.blog.slug)
 
-    if request.method == 'POST':
-        comment_text = request.POST.get('comment')
-        if comment_text:
-            comment.comment = comment_text
-            comment.save()
+    comment_form = CommentForm(request.POST, instance=comment)
+    if comment_form.is_valid():
+        comment_form.save()
+    else:
+        for error in comment_form.errors.get('comment', []):
+            messages.error(request, error)
+        for error in comment_form.non_field_errors():
+            messages.error(request, error)
     return redirect('Blog_detail', slug=comment.blog.slug)
 
 

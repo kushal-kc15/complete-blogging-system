@@ -196,6 +196,52 @@ class EngagementSecurityTests(TestCase):
         self.assertRedirects(response, f'{reverse("login")}?next={detail_url}')
         self.assertFalse(Comment.objects.filter(comment='Anonymous comment').exists())
 
+    def test_edit_comment_rejects_get(self):
+        response = self.client.get(reverse('edit_comment', args=[self.parent.id]))
+
+        self.assertEqual(response.status_code, 405)
+        self.parent.refresh_from_db()
+        self.assertEqual(self.parent.comment, 'Parent')
+
+    def test_edit_comment_valid_edit_succeeds(self):
+        response = self.client.post(
+            reverse('edit_comment', args=[self.parent.id]),
+            {'comment': 'Updated parent text'},
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse('Blog_detail', args=[self.first_post.slug]))
+        self.parent.refresh_from_db()
+        self.assertEqual(self.parent.comment, 'Updated parent text')
+
+    def test_edit_comment_rejects_empty_content(self):
+        response = self.client.post(
+            reverse('edit_comment', args=[self.parent.id]),
+            {'comment': '   '},
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse('Blog_detail', args=[self.first_post.slug]))
+        self.assertContains(response, 'This field is required.')
+        self.parent.refresh_from_db()
+        self.assertEqual(self.parent.comment, 'Parent')
+
+    def test_edit_comment_by_another_user_is_rejected(self):
+        other_user = User.objects.create_user(
+            username='other-reader', password='test-password'
+        )
+        self.client.force_login(other_user)
+
+        response = self.client.post(
+            reverse('edit_comment', args=[self.parent.id]),
+            {'comment': 'Hijacked text'},
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse('Blog_detail', args=[self.first_post.slug]))
+        self.parent.refresh_from_db()
+        self.assertEqual(self.parent.comment, 'Parent')
+
 
 class UploadEndpointSecurityTests(TestCase):
     def setUp(self):
