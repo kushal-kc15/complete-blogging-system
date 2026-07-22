@@ -77,7 +77,10 @@
       clamped = maxScroll;
     }
 
-    return (clamped / maxScroll) * 100;
+    var result = (clamped / maxScroll) * 100;
+    // Normalize negative zero (from a -0 offset) to positive zero so callers
+    // and tests observe a canonical 0.
+    return result === 0 ? 0 : result;
   }
 
   /**

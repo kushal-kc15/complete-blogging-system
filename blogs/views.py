@@ -317,6 +317,9 @@ def Search(request):
 def AuthorProfile(request, username):
     author = get_object_or_404(User, username=username)
     profile = UserProfile.objects.filter(user=author).first()
+    # Public post listing stays on published() so scheduled posts (status
+    # published with a future published_at) are excluded here just like every
+    # other public surface (Requirement 11.1).
     posts_list = Blog.objects.published().filter(
         author=author,
     ).select_related('category', 'author').order_by('-created_at')
@@ -325,10 +328,37 @@ def AuthorProfile(request, username):
     page = request.GET.get('page')
     posts = paginator.get_page(page)
 
+    # Follow-state context. A viewer only sees a follow/unfollow control when
+    # authenticated and looking at someone else's profile (Requirements 7.1,
+    # 7.2, 7.6). is_following drives which of the two controls is shown.
+    is_self = request.user.is_authenticated and request.user.id == author.id
+    show_follow_control = request.user.is_authenticated and not is_self
+    is_following = (
+        show_follow_control
+        and Follow.objects.filter(
+            follower=request.user, followed=author
+        ).exists()
+    )
+
+    # Follower count = number of Follow records where this author is the
+    # followed User (Requirement 9.1).
+    follower_count = Follow.objects.filter(followed=author).count()
+
+    # Density selection (Requirements 5.5, 5.6): a viewer with Editor
+    # permission (staff or blogs.change_blog) gets the density-optimized
+    # presentation; Visitors and non-Editor Readers get the spacious one.
+    use_dashboard_density = request.user.is_authenticated and (
+        request.user.is_staff or request.user.has_perm('blogs.change_blog')
+    )
+
     context = {
         'author_profile_user': author,
         'author_profile': profile,
         'posts': posts,
+        'is_following': is_following,
+        'show_follow_control': show_follow_control,
+        'follower_count': follower_count,
+        'use_dashboard_density': use_dashboard_density,
     }
     return render(request, 'author_profile.html', context)
 
@@ -361,3 +391,37 @@ def unfollow_author(request, username):
     # relationship ends up unfollowed (Requirement 7.4).
     Follow.objects.filter(follower=request.user, followed=author).delete()
     return redirect('author_profile', username=author.username)
+
+
+@login_required(login_url='login')
+def following_feed(request):
+    # The Following_Feed lists only Published_Blog posts authored by Users the
+    # Reader follows, newest first. The follow set and the publication filter
+    # are both applied at the query level so unpublished and not-yet-due
+    # Scheduled_Blog posts are excluded before retrieval, never after
+    # (Requirements 8.1, 8.2, 11.4).
+    #
+    # published() already restricts to status='published' with published_at
+    # null or in the past, so scheduled posts drop out at the same choke point
+    # every public surface uses. author_id__in against the followed-id
+    # subquery keeps non-followed authors out. select_related('author',
+    # 'category') mirrors the other listing views: the feed cards render
+    # author and category per row, so this avoids a query per post
+    # (Requirement 13.2).
+    followed_ids = Follow.objects.filter(
+        follower=request.user
+    ).values('followed_id')
+    posts_list = Blog.objects.published().filter(
+        author_id__in=followed_ids
+    ).select_related('author', 'category').order_by(
+        '-published_at', '-created_at'
+    )
+
+    paginator = Paginator(posts_list, 6)
+    page = request.GET.get('page')
+    posts = paginator.get_page(page)
+
+    context = {
+        'posts': posts,
+    }
+    return render(request, 'following_feed.html', context)

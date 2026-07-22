@@ -10,33 +10,34 @@
 {% block twitter_description %}Read the latest {{ category }} articles on InkSpire.{% endblock %}
 
 {% block content %}
-<section class="archive-header">
-  <div class="container">
-    <span class="eyebrow">Category</span>
-    <h1>{{ category }}</h1>
-    <p>Browse the latest published stories in {{ category }}.</p>
-  </div>
-</section>
+<div class="container-wide">
 
-<section class="discovery-section">
-  <div class="container">
+  {# Archive header — reuses the Design System .section-heading primitive. #}
+  <section class="home-section" aria-label="Category header">
+    <div class="section-heading">
+      <span class="eyebrow">Category</span>
+      <h1 class="heading">{{ category }}</h1>
+      <p>Browse the latest published stories in {{ category }}.</p>
+    </div>
+  </section>
+
+  <section class="home-section" aria-label="Category articles">
     {% if posts %}
-    <div class="row g-4">
+    <div class="post-grid--asymmetric">
       {% for post in posts %}
-      <div class="col-md-6 col-xl-4">
-        {% include 'partials/post_card.html' with post=post %}
-      </div>
+      {% include 'partials/editorial_post_card.html' with post=post %}
       {% endfor %}
     </div>
 
-    {% include 'partials/pagination.html' with page_obj=posts aria_label_prefix=category nav_class='mt-5' justify_center=True %}
+    {% include 'partials/pagination.html' with page_obj=posts aria_label_prefix=category nav_class='home-pagination' justify_center=True %}
     {% else %}
     <div class="empty-state">
-      <h2>No posts found</h2>
-      <p>There are no published articles in {{ category }} yet.</p>
-      <a href="{% url 'home' %}" class="btn btn-warning">Back to homepage</a>
+      <h2 class="empty-state__title">No posts found</h2>
+      <p class="empty-state__message">There are no published articles in {{ category }} yet.</p>
+      <a href="{% url 'home' %}" class="btn btn--primary">Back to homepage</a>
     </div>
     {% endif %}
-  </div>
-</section>
+  </section>
+
+</div>
 {% endblock %}

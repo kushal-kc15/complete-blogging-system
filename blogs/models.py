@@ -97,6 +97,16 @@ class Blog(models.Model):
     def effective_published_at(self):
         return self.published_at or self.created_at
 
+    @property
+    def is_scheduled(self):
+        """Row-level mirror of ``Blog.objects.scheduled()`` semantics: a
+        published-status post whose ``published_at`` is still in the future."""
+        return (
+            self.status == 'published'
+            and self.published_at is not None
+            and self.published_at > timezone.now()
+        )
+
     def save(self, *args, **kwargs):
         if self.status == 'published' and self.published_at is None:
             self.published_at = timezone.now()

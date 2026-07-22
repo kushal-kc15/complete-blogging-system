@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load editorial_extras %}
 
 {% block title %}InkSpire - Modern Blogging Platform{% endblock %}
 {% block meta_description %}Read thoughtful stories, practical guides, and fresh perspectives from InkSpire writers.{% endblock %}
@@ -11,81 +12,79 @@
 
 {% block content %}
 
-{% if featured_post %}
-<section class="discovery-section">
-  <div class="container">
-    {% include 'partials/featured_story.html' with post=featured_post.0 %}
-  </div>
-</section>
+<div class="container-wide home">
 
-{% with secondary_featured=featured_post|slice:"1:" %}
-{% if secondary_featured %}
-<section class="discovery-section">
-  <div class="container">
-    <div class="section-heading">
-      <span>Editors' picks</span>
-      <h2>More featured posts</h2>
+  {# --- Lead story / featured region (Requirements 3.1, 3.4) ------------- #}
+  {# Exactly one hero for the primary featured Published_Blog. When no post  #}
+  {# is featured, render a named empty-state INSTEAD of the hero, regardless #}
+  {# of whether other (non-featured) posts exist.                           #}
+  <section class="home-section" aria-label="Featured story">
+    {% if featured_post %}
+    {% include 'partials/editorial_hero.html' with post=featured_post.0 %}
+    {% else %}
+    <div class="empty-state">
+      <h2 class="empty-state__title">No featured story yet</h2>
+      <p class="empty-state__message">
+        No post has been marked as featured, so there's no lead story to headline the homepage.
+        Once an editor features a published post, it will appear here.
+      </p>
     </div>
-    <div class="row g-4">
+    {% endif %}
+  </section>
+
+  {# --- Asymmetric grid of more posts (Requirement 3.2) ------------------ #}
+  {# Additional featured posts (beyond the hero) plus recent published posts #}
+  {# are presented together in a mixed-size, non-uniform grid.              #}
+  {% with secondary_featured=featured_post|slice:"1:" %}
+  <section class="home-section" id="latest-stories" aria-label="More stories">
+    <div class="section-heading">
+      <span class="eyebrow">Latest</span>
+      <h2 class="heading">Recently published</h2>
+    </div>
+
+    {% if secondary_featured or posts %}
+    <div class="post-grid--asymmetric">
       {% for post in secondary_featured %}
-      <div class="col-md-6 col-xl-4">
-        {% include 'partials/post_card.html' with post=post %}
-      </div>
+      {% include 'partials/editorial_post_card.html' with post=post %}
       {% endfor %}
-    </div>
-  </div>
-</section>
-{% endif %}
-{% endwith %}
-{% endif %}
-
-<section class="discovery-section" id="latest-stories">
-  <div class="container">
-    <div class="section-heading">
-      <span>Latest</span>
-      <h2>Recently published</h2>
-    </div>
-
-    <div class="post-list">
       {% for post in posts %}
-      {% include 'partials/post_list_item.html' with post=post %}
-      {% empty %}
-      <div class="empty-state">
-        <h3>No posts yet</h3>
-        <p>Published articles will appear here.</p>
-      </div>
+      {% include 'partials/editorial_post_card.html' with post=post %}
       {% endfor %}
     </div>
 
-    {% include 'partials/pagination.html' with page_obj=posts aria_label='Latest posts pagination' nav_class='mt-4' justify_center=False %}
-  </div>
-</section>
+    {% include 'partials/pagination.html' with page_obj=posts aria_label='Latest posts pagination' nav_class='home-pagination' justify_center=False %}
+    {% else %}
+    <div class="empty-state">
+      <h3 class="empty-state__title">No posts yet</h3>
+      <p class="empty-state__message">Published articles will appear here as writers publish them.</p>
+    </div>
+    {% endif %}
+  </section>
+  {% endwith %}
 
-<section class="discovery-section">
-  <div class="container">
+  {# --- Explore by topic: color-coded category tags --------------------- #}
+  <section class="home-section" aria-label="Top categories">
     <div class="section-heading">
-      <span>Explore by topic</span>
-      <h2>Top categories</h2>
+      <span class="eyebrow">Explore by topic</span>
+      <h2 class="heading">Top categories</h2>
     </div>
 
     {% if top_categories %}
-    <div class="category-chip-list" aria-label="Top categories">
-      {% include 'partials/category_chips.html' with categories=top_categories %}
+    <div class="category-tag-list">
+      {% for category in top_categories %}
+      <a href="{% url 'posts_by_category' category.id %}" class="category-tag"
+         style="--tag-color: {{ category|category_color }};">{{ category.name }}</a>
+      {% endfor %}
     </div>
-    <p class="mt-3"><a href="{% url 'category_index' %}">View all categories</a></p>
+    <p class="home-section__more"><a class="link" href="{% url 'category_index' %}">View all categories</a></p>
     {% else %}
     <div class="empty-state">
-      <h3>No categories yet</h3>
-      <p>Categories will appear here once published posts are organized into them.</p>
+      <h3 class="empty-state__title">No categories yet</h3>
+      <p class="empty-state__message">Categories will appear here once published posts are organized into them.</p>
     </div>
     {% endif %}
-  </div>
-</section>
+  </section>
 
-<section class="discovery-section">
-  <div class="container">
-    {% include 'partials/newsletter_placeholder.html' %}
-  </div>
-</section>
+</div>
 
 {% endblock %}

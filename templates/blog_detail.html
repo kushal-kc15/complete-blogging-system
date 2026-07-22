@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load rich_text %}
+{% load static %}
 
 {% block title %}{{ post.title }} | InkSpire{% endblock %}
 
@@ -56,280 +57,250 @@
 
 {% block content %}
 
-<!-- Page content-->
-<div class="container article-page">
+<!-- Reading-progress indicator hook (Requirement 4.4). The sole scroll-driven
+     visual update; its bar width is set by reading-progress.js via the
+     --reading-progress custom property. No-ops if the script is absent. -->
+<div class="reading-progress" aria-hidden="true">
+  <div class="reading-progress__bar"></div>
+</div>
+
+<div class="container-standard article-page">
   {% if is_preview %}
-  <div class="alert alert-warning" role="alert">
-    <strong>Draft preview:</strong> This post is not publicly published.
+  <div class="alert alert--warning" role="alert">
+    <div><strong>Draft preview:</strong> This post is not publicly published.</div>
   </div>
   {% endif %}
-  <div class="row">
-    <div class="col-lg-8 article-column">
-      <!-- Post content-->
-      <article class="article-detail">
-        <!-- Post header-->
-        <header class="article-header">
-          <a class="article-category" href="{% url 'posts_by_category' post.category.id %}">
-            {{ post.category }}
-          </a>
-          <!-- Post title-->
-          <h1 class="article-title">{{ post.title }}</h1>
-          <!-- Post meta content-->
-          <p class="article-deck">{{ post.short_description }}</p>
-          <div class="article-meta">
-            <div class="article-author-mark" aria-hidden="true"><i class="fa fa-user"></i></div>
-            <div>
-              <strong>
-                <a href="{% url 'author_profile' post.author.username %}" class="article-author-link">
-                  {{ post.author.get_full_name|default:post.author.username }}
-                </a>
-              </strong>
-              <div class="article-meta-details">
-                <time datetime="{{ post.effective_published_at|date:'c' }}">{{ post.effective_published_at|date:"F j, Y" }}</time>
-                <span aria-hidden="true">&middot;</span>
-                <span>{{ post.reading_time }} min read</span>
-                <span aria-hidden="true">&middot;</span>
-                <span>{{ post.views }} views</span>
-              </div>
-            </div>
-          </div>
 
-          <!-- Like, Bookmark, Share buttons -->
-          {% if not is_preview %}
-          <div class="article-actions">
-            <div class="article-engagement">
-            {% if user.is_authenticated %}
-            <form action="{% url 'like_post' post.slug %}" method="POST" class="d-inline">
-              {% csrf_token %}<button type="submit"
-              class="btn btn-sm {% if user_has_liked %}btn-danger{% else %}btn-outline-danger{% endif %}">
-              <i class="fa fa-heart"></i> {{ like_count }}
-              </button></form>
-            <form action="{% url 'bookmark_post' post.slug %}" method="POST" class="d-inline">
-              {% csrf_token %}<button type="submit"
-              class="btn btn-sm {% if user_has_bookmarked %}btn-primary{% else %}btn-outline-primary{% endif %}">
-              <i class="fa fa-bookmark"></i> {% if user_has_bookmarked %}Saved{% else %}Save{% endif %}
-              </button></form>
-            {% else %}
-            <a href="{% url 'login' %}" class="btn btn-sm btn-outline-danger">
-              <i class="fa fa-heart"></i> {{ like_count }}
+  <article class="article-detail">
+    <header class="article-header">
+      <a class="category-tag" href="{% url 'posts_by_category' post.category.id %}">{{ post.category }}</a>
+      <h1 class="heading article-title">{{ post.title }}</h1>
+      <p class="article-deck">{{ post.short_description }}</p>
+
+      <div class="article-meta meta">
+        <div class="author-avatar author-avatar--fallback article-author-mark" aria-hidden="true"><i class="fa fa-user"></i></div>
+        <div>
+          <strong>
+            <a class="link" href="{% url 'author_profile' post.author.username %}">
+              {{ post.author.get_full_name|default:post.author.username }}
             </a>
-            {% endif %}
-            </div>
-
-            <!-- Share buttons -->
-            <div class="article-share" aria-label="Share this article">
-              <span>Share</span>
-              <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}&text={{ post.title }}"
-                target="_blank" rel="noopener noreferrer" class="article-share-link" aria-label="Share on Twitter">
-                <i class="fa fa-twitter"></i>
-              </a>
-              <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" target="_blank"
-                rel="noopener noreferrer" class="article-share-link" aria-label="Share on Facebook">
-                <i class="fa fa-facebook"></i>
-              </a>
-              <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri }}&title={{ post.title }}"
-                target="_blank" rel="noopener noreferrer" class="article-share-link" aria-label="Share on LinkedIn">
-                <i class="fa fa-linkedin"></i>
-              </a>
-              <a href="https://wa.me/?text={{ post.title }} {{ request.build_absolute_uri }}" target="_blank"
-                rel="noopener noreferrer" class="article-share-link" aria-label="Share on WhatsApp">
-                <i class="fa fa-whatsapp"></i>
-              </a>
-            </div>
+          </strong>
+          <div class="article-meta-details">
+            <time datetime="{{ post.effective_published_at|date:'c' }}">{{ post.effective_published_at|date:"F j, Y" }}</time>
+            <span aria-hidden="true">&middot;</span>
+            <span>{{ post.reading_time }} min read</span>
+            <span aria-hidden="true">&middot;</span>
+            <span>{{ post.views }} views</span>
           </div>
-          {% endif %}
-        </header>
+        </div>
+      </div>
 
-        <!-- Preview image figure-->
-        {% if post.featured_image %}
-        <figure class="article-hero"><img src="{{ post.featured_image.url }}"
-            alt="{{ post.featured_image_alt|default:post.title }}" /></figure>
+      {% if not is_preview %}
+      <div class="article-actions">
+        <div class="article-engagement">
+        {% if user.is_authenticated %}
+        <form action="{% url 'like_post' post.slug %}" method="POST">
+          {% csrf_token %}<button type="submit"
+          class="btn btn--sm {% if user_has_liked %}btn--danger{% else %}btn--secondary{% endif %}">
+          <i class="fa fa-heart" aria-hidden="true"></i> {{ like_count }}
+          </button></form>
+        <form action="{% url 'bookmark_post' post.slug %}" method="POST">
+          {% csrf_token %}<button type="submit"
+          class="btn btn--sm {% if user_has_bookmarked %}btn--primary{% else %}btn--secondary{% endif %}">
+          <i class="fa fa-bookmark" aria-hidden="true"></i> {% if user_has_bookmarked %}Saved{% else %}Save{% endif %}
+          </button></form>
+        {% else %}
+        <a href="{% url 'login' %}" class="btn btn--sm btn--secondary">
+          <i class="fa fa-heart" aria-hidden="true"></i> {{ like_count }}
+        </a>
         {% endif %}
+        </div>
 
-        <!-- Post content-->
-        <section class="article-main">
-          <div class="article-content">{{ post.blog_body|sanitize_rich_text }}</div>
+        <div class="article-share meta" aria-label="Share this article">
+          <span>Share</span>
+          <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}&text={{ post.title }}"
+            target="_blank" rel="noopener noreferrer" class="article-share-link" aria-label="Share on Twitter">
+            <i class="fa fa-twitter" aria-hidden="true"></i>
+          </a>
+          <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" target="_blank"
+            rel="noopener noreferrer" class="article-share-link" aria-label="Share on Facebook">
+            <i class="fa fa-facebook" aria-hidden="true"></i>
+          </a>
+          <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri }}&title={{ post.title }}"
+            target="_blank" rel="noopener noreferrer" class="article-share-link" aria-label="Share on LinkedIn">
+            <i class="fa fa-linkedin" aria-hidden="true"></i>
+          </a>
+          <a href="https://wa.me/?text={{ post.title }} {{ request.build_absolute_uri }}" target="_blank"
+            rel="noopener noreferrer" class="article-share-link" aria-label="Share on WhatsApp">
+            <i class="fa fa-whatsapp" aria-hidden="true"></i>
+          </a>
+        </div>
+      </div>
+      {% endif %}
+    </header>
 
-          <!-- Related Posts -->
-          {% if related_posts %}
-          <section class="related-posts">
-            <div class="section-heading">
-              <span>Keep reading</span>
-              <h2>Related posts</h2>
+    {% if post.featured_image %}
+    <figure class="article-hero"><img src="{{ post.featured_image.url }}"
+        alt="{{ post.featured_image_alt|default:post.title }}" /></figure>
+    {% endif %}
+
+    <section class="article-main" data-reading-progress-target>
+      <div class="article-content article-body prose">{{ post.blog_body|sanitize_rich_text }}</div>
+
+      <!-- Related Posts -->
+      {% if related_posts %}
+      <section class="related-posts">
+        <div class="section-heading">
+          <span class="eyebrow">Keep reading</span>
+          <h2 class="heading">Related posts</h2>
+        </div>
+        <div class="post-grid--asymmetric">
+          {% for related in related_posts %}
+          {% include 'partials/editorial_post_card.html' with post=related %}
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- Comments Section -->
+      <section class="comments-section">
+        <div class="section-heading">
+          <span class="eyebrow">Join the conversation</span>
+          <h2 class="heading">Comments <small>{{ comment_count }}</small></h2>
+        </div>
+
+        {% if comments %}
+        {% for comment in comments %}
+        <div class="comment-card">
+          <div class="comment-card__head">
+            <div>
+              <strong>{{ comment.user.username }}</strong>
+              <small class="meta">| {{ comment.created_at|timesince }} ago</small>
             </div>
-            <div class="row">
-              {% for related in related_posts %}
-              <div class="col-md-4 mb-3">
-                <article class="related-card">
-                  {% if related.featured_image %}
-                  <a href="{% url 'Blog_detail' related.slug %}" tabindex="-1"><img src="{{ related.featured_image.url }}" alt="{{ related.featured_image_alt|default:related.title }}"></a>
-                  {% endif %}
-                  <div class="related-card-body">
-                    <h3><a href="{% url 'Blog_detail' related.slug %}">{{ related.title|truncatewords:8 }}</a></h3>
-                    <small class="text-muted">{{ related.effective_published_at|timesince }} ago</small>
-                  </div>
-                </article>
-              </div>
-              {% endfor %}
+            {% if user == comment.user %}
+            <div class="data-table__actions">
+              <button class="btn btn--sm btn--ghost" onclick="toggleEditForm({{ comment.id }})" aria-label="Edit comment">
+                <i class="fa fa-edit" aria-hidden="true"></i>
+              </button>
+              <form action="{% url 'delete_comment' comment.id %}" method="POST"
+                onsubmit="return confirm('Delete this comment?')">
+                {% csrf_token %}<button type="submit" class="btn btn--sm btn--danger" aria-label="Delete comment"><i class="fa fa-trash" aria-hidden="true"></i></button>
+              </form>
             </div>
-          </section>
-          {% endif %}
-
-          <!-- Comments Section -->
-          <section class="comments-section">
-            <div class="section-heading">
-              <span>Join the conversation</span>
-              <h2>Comments <small>{{ comment_count }}</small></h2>
-            </div>
-
-            {% if comments %}
-            {% for comment in comments %}
-            <div class="card comment-card">
-              <div class="card-body">
-                <div class="d-flex justify-content-between">
-                  <div>
-                    <strong>{{ comment.user.username }}</strong>
-                    <small class="text-muted">| {{ comment.created_at|timesince }} ago</small>
-                  </div>
-                  {% if user == comment.user %}
-                  <div>
-                    <button class="btn btn-sm btn-link text-primary" onclick="toggleEditForm({{ comment.id }})">
-                      <i class="fa fa-edit"></i>
-                    </button>
-                    <form action="{% url 'delete_comment' comment.id %}" method="POST" class="d-inline"
-                      onsubmit="return confirm('Delete this comment?')">
-                      {% csrf_token %}<button type="submit" class="btn btn-sm btn-link text-danger"><i class="fa fa-trash"></i></button>
-                    </form>
-                  </div>
-                  {% endif %}
-                </div>
-                <p class="card-text mt-2 mb-1" id="comment-text-{{ comment.id }}">{{ comment.comment }}</p>
-
-                <!-- Edit form (hidden) -->
-                <form id="edit-form-{{ comment.id }}" action="{% url 'edit_comment' comment.id %}" method="POST"
-                  style="display: none;">
-                  {% csrf_token %}
-                  <textarea name="comment" class="form-control mb-2">{{ comment.comment }}</textarea>
-                  <button type="submit" class="btn btn-sm btn-warning">Update</button>
-                  <button type="button" class="btn btn-sm btn-secondary"
-                    onclick="toggleEditForm({{ comment.id }})">Cancel</button>
-                </form>
-
-                <!-- Reply button -->
-                {% if user.is_authenticated %}
-                <button class="btn btn-sm btn-link p-0" onclick="toggleReplyForm({{ comment.id }})">
-                  <i class="fa fa-reply"></i> Reply
-                </button>
-
-                <!-- Reply form (hidden) -->
-                <form id="reply-form-{{ comment.id }}" action="{% url 'Blog_detail' post.slug %}" method="POST"
-                  style="display: none;" class="mt-2">
-                  {% csrf_token %}
-                  <input type="hidden" name="parent_id" value="{{ comment.id }}">
-                  <textarea name="{{ comment_form.comment.html_name }}" class="form-control mb-2" rows="2"
-                    placeholder="Write a reply..." aria-label="Reply to {{ comment.user.username }}">{{ comment_form.comment.value|default_if_none:'' }}</textarea>
-                  <button type="submit" class="btn btn-sm btn-warning">Reply</button>
-                  <button type="button" class="btn btn-sm btn-secondary"
-                    onclick="toggleReplyForm({{ comment.id }})">Cancel</button>
-                </form>
-                {% endif %}
-
-                <!-- Replies -->
-                {% for reply in comment.visible_replies %}
-                <div class="card comment-reply">
-                  <div class="card-body py-2">
-                    <div class="d-flex justify-content-between">
-                      <div>
-                        <strong>{{ reply.user.username }}</strong>
-                        <small class="text-muted">| {{ reply.created_at|timesince }} ago</small>
-                      </div>
-                      {% if user == reply.user %}
-                      <form action="{% url 'delete_comment' reply.id %}" method="POST" class="d-inline"
-                        onsubmit="return confirm('Delete this reply?')">
-                        {% csrf_token %}<button type="submit" class="btn btn-sm btn-link text-danger"><i class="fa fa-trash"></i></button>
-                      </form>
-                      {% endif %}
-                    </div>
-                    <p class="card-text mt-1 mb-0">{{ reply.comment }}</p>
-                  </div>
-                </div>
-                {% endfor %}
-              </div>
-            </div>
-            {% endfor %}
-            {% else %}
-            <p class="text-muted">No comments yet. Be the first to comment!</p>
-            {% endif %}
-          </section>
-
-          <!-- Comment Form -->
-          <div class="comment-composer">
-            {% if is_preview %}
-            <p class="text-muted mb-0">Comments are disabled in draft preview.</p>
-            {% elif user.is_authenticated %}
-            <form action="{% url 'Blog_detail' post.slug %}" method="POST">
-              {% csrf_token %}
-              <div class="form-group">
-                {% if comment_form.non_field_errors %}
-                <div class="text-danger small mb-2">{{ comment_form.non_field_errors }}</div>
-                {% endif %}
-                <label for="{{ comment_form.comment.id_for_label }}" class="visually-hidden">Comment</label>
-                {{ comment_form.comment }}
-                {% for error in comment_form.comment.errors %}
-                <div class="text-danger small mt-1">{{ error }}</div>
-                {% endfor %}
-                <button type="submit" class="btn btn-warning mt-2"><i class="fa fa-comment"></i> Submit</button>
-              </div>
-            </form>
-            {% else %}
-            <p>Please <a href="{% url 'login' %}" class="text-warning">login</a> to write a comment!</p>
             {% endif %}
           </div>
+          <p class="comment-card__text" id="comment-text-{{ comment.id }}">{{ comment.comment }}</p>
 
-        </section>
-      </article>
+          <!-- Edit form (hidden) -->
+          <form id="edit-form-{{ comment.id }}" action="{% url 'edit_comment' comment.id %}" method="POST"
+            style="display: none;">
+            {% csrf_token %}
+            <textarea name="comment" class="form-control">{{ comment.comment }}</textarea>
+            <button type="submit" class="btn btn--sm btn--primary">Update</button>
+            <button type="button" class="btn btn--sm btn--secondary"
+              onclick="toggleEditForm({{ comment.id }})">Cancel</button>
+          </form>
+
+          <!-- Reply button -->
+          {% if user.is_authenticated %}
+          <button class="btn btn--sm btn--ghost" onclick="toggleReplyForm({{ comment.id }})">
+            <i class="fa fa-reply" aria-hidden="true"></i> Reply
+          </button>
+
+          <!-- Reply form (hidden) -->
+          <form id="reply-form-{{ comment.id }}" action="{% url 'Blog_detail' post.slug %}" method="POST"
+            style="display: none;">
+            {% csrf_token %}
+            <input type="hidden" name="parent_id" value="{{ comment.id }}">
+            <textarea name="{{ comment_form.comment.html_name }}" class="form-control" rows="2"
+              placeholder="Write a reply..." aria-label="Reply to {{ comment.user.username }}">{{ comment_form.comment.value|default_if_none:'' }}</textarea>
+            <button type="submit" class="btn btn--sm btn--primary">Reply</button>
+            <button type="button" class="btn btn--sm btn--secondary"
+              onclick="toggleReplyForm({{ comment.id }})">Cancel</button>
+          </form>
+          {% endif %}
+
+          <!-- Replies -->
+          {% for reply in comment.visible_replies %}
+          <div class="comment-card comment-reply">
+            <div class="comment-card__head">
+              <div>
+                <strong>{{ reply.user.username }}</strong>
+                <small class="meta">| {{ reply.created_at|timesince }} ago</small>
+              </div>
+              {% if user == reply.user %}
+              <form action="{% url 'delete_comment' reply.id %}" method="POST"
+                onsubmit="return confirm('Delete this reply?')">
+                {% csrf_token %}<button type="submit" class="btn btn--sm btn--danger" aria-label="Delete reply"><i class="fa fa-trash" aria-hidden="true"></i></button>
+              </form>
+              {% endif %}
+            </div>
+            <p class="comment-card__text">{{ reply.comment }}</p>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="meta">No comments yet. Be the first to comment!</p>
+        {% endif %}
+      </section>
+
+      <!-- Comment Form -->
+      <div class="comment-composer">
+        {% if is_preview %}
+        <p class="meta">Comments are disabled in draft preview.</p>
+        {% elif user.is_authenticated %}
+        <form action="{% url 'Blog_detail' post.slug %}" method="POST">
+          {% csrf_token %}
+          <div class="form-field">
+            {% if comment_form.non_field_errors %}
+            <div class="form-error">{{ comment_form.non_field_errors }}</div>
+            {% endif %}
+            <label for="{{ comment_form.comment.id_for_label }}" class="sr-only">Comment</label>
+            {{ comment_form.comment }}
+            {% for error in comment_form.comment.errors %}
+            <div class="form-error">{{ error }}</div>
+            {% endfor %}
+            <button type="submit" class="btn btn--primary"><i class="fa fa-comment" aria-hidden="true"></i> Submit</button>
+          </div>
+        </form>
+        {% else %}
+        <p>Please <a class="link" href="{% url 'login' %}">login</a> to write a comment!</p>
+        {% endif %}
+      </div>
+    </section>
+  </article>
+
+  <!-- Post-article widgets -->
+  <aside class="article-aside">
+    <div class="article-widget">
+      <h2 class="heading"><i class="fa fa-user" aria-hidden="true"></i> Author</h2>
+      <p>
+        <strong>
+          <a class="link" href="{% url 'author_profile' post.author.username %}">
+            {{ post.author.get_full_name|default:post.author.username }}
+          </a>
+        </strong>
+      </p>
+      <a href="{% url 'author_profile' post.author.username %}" class="btn btn--secondary btn--sm">View profile</a>
     </div>
 
-    <!-- Side widgets-->
-    <aside class="col-lg-4 article-sidebar">
-      <!-- Author widget -->
-      <div class="card mb-4 p-3 border-0 bg-light">
-        <h4 class="font-italic"><i class="fa fa-user"></i> Author</h4>
-        <div class="card-body">
-          <p class="mb-1">
-            <strong>
-              <a href="{% url 'author_profile' post.author.username %}" class="text-dark">
-                {{ post.author.get_full_name|default:post.author.username }}
-              </a>
-            </strong>
-          </p>
-          <a href="{% url 'author_profile' post.author.username %}" class="btn btn-outline-dark btn-sm mt-2">View profile</a>
-        </div>
+    <div class="article-widget">
+      <h2 class="heading"><i class="fa fa-folder" aria-hidden="true"></i> Categories</h2>
+      <div class="category-tag-list">
+        {% for cat in categories %}
+        <a href="{% url 'posts_by_category' cat.id %}" class="category-tag">{{ cat.name }}</a>
+        {% endfor %}
       </div>
+    </div>
 
-      <!-- Categories widget-->
-      <div class="card mb-4 p-3 border-0 bg-light">
-        <h4 class="font-italic"><i class="fa fa-folder"></i> Categories</h4>
-        <div class="card-body">
-          <ul class="list-unstyled mb-0">
-            {% for cat in categories %}
-            <li><a href="{% url 'posts_by_category' cat.id %}" class="text-dark">{{ cat.name }}</a></li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
-
-      <!-- RSS Feed -->
-      <div class="card mb-4 p-3 border-0 bg-light">
-        <h4 class="font-italic"><i class="fa fa-rss"></i> Subscribe</h4>
-        <div class="card-body">
-          <a href="{% url 'rss_feed' %}" class="btn btn-warning btn-sm">
-            <i class="fa fa-rss"></i> RSS Feed
-          </a>
-        </div>
-      </div>
-    </aside>
-  </div>
+    <div class="article-widget">
+      <h2 class="heading"><i class="fa fa-rss" aria-hidden="true"></i> Subscribe</h2>
+      <a href="{% url 'rss_feed' %}" class="btn btn--primary btn--sm">
+        <i class="fa fa-rss" aria-hidden="true"></i> RSS Feed
+      </a>
+    </div>
+  </aside>
 </div>
 
 <script>
@@ -351,4 +322,9 @@
   }
 </script>
 
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Reading-progress wiring (Requirement 4.4): origin-local, CSP-safe. -->
+<script src="{% static 'js/reading-progress.js' %}" defer></script>
 {% endblock %}

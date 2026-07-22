@@ -20,64 +20,161 @@
 {% endblock %}
 
 {% block content %}
-<section class="author-hero">
-  <div class="container">
-    <div class="author-profile-card">
+{% comment %}
+  Author Profile Page (Requirements 5.5, 5.6, 7.1, 7.2, 7.6, 9.1).
+  Presentation is driven by `use_dashboard_density` (set by the view):
+    - Editors (staff / blogs.change_blog) get the DENSITY presentation
+      (compact .data-table listing) matching the Dashboard.
+    - Visitors and non-Editor Readers get the SPACIOUS public presentation
+      (author hero + asymmetric post-card grid).
+  The follow/unfollow control is shown only when `show_follow_control` is true
+  (authenticated viewer, not the author's own profile), and reflects
+  `is_following` (Requirements 7.1, 7.2, 7.6).
+{% endcomment %}
+
+{% if use_dashboard_density %}
+{# ---------------- DENSITY presentation (Editors, Requirement 5.6) -------- #}
+<div class="container-dashboard">
+  <section class="home-section" aria-label="Author overview">
+    <div class="section-heading">
+      <span class="eyebrow">Author</span>
+      <h1 class="heading">{{ author_profile_user.get_full_name|default:author_profile_user.username }}</h1>
+      <p class="meta">@{{ author_profile_user.username }}
+        &middot; {{ posts.paginator.count }} published post{{ posts.paginator.count|pluralize }}
+        &middot; {{ follower_count }} follower{{ follower_count|pluralize }}</p>
+    </div>
+
+    {% if show_follow_control %}
+    <div class="author-follow">
+      {% if is_following %}
+      <form action="{% url 'unfollow_author' author_profile_user.username %}" method="POST">
+        {% csrf_token %}
+        <button type="submit" class="btn btn--secondary btn--sm">Following</button>
+      </form>
+      {% else %}
+      <form action="{% url 'follow_author' author_profile_user.username %}" method="POST">
+        {% csrf_token %}
+        <button type="submit" class="btn btn--primary btn--sm">Follow</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="home-section" aria-label="Author posts">
+    {% if posts %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th scope="col">Title</th>
+          <th scope="col">Category</th>
+          <th scope="col">Published</th>
+          <th scope="col">Views</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for post in posts %}
+        <tr>
+          <td><a class="link" href="{% url 'Blog_detail' post.slug %}">{{ post.title }}</a></td>
+          <td>{{ post.category }}</td>
+          <td>{{ post.effective_published_at|date:"M j, Y" }}</td>
+          <td>{{ post.views }}</td>
+          <td>
+            <span class="data-table__actions">
+              <a class="btn btn--ghost btn--sm" href="{% url 'Blog_detail' post.slug %}">View</a>
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% include 'partials/pagination.html' with page_obj=posts aria_label='Author posts pagination' nav_class='home-pagination' justify_center=True %}
+    {% else %}
+    <div class="empty-state">
+      <h2 class="empty-state__title">No published posts yet</h2>
+      <p class="empty-state__message">{{ author_profile_user.get_full_name|default:author_profile_user.username }} does not have any public posts right now.</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+{% else %}
+{# ---------------- SPACIOUS presentation (Visitors / non-Editors, Req 5.5) - #}
+<div class="container-wide">
+  <section class="home-section" aria-label="Author profile">
+    <div class="author-header">
       {% if author_profile.avatar %}
       <img src="{{ author_profile.avatar.url }}" alt="{{ author_profile_user.username }} avatar" class="author-avatar">
       {% else %}
-      <div class="author-avatar author-avatar-fallback" aria-hidden="true">
+      <div class="author-avatar author-avatar--fallback" aria-hidden="true">
         <i class="fa fa-user"></i>
       </div>
       {% endif %}
 
-      <div class="author-profile-body">
+      <div class="author-header__body">
         <span class="eyebrow">Author</span>
-        <h1>{{ author_profile_user.get_full_name|default:author_profile_user.username }}</h1>
-        <p class="author-username">@{{ author_profile_user.username }}</p>
+        <h1 class="heading">{{ author_profile_user.get_full_name|default:author_profile_user.username }}</h1>
+        <p class="meta">@{{ author_profile_user.username }}</p>
         {% if author_profile.bio %}
         <p class="author-bio">{{ author_profile.bio }}</p>
         {% else %}
-        <p class="author-bio text-muted">This author has not added a bio yet.</p>
+        <p class="author-bio meta">This author has not added a bio yet.</p>
         {% endif %}
-        <div class="author-meta">
-          <span><i class="fa fa-file-text-o"></i> {{ posts.paginator.count }} published post{{ posts.paginator.count|pluralize }}</span>
+
+        <div class="author-meta meta">
+          <span><i class="fa fa-file-text-o" aria-hidden="true"></i> {{ posts.paginator.count }} published post{{ posts.paginator.count|pluralize }}</span>
+          <span><i class="fa fa-users" aria-hidden="true"></i> {{ follower_count }} follower{{ follower_count|pluralize }}</span>
           {% if author_profile.location %}
-          <span><i class="fa fa-map-marker"></i> {{ author_profile.location }}</span>
+          <span><i class="fa fa-map-marker" aria-hidden="true"></i> {{ author_profile.location }}</span>
           {% endif %}
           {% if author_profile.website %}
-          <a href="{{ author_profile.website }}" target="_blank" rel="noopener"><i class="fa fa-globe"></i> Website</a>
+          <a class="link" href="{{ author_profile.website }}" target="_blank" rel="noopener"><i class="fa fa-globe" aria-hidden="true"></i> Website</a>
           {% endif %}
         </div>
+
+        {% if show_follow_control %}
+        <div class="author-follow">
+          {% if is_following %}
+          <form action="{% url 'unfollow_author' author_profile_user.username %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn btn--secondary"><i class="fa fa-check" aria-hidden="true"></i> Following</button>
+          </form>
+          {% else %}
+          <form action="{% url 'follow_author' author_profile_user.username %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn btn--primary"><i class="fa fa-plus" aria-hidden="true"></i> Follow</button>
+          </form>
+          {% endif %}
+        </div>
+        {% endif %}
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section class="discovery-section">
-  <div class="container">
+  <section class="home-section" aria-label="Author posts">
     <div class="section-heading">
-      <span>Published work</span>
-      <h2>Articles by {{ author_profile_user.get_full_name|default:author_profile_user.username }}</h2>
+      <span class="eyebrow">Published work</span>
+      <h2 class="heading">Articles by {{ author_profile_user.get_full_name|default:author_profile_user.username }}</h2>
     </div>
 
     {% if posts %}
-    <div class="row g-4">
+    <div class="post-grid--asymmetric">
       {% for post in posts %}
-      <div class="col-md-6 col-xl-4">
-        {% include 'partials/post_card.html' with post=post %}
-      </div>
+      {% include 'partials/editorial_post_card.html' with post=post %}
       {% endfor %}
     </div>
 
-    {% include 'partials/pagination.html' with page_obj=posts aria_label='Author posts pagination' nav_class='mt-5' justify_center=True %}
+    {% include 'partials/pagination.html' with page_obj=posts aria_label='Author posts pagination' nav_class='home-pagination' justify_center=True %}
     {% else %}
     <div class="empty-state">
-      <h2>No published posts yet</h2>
-      <p>{{ author_profile_user.get_full_name|default:author_profile_user.username }} does not have any public posts right now.</p>
-      <a href="{% url 'home' %}" class="btn btn-warning">Explore latest posts</a>
+      <h2 class="empty-state__title">No published posts yet</h2>
+      <p class="empty-state__message">{{ author_profile_user.get_full_name|default:author_profile_user.username }} does not have any public posts right now.</p>
+      <a href="{% url 'home' %}" class="btn btn--primary">Explore latest posts</a>
     </div>
     {% endif %}
-  </div>
-</section>
+  </section>
+</div>
+{% endif %}
 {% endblock %}

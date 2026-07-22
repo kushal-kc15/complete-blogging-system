@@ -5,61 +5,63 @@
 {% block meta_description %}Login to your InkSpire account.{% endblock %}
 
 {% block content %}
-<section class="auth-page">
-  <div class="container">
+<div class="container-standard">
+  <section class="auth-page home-section">
     <div class="auth-card">
-      <div class="auth-intro">
+      <div class="auth-intro section-heading">
         <span class="eyebrow">Welcome back</span>
-        <h1>Log in to InkSpire</h1>
+        <h1 class="heading">Log in to InkSpire</h1>
         <p>Continue reading, bookmarking, and joining the conversation.</p>
       </div>
 
       {% if login_rate_limited %}
-      <div class="alert alert-danger">
+      <div class="alert alert--danger" role="alert">
         {{ form.non_field_errors }}
       </div>
       {% elif form.errors %}
-      <div class="alert alert-danger">
-        <strong>We couldn't log you in.</strong>
-        <p class="mb-0">Please check your username and password.</p>
+      <div class="alert alert--danger" role="alert">
+        <div>
+          <strong>We couldn't log you in.</strong>
+          <p>Please check your username and password.</p>
+        </div>
       </div>
       {% endif %}
 
-      <form method="post" action="{% provider_login_url 'google' process='login' %}" class="mb-3">
+      <form method="post" action="{% provider_login_url 'google' process='login' %}" class="auth-social">
         {% csrf_token %}
-        <button type="submit" class="btn btn-outline-dark w-100">
-          <i class="fa fa-google"></i> Continue with Google
+        <button type="submit" class="btn btn--secondary btn--block">
+          <i class="fa fa-google" aria-hidden="true"></i> Continue with Google
         </button>
       </form>
 
-      <div class="text-center text-muted small mb-3">or log in with username</div>
+      <div class="auth-divider meta">or log in with username</div>
 
       <form action="{% url 'login' %}" method="POST" class="auth-form">
         {% csrf_token %}
         {% if next %}
         <input type="hidden" name="next" value="{{ next }}">
         {% endif %}
-        <div class="mb-3">
+        <div class="form-field">
           <label for="id_username" class="form-label">Username</label>
           <input type="text" name="username" id="id_username" class="form-control" autocomplete="username" value="{{ form.username.value|default_if_none:'' }}" required>
         </div>
 
-        <div class="mb-2">
+        <div class="form-field">
           <label for="id_password" class="form-label">Password</label>
           <input type="password" name="password" id="id_password" class="form-control" autocomplete="current-password" required>
         </div>
 
-        <div class="auth-helper text-end mb-4">
-          <a href="{% url 'password_reset' %}">Forgot password?</a>
+        <div class="auth-helper">
+          <a class="link" href="{% url 'password_reset' %}">Forgot password?</a>
         </div>
 
-        <button type="submit" class="btn btn-warning w-100">
-          <i class="fa fa-sign-in"></i> Login
+        <button type="submit" class="btn btn--primary btn--block">
+          <i class="fa fa-sign-in" aria-hidden="true"></i> Login
         </button>
       </form>
 
-      <p class="auth-switch">Don't have an account? <a href="{% url 'register' %}">Create one</a></p>
+      <p class="auth-switch meta">Don't have an account? <a class="link" href="{% url 'register' %}">Create one</a></p>
     </div>
-  </div>
-</section>
+  </section>
+</div>
 {% endblock %}

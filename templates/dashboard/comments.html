@@ -3,119 +3,109 @@
 {% block title %}Moderate Comments | InkSpire{% endblock %}
 
 {% block content %}
-<div class="row dashboard-shell">
+<div class="container-dashboard dashboard-layout">
     {% include 'dashboard/sidebar.html' %}
 
-    <div class="col-md-9">
-        <div class="dashboard-header">
+    <section class="dashboard-main">
+        <header class="dashboard-page-header">
             <div>
                 <span class="eyebrow">Moderation</span>
                 <h1>Comments</h1>
-                <p>Hide or restore comments without deleting reader history.</p>
+                <p class="meta">Hide or restore comments without deleting reader history.</p>
             </div>
-        </div>
+        </header>
 
-        <div class="row g-3 mb-4">
-            <div class="col-sm-6">
-                <div class="dashboard-stat-card">
-                    <span>Visible comments</span>
-                    <strong>{{ visible_count }}</strong>
-                    <i class="fa fa-eye"></i>
-                </div>
+        <div class="dashboard-stats">
+            <div class="dashboard-stat">
+                <span class="dashboard-stat__label">Visible comments</span>
+                <strong class="dashboard-stat__value">{{ visible_count }}</strong>
             </div>
-            <div class="col-sm-6">
-                <div class="dashboard-stat-card">
-                    <span>Hidden comments</span>
-                    <strong>{{ hidden_count }}</strong>
-                    <i class="fa fa-eye-slash"></i>
-                </div>
+            <div class="dashboard-stat">
+                <span class="dashboard-stat__label">Hidden comments</span>
+                <strong class="dashboard-stat__value">{{ hidden_count }}</strong>
             </div>
         </div>
 
         <div class="dashboard-panel">
             {% if comments %}
-            <div class="table-responsive">
-                <table class="table dashboard-table align-middle">
-                    <thead>
-                        <tr>
-                            <th>Comment</th>
-                            <th>Post</th>
-                            <th>Author</th>
-                            <th>Status</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for comment in comments %}
-                        <tr>
-                            <td>
-                                <strong>{{ comment.comment|truncatewords:14 }}</strong>
-                                <div class="text-muted small">{{ comment.created_at|timesince }} ago</div>
-                            </td>
-                            <td>
+            <table class="data-table data-table--compact">
+                <thead>
+                    <tr>
+                        <th>Comment</th>
+                        <th>Post</th>
+                        <th>Author</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comment in comments %}
+                    <tr>
+                        <td>
+                            <strong>{{ comment.comment|truncatewords:14 }}</strong>
+                            <div class="meta">{{ comment.created_at|timesince }} ago</div>
+                        </td>
+                        <td>
+                            {% if comment.blog.status == 'published' %}
+                            <a class="link" href="{% url 'Blog_detail' comment.blog.slug %}">{{ comment.blog.title|truncatewords:7 }}</a>
+                            {% else %}
+                            {{ comment.blog.title|truncatewords:7 }}
+                            {% endif %}
+                        </td>
+                        <td>{{ comment.user.username }}</td>
+                        <td>
+                            {% if comment.is_visible %}
+                            <span class="status-pill status-pill--published">Visible</span>
+                            {% else %}
+                            <span class="status-pill status-pill--draft">Hidden</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="data-table__actions">
                                 {% if comment.blog.status == 'published' %}
-                                <a href="{% url 'Blog_detail' comment.blog.slug %}" class="text-dark">{{ comment.blog.title|truncatewords:7 }}</a>
-                                {% else %}
-                                {{ comment.blog.title|truncatewords:7 }}
+                                <a href="{% url 'Blog_detail' comment.blog.slug %}" class="btn btn--sm btn--secondary" title="View post" aria-label="View post">
+                                    <i class="fa fa-eye" aria-hidden="true"></i>
+                                </a>
                                 {% endif %}
-                            </td>
-                            <td>{{ comment.user.username }}</td>
-                            <td>
-                                {% if comment.is_visible %}
-                                <span class="status-pill status-published">Visible</span>
-                                {% else %}
-                                <span class="status-pill status-hidden">Hidden</span>
+                                {% if user.is_staff or perms.blogs.change_comment %}
+                                <form action="{% url 'toggle_comment_visibility' comment.id %}" method="POST" class="dashboard-inline-form">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn--sm {% if comment.is_visible %}btn--secondary{% else %}btn--primary{% endif %}">
+                                        {% if comment.is_visible %}
+                                        <i class="fa fa-eye-slash" aria-hidden="true"></i> Hide
+                                        {% else %}
+                                        <i class="fa fa-eye" aria-hidden="true"></i> Show
+                                        {% endif %}
+                                    </button>
+                                </form>
                                 {% endif %}
-                            </td>
-                            <td class="text-end">
-                                <div class="dashboard-actions">
-                                    {% if comment.blog.status == 'published' %}
-                                    <a href="{% url 'Blog_detail' comment.blog.slug %}" class="btn btn-sm btn-outline-secondary" title="View post">
-                                        <i class="fa fa-eye"></i>
-                                    </a>
-                                    {% endif %}
-                                    {% if user.is_staff or perms.blogs.change_comment %}
-                                    <form action="{% url 'toggle_comment_visibility' comment.id %}" method="POST" class="d-inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm {% if comment.is_visible %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
-                                            {% if comment.is_visible %}
-                                            <i class="fa fa-eye-slash"></i> Hide
-                                            {% else %}
-                                            <i class="fa fa-eye"></i> Show
-                                            {% endif %}
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             {% else %}
-            <div class="dashboard-empty">
-                <h2>No comments yet</h2>
-                <p>Reader comments will appear here once posts receive replies.</p>
+            <div class="empty-state">
+                <h2 class="empty-state__title">No comments yet</h2>
+                <p class="empty-state__message">Reader comments will appear here once posts receive replies.</p>
             </div>
             {% endif %}
 
             {% if comments.paginator.num_pages > 1 %}
-            <nav class="mt-4" aria-label="Comment moderation pagination">
-                <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
-                    <span class="text-muted small">Page {{ comments.number }} of {{ comments.paginator.num_pages }}</span>
-                    <div class="d-flex gap-2">
-                        {% if comments.has_previous %}
-                        <a class="btn btn-sm btn-outline-secondary" href="?page={{ comments.previous_page_number }}">Previous</a>
-                        {% endif %}
-                        {% if comments.has_next %}
-                        <a class="btn btn-sm btn-outline-secondary" href="?page={{ comments.next_page_number }}">Next</a>
-                        {% endif %}
-                    </div>
+            <nav class="dashboard-pagination" aria-label="Comment moderation pagination">
+                <span class="meta">Page {{ comments.number }} of {{ comments.paginator.num_pages }}</span>
+                <div class="data-table__actions">
+                    {% if comments.has_previous %}
+                    <a class="btn btn--sm btn--secondary" href="?page={{ comments.previous_page_number }}">Previous</a>
+                    {% endif %}
+                    {% if comments.has_next %}
+                    <a class="btn btn--sm btn--secondary" href="?page={{ comments.next_page_number }}">Next</a>
+                    {% endif %}
                 </div>
             </nav>
             {% endif %}
         </div>
-    </div>
+    </section>
 </div>
 {% endblock %}

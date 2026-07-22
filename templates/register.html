@@ -5,70 +5,72 @@
 {% block meta_description %}Create an InkSpire account.{% endblock %}
 
 {% block content %}
-<section class="auth-page">
-  <div class="container">
-    <div class="auth-card auth-card-wide">
-      <div class="auth-intro">
+<div class="container-standard">
+  <section class="auth-page home-section">
+    <div class="auth-card auth-card--wide">
+      <div class="auth-intro section-heading">
         <span class="eyebrow">Join InkSpire</span>
-        <h1>Create your account</h1>
+        <h1 class="heading">Create your account</h1>
         <p>Save articles, comment on posts, and build your reader profile.</p>
       </div>
 
       {% if form.errors %}
-      <div class="alert alert-danger">
-        <strong>Please fix the errors below.</strong>
-        {% for field in form %}
-        {% for error in field.errors %}
-        <p class="mb-1"><strong>{{ field.label }}:</strong> {{ error }}</p>
-        {% endfor %}
-        {% endfor %}
-        {% for error in form.non_field_errors %}
-        <p class="mb-1">{{ error }}</p>
-        {% endfor %}
+      <div class="alert alert--danger" role="alert">
+        <div>
+          <strong>Please fix the errors below.</strong>
+          {% for field in form %}
+          {% for error in field.errors %}
+          <p><strong>{{ field.label }}:</strong> {{ error }}</p>
+          {% endfor %}
+          {% endfor %}
+          {% for error in form.non_field_errors %}
+          <p>{{ error }}</p>
+          {% endfor %}
+        </div>
       </div>
       {% endif %}
 
-      <form method="post" action="{% provider_login_url 'google' process='signup' %}" class="mb-3">
+      <form method="post" action="{% provider_login_url 'google' process='signup' %}" class="auth-social">
         {% csrf_token %}
-        <button type="submit" class="btn btn-outline-dark w-100">
-          <i class="fa fa-google"></i> Continue with Google
+        <button type="submit" class="btn btn--secondary btn--block">
+          <i class="fa fa-google" aria-hidden="true"></i> Continue with Google
         </button>
       </form>
 
-      <div class="text-center text-muted small mb-3">or create an account with email</div>
+      <div class="auth-divider meta">or create an account with email</div>
 
       <form action="{% url 'register' %}" method="POST" class="auth-form">
         {% csrf_token %}
-        <div class="mb-3">
+        <div class="form-field">
           <label for="id_username" class="form-label">Username</label>
           <input type="text" name="username" id="id_username" class="form-control"
             value="{{ form.username.value|default:'' }}" autocomplete="username" required>
         </div>
 
-        <div class="mb-3">
+        <div class="form-field">
           <label for="id_email" class="form-label">Email</label>
           <input type="email" name="email" id="id_email" class="form-control"
             value="{{ form.email.value|default:'' }}" autocomplete="email" required>
         </div>
 
-        <div class="row">
-          <div class="col-md-6 mb-3">
+        <div class="auth-form__row">
+          <div class="form-field">
             <label for="id_password1" class="form-label">Password</label>
             <input type="password" name="password1" id="id_password1" class="form-control" autocomplete="new-password" required>
           </div>
-          <div class="col-md-6 mb-4">
+          <div class="form-field">
             <label for="id_password2" class="form-label">Confirm password</label>
             <input type="password" name="password2" id="id_password2" class="form-control" autocomplete="new-password" required>
           </div>
         </div>
 
-        <button type="submit" class="btn btn-warning w-100">
-          <i class="fa fa-user-plus"></i> Create account
+        <button type="submit" class="btn btn--primary btn--block">
+          <i class="fa fa-user-plus" aria-hidden="true"></i> Create account
         </button>
       </form>
 
-      <p class="auth-switch">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+      <p class="auth-switch meta">Already have an account? <a class="link" href="{% url 'login' %}">Log in</a></p>
     </div>
-  </div>
-</section>
+  </section>
+</div>
 {% endblock %}

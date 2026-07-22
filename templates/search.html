@@ -11,33 +11,34 @@
 {% block extra_head %}<meta name="robots" content="noindex,follow">{% endblock %}
 
 {% block content %}
-<section class="archive-header">
-  <div class="container">
-    <span class="eyebrow">Search</span>
-    <h1>{% if keyword %}Results for "{{ keyword }}"{% else %}Search InkSpire{% endif %}</h1>
-    <p>{% if keyword %}Articles matching your search term.{% else %}Enter a search term in the navigation bar to find articles.{% endif %}</p>
-  </div>
-</section>
+<div class="container-wide">
 
-<section class="discovery-section">
-  <div class="container">
+  {# Search header — reuses the Design System .section-heading primitive. #}
+  <section class="home-section" aria-label="Search header">
+    <div class="section-heading">
+      <span class="eyebrow">Search</span>
+      <h1 class="heading">{% if keyword %}Results for "{{ keyword }}"{% else %}Search InkSpire{% endif %}</h1>
+      <p>{% if keyword %}Articles matching your search term.{% else %}Enter a search term in the navigation bar to find articles.{% endif %}</p>
+    </div>
+  </section>
+
+  <section class="home-section" aria-label="Search results">
     {% if posts %}
-    <div class="row g-4">
+    <div class="post-grid--asymmetric">
       {% for post in posts %}
-      <div class="col-md-6 col-xl-4">
-        {% include 'partials/post_card.html' with post=post %}
-      </div>
+      {% include 'partials/editorial_post_card.html' with post=post %}
       {% endfor %}
     </div>
 
-    {% include 'partials/pagination.html' with page_obj=posts aria_label='Search results pagination' nav_class='mt-5' justify_center=True keyword=keyword %}
+    {% include 'partials/pagination.html' with page_obj=posts aria_label='Search results pagination' nav_class='home-pagination' justify_center=True keyword=keyword %}
     {% else %}
     <div class="empty-state">
-      <h2>No posts found</h2>
-      <p>{% if keyword %}No published articles matched "{{ keyword }}". Try a different search term.{% else %}Start with a keyword, topic, or title.{% endif %}</p>
-      <a href="{% url 'home' %}" class="btn btn-warning">Back to homepage</a>
+      <h2 class="empty-state__title">No posts found</h2>
+      <p class="empty-state__message">{% if keyword %}No published articles matched "{{ keyword }}". Try a different search term.{% else %}Start with a keyword, topic, or title.{% endif %}</p>
+      <a href="{% url 'home' %}" class="btn btn--primary">Back to homepage</a>
     </div>
     {% endif %}
-  </div>
-</section>
+  </section>
+
+</div>
 {% endblock %}

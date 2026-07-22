@@ -3,39 +3,41 @@
 {% block title %}Edit Post | InkSpire{% endblock %}
 
 {% block content %}
-<div class="row dashboard-shell">
+<div class="container-dashboard dashboard-layout">
     {% include 'dashboard/sidebar.html' %}
 
-    <div class="col-md-9">
-        <div class="dashboard-header">
+    <section class="dashboard-main">
+        <header class="dashboard-page-header">
             <div>
                 <span class="eyebrow">Editor</span>
                 <h1>Edit post</h1>
-                <p>Update post content, publishing status, media, and SEO metadata.</p>
+                <p class="meta">Update post content, publishing status, media, and SEO metadata.</p>
             </div>
-            <div class="dashboard-actions">
-                <a href="{% url 'Blog_detail' post.slug %}" class="btn btn-outline-secondary">
-                    <i class="fa fa-eye"></i> {% if post.status == 'published' %}View post{% else %}Preview draft{% endif %}
+            <div class="data-table__actions">
+                <a href="{% url 'Blog_detail' post.slug %}" class="btn btn--sm btn--secondary">
+                    <i class="fa fa-eye" aria-hidden="true"></i> {% if post.status == 'published' %}View post{% else %}Preview draft{% endif %}
                 </a>
-                <a href="{% url 'posts' %}" class="btn btn-outline-secondary">
-                    <i class="fa fa-arrow-left"></i> Back to posts
+                <a href="{% url 'posts' %}" class="btn btn--sm btn--secondary">
+                    <i class="fa fa-arrow-left" aria-hidden="true"></i> Back to posts
                 </a>
             </div>
-        </div>
+        </header>
 
         {% if form.errors %}
-        <div class="alert alert-danger editor-errors">
-            <strong>Please fix the highlighted fields.</strong>
-            <ul class="mb-0 mt-2">
-                {% for field in form %}
-                {% for error in field.errors %}
-                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
-                {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
+        <div class="alert alert--danger editor-errors" role="alert">
+            <div>
+                <strong>Please fix the highlighted fields.</strong>
+                <ul class="editor-errors__list">
+                    {% for field in form %}
+                    {% for error in field.errors %}
+                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
         {% endif %}
 
@@ -48,14 +50,14 @@
                     <span class="eyebrow">Story basics</span>
                     <h2>Title and summary</h2>
                 </div>
-                <div class="editor-field">
+                <div class="form-field">
                     <label for="{{ form.title.id_for_label }}" class="form-label">Title</label>
                     {{ form.title }}
                     {{ form.title.errors }}
                 </div>
-                <div class="editor-field">
+                <div class="form-field">
                     <label for="{{ form.short_description.id_for_label }}" class="form-label">Short description</label>
-                    <p class="field-help">Used on article cards and social previews.</p>
+                    <p class="form-help">Used on article cards and social previews.</p>
                     {{ form.short_description }}
                     {{ form.short_description.errors }}
                 </div>
@@ -66,21 +68,21 @@
                     <span class="eyebrow">Publishing</span>
                     <h2>Status and placement</h2>
                 </div>
-                <div class="row">
-                    <div class="col-md-6 editor-field">
+                <div class="editor-grid">
+                    <div class="form-field">
                         <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
                         {{ form.category }}
                         {{ form.category.errors }}
                     </div>
-                    <div class="col-md-6 editor-field">
+                    <div class="form-field">
                         <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
                         {{ form.status }}
                         {{ form.status.errors }}
                     </div>
                 </div>
-                <div class="form-check editor-check">
+                <div class="editor-check">
                     {{ form.is_featured }}
-                    <label class="form-check-label" for="{{ form.is_featured.id_for_label }}">Mark as featured post</label>
+                    <label for="{{ form.is_featured.id_for_label }}">Mark as featured post</label>
                 </div>
             </div>
 
@@ -92,17 +94,17 @@
                 {% if post.featured_image %}
                 <div class="current-image">
                     <img src="{{ post.featured_image.url }}" alt="{{ post.featured_image_alt|default:post.title }}">
-                    <span>Current featured image</span>
+                    <span class="meta">Current featured image</span>
                 </div>
                 {% endif %}
-                <div class="editor-field">
+                <div class="form-field">
                     <label for="{{ form.featured_image.id_for_label }}" class="form-label">Replace image</label>
                     {{ form.featured_image }}
                     {{ form.featured_image.errors }}
                 </div>
-                <div class="editor-field">
+                <div class="form-field">
                     <label for="{{ form.featured_image_alt.id_for_label }}" class="form-label">Image alt text</label>
-                    <p class="field-help">Describe the image for accessibility and image SEO.</p>
+                    <p class="form-help">Describe the image for accessibility and image SEO.</p>
                     {{ form.featured_image_alt }}
                     {{ form.featured_image_alt.errors }}
                 </div>
@@ -113,7 +115,7 @@
                     <span class="eyebrow">Article</span>
                     <h2>Content</h2>
                 </div>
-                <div class="editor-field">
+                <div class="form-field">
                     <label for="{{ form.blog_body.id_for_label }}" class="form-label">Post body</label>
                     {{ form.blog_body }}
                     {{ form.blog_body.errors }}
@@ -125,21 +127,21 @@
                     <span class="eyebrow">SEO</span>
                     <h2>Search metadata</h2>
                 </div>
-                <div class="editor-field">
+                <div class="form-field">
                     <label for="{{ form.meta_description.id_for_label }}" class="form-label">SEO meta description</label>
-                    <p class="field-help">Keep this concise; around 160 characters works best.</p>
+                    <p class="form-help">Keep this concise; around 160 characters works best.</p>
                     {{ form.meta_description }}
                     {{ form.meta_description.errors }}
                 </div>
             </div>
 
             <div class="editor-actions">
-                <a href="{% url 'posts' %}" class="btn btn-outline-secondary">Cancel</a>
-                <button type="submit" class="btn btn-warning">
-                    <i class="fa fa-save"></i> Update post
+                <a href="{% url 'posts' %}" class="btn btn--secondary">Cancel</a>
+                <button type="submit" class="btn btn--primary">
+                    <i class="fa fa-save" aria-hidden="true"></i> Update post
                 </button>
             </div>
         </form>
-    </div>
+    </section>
 </div>
 {% endblock %}

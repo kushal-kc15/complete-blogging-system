@@ -1,0 +1,38 @@
+{% load editorial_extras %}
+{% comment %}
+  Editorial hero — the single large lead-story treatment for the primary
+  featured Published_Blog (Requirement 3.1). Uses the Design System
+  `.hero` component classes from editorial.css. When a featured image is
+  present the text is overlaid on the image (`.hero--media`); otherwise the
+  hero renders as a flat surface panel. The category renders as a color-coded
+  `.category-tag` (Requirement 3.3).
+{% endcomment %}
+<article class="hero{% if post.featured_image %} hero--media{% endif %}">
+  {% if post.featured_image %}
+  <div class="hero__media">
+    <img src="{{ post.featured_image.url }}" alt="{{ post.featured_image_alt|default:post.title }}">
+  </div>
+  {% endif %}
+  <div class="hero__content">
+    <span class="eyebrow">Featured story</span>
+    {% if post.category %}
+    <a href="{% url 'posts_by_category' post.category.id %}"
+       class="category-tag{% if post.featured_image %} category-tag--solid{% endif %}"
+       style="--tag-color: {{ post.category|category_color }};">{{ post.category }}</a>
+    {% endif %}
+    <h1 class="hero__title"><a href="{% url 'Blog_detail' post.slug %}">{{ post.title }}</a></h1>
+    {% if post.short_description %}
+    <p class="hero__excerpt">{{ post.short_description|truncatewords:28 }}</p>
+    {% endif %}
+    <div class="meta">
+      <a href="{% url 'author_profile' post.author.username %}">{{ post.author.get_full_name|default:post.author.username }}</a>
+      <span aria-hidden="true">&middot;</span>
+      <time datetime="{{ post.effective_published_at|date:'c' }}">{{ post.effective_published_at|date:"F j, Y" }}</time>
+      {% if post.reading_time %}
+      <span aria-hidden="true">&middot;</span>
+      <span>{{ post.reading_time }} min read</span>
+      {% endif %}
+    </div>
+    <a href="{% url 'Blog_detail' post.slug %}" class="btn btn--primary">Continue reading</a>
+  </div>
+</article>

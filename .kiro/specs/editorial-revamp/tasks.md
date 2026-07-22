@@ -49,7 +49,7 @@ The three concerns are largely independent. Scheduling is built first because it
 - [~] 3. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. Scheduling: dashboard controls
+- [x] 4. Scheduling: dashboard controls
   - [x] 4.1 Add publication-time control and validation to `BlogForm`
     - In `dashboard/forms.py`, bind a `publication_time` control (datetime-local widget) to the model's `published_at`
     - Reject a past Publication_Time for a not-yet-published post with a validation message naming the future-time requirement
@@ -57,25 +57,25 @@ The three concerns are largely independent. Scheduling is built first because it
     - Preserve existing image-upload validation and sanitizer mixin
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 13.5_
 
-  - [~] 4.2 Write property test for past-time rejection
+  - [x] 4.2 Write property test for past-time rejection
     - **Property 17: Past publication times are rejected before publish**
     - Assert form invalid with future-time message for any past time on a not-yet-published post; form accepts any future time
     - **Validates: Requirements 12.3**
 
-  - [~] 4.3 Write unit test for cleared-schedule-to-draft normalization
+  - [x] 4.3 Write unit test for cleared-schedule-to-draft normalization
     - Assert clearing publication time without publishing saves as draft
     - _Requirements: 12.4_
 
-  - [~] 4.4 Distinguish scheduled posts in dashboard post listing
+  - [x] 4.4 Distinguish scheduled posts in dashboard post listing
     - In `templates/dashboard/posts.html`, classify each row as draft / scheduled / published using `scheduled()` semantics; show status pills and the Publication_Time for scheduled posts
     - _Requirements: 12.5_
 
-  - [~] 4.5 Write property test for dashboard listing classification
+  - [x] 4.5 Write property test for dashboard listing classification
     - **Property 18: Dashboard listing classifies each post by its true state**
     - Assert each post is labeled draft / scheduled / published matching its actual state and that scheduled rows show their Publication_Time
     - **Validates: Requirements 12.5**
 
-  - [~] 4.6 Write example tests for sitemap and RSS scheduled exclusion
+  - [x] 4.6 Write example tests for sitemap and RSS scheduled exclusion
     - Assert `BlogSitemap` and `LatestPostsFeed` exclude scheduled posts (1-2 representative examples each)
     - _Requirements: 11.2, 11.3_
 
@@ -113,31 +113,31 @@ The three concerns are largely independent. Scheduling is built first because it
     - Add POST-only, `@login_required` views in `blogs/views.py`; use `get_or_create` for follow (idempotent), guard self-follow, catch `IntegrityError` as no-op; delete on unfollow; redirect back to profile
     - _Requirements: 6.3, 7.3, 7.4, 7.5_
 
-  - [~] 7.2 Implement `following_feed` view
+  - [x] 7.2 Implement `following_feed` view
     - `@login_required` GET view: query `Blog.objects.published().filter(author_id__in=followed_ids)` with `select_related('author','category')`, ordered `-published_at, -created_at`; filter at query level
     - Render a named empty-state when the Reader follows no one / no posts exist
     - _Requirements: 8.1, 8.2, 8.4, 11.4, 13.2_
 
-  - [~] 7.3 Wire follow/unfollow/following URLs
+  - [x] 7.3 Wire follow/unfollow/following URLs
     - Add routes in `blogs/urls.py` for `follow_author`, `unfollow_author`, and `following_feed`
     - _Requirements: 7.3, 7.4, 8.1_
 
-  - [~] 7.4 Write property test for follow/unfollow round-trip
+  - [x] 7.4 Write property test for follow/unfollow round-trip
     - **Property 9: Follow then unfollow round-trips to the original state**
     - Assert follow-then-unfollow leaves no Follow record between the pair
     - **Validates: Requirements 7.4**
 
-  - [~] 7.5 Write property test for anonymous follow/unfollow no-op redirect
+  - [-] 7.5 Write property test for anonymous follow/unfollow no-op redirect
     - **Property 10: Anonymous follow/unfollow is a no-op redirect**
     - Assert an unauthenticated submission redirects to login and leaves Follow records unchanged
     - **Validates: Requirements 7.5**
 
-  - [~] 7.6 Write property test for the Following Feed contents
+  - [-] 7.6 Write property test for the Following Feed contents
     - **Property 12: Following Feed contains exactly published-due posts by followed authors**
     - Use a plain-Python model oracle; assert the feed equals exactly published-due posts by followed authors, newest first, excluding non-followed authors and unpublished/not-yet-due posts
     - **Validates: Requirements 8.1, 8.2, 11.4**
 
-  - [~] 7.7 Write example tests for feed redirect and empty state
+  - [-] 7.7 Write example tests for feed redirect and empty state
     - Assert anonymous request redirects to login (8.3); Reader following no one gets the named empty-state (8.4)
     - _Requirements: 8.3, 8.4_
 
@@ -145,18 +145,18 @@ The three concerns are largely independent. Scheduling is built first because it
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 9. Author profile: follow state, follower count, and density branching
-  - [~] 9.1 Add follow-state, follower-count, and density context to `AuthorProfile`
+  - [x] 9.1 Add follow-state, follower-count, and density context to `AuthorProfile`
     - In `blogs/views.py`, compute `is_following` (authenticated, not self), `show_follow_control` (authenticated and not self), `follower_count` (Follow records where author is followed)
     - Compute `use_dashboard_density` = authenticated AND (staff OR `blogs.change_blog`) to select the density-optimized vs spacious presentation
     - Keep public post listing on `published()` so scheduled posts are excluded
     - _Requirements: 5.5, 5.6, 7.1, 7.2, 7.6, 9.1, 11.1_
 
-  - [~] 9.2 Write property test for permission-based profile presentation
+  - [-] 9.2 Write property test for permission-based profile presentation
     - **Property 4: Author-profile presentation is selected by Editor permission**
     - Assert density presentation iff viewer holds Editor permission; every non-Editor (including Visitors) gets the spacious presentation
     - **Validates: Requirements 5.5, 5.6**
 
-  - [~] 9.3 Write property test for displayed control reflecting follow state
+  - [-] 9.3 Write property test for displayed control reflecting follow state
     - **Property 8: Displayed control reflects follow state**
     - Assert unfollow control shown when a Follow record exists, follow control when it does not (authenticated viewer, other user)
     - **Validates: Requirements 7.1, 7.2**
@@ -187,7 +187,7 @@ The three concerns are largely independent. Scheduling is built first because it
     - Assert dark accent equals light accent and exactly one serif + one sans family are declared; compute WCAG contrast for every documented text/bg token pair in both themes (4.5:1 body, 3:1 large/UI)
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 4.1, 4.2, 4.3, 4.5_
 
-- [ ] 11. Dark mode: theme scripts
+- [x] 11. Dark mode: theme scripts
   - [x] 11.1 Create `theme-init.js` (pre-paint theme resolver)
     - Origin-local synchronous `<head>` script: set `document.documentElement.dataset.theme` from cookie -> `prefers-color-scheme` -> light default; treat malformed cookie as "no preference"
     - _Requirements: 2.4, 14.2_
@@ -201,24 +201,24 @@ The three concerns are largely independent. Scheduling is built first because it
     - Test init branches with mocked `matchMedia` (dark/light/unsupported), persistence round-trip, toggle-without-navigation, and transition-unsupported fallback
     - _Requirements: 2.2, 2.3, 2.4, 2.5_
 
-  - [-] 11.4 Write property test for reading-progress computation
+  - [x] 11.4 Write property test for reading-progress computation
     - **Property 2: Reading-progress reflects scroll position**
     - Test the pure scroll->progress function over random offsets in `[0, max]`; assert value in `[0, 100]`, 0 at top, 100 at bottom, monotonic non-decreasing (pairwise on sorted offsets)
     - **Validates: Requirements 4.4**
 
-- [ ] 12. Templates: base layout redesign, theme toggle, and SEO preservation
+- [x] 12. Templates: base layout redesign, theme toggle, and SEO preservation
   - [x] 12.1 Restyle `base.html` under the Design System
     - Apply `editorial.css`; include `theme-init.js` in `<head>` and `theme-toggle.js` deferred; add the Theme_Toggle control to the header
     - Preserve existing SEO blocks (canonical, Open Graph, Twitter Card, JSON-LD) with no functional regression; replace Bootstrap-utility layout with Design-System equivalents
     - _Requirements: 2.1, 5.1, 5.2, 5.3, 13.7_
 
-  - [-] 12.2 Write property test for SEO metadata preservation
+  - [x] 12.2 Write property test for SEO metadata preservation
     - **Property 3: SEO metadata is preserved for every published post**
     - Render the article detail page and assert each of canonical URL, Open Graph, Twitter Card, and JSON-LD (where present) individually
     - **Validates: Requirements 5.2, 13.7**
 
 - [ ] 13. Templates: homepage editorial layout
-  - [~] 13.1 Rebuild the homepage with hero + asymmetric grid + category tags
+  - [x] 13.1 Rebuild the homepage with hero + asymmetric grid + category tags
     - Render exactly one hero for the primary featured Published_Blog above listings; render additional posts in a mixed-size asymmetric grid; show color-coded category tags on hero/cards
     - When no featured post exists, render a named empty-state instead of the hero (even if non-featured posts exist)
     - Apply subtle card hover lift and animated link underline; add reading-progress indicator hook for article pages
@@ -234,12 +234,12 @@ The three concerns are largely independent. Scheduling is built first because it
     - _Requirements: 3.1, 3.4_
 
 - [ ] 14. Templates: restyle remaining public and auth pages, and dashboard density
-  - [~] 14.1 Restyle article detail, archive, search, author profile, and auth pages
+  - [x] 14.1 Restyle article detail, archive, search, author profile, and auth pages
     - Apply the Design System to article detail (with reading-progress indicator), category archive, search results, author profile, and authentication pages (login, register, password reset)
     - Render the author profile in spacious presentation for Visitors/non-Editors and density presentation for Editors, driven by `use_dashboard_density`
     - _Requirements: 4.4, 5.1, 5.5, 5.6_
 
-  - [~] 14.2 Restyle dashboard templates with density-optimized presentation
+  - [x] 14.2 Restyle dashboard templates with density-optimized presentation
     - Apply the density component set (compact tables, visible row actions) distinct from public reading pages; keep existing Django-permission access model
     - _Requirements: 5.1, 5.4, 13.8_
 

@@ -1,98 +1,91 @@
 {% extends 'base.html' %}
 
-{% block content %}
+{% block title %}Add User | InkSpire{% endblock %}
 
-<div class="row">
+{% block content %}
+<div class="container-dashboard dashboard-layout">
   {% include 'dashboard/sidebar.html' %}
 
-  <div class="col-md-9">
+  <section class="dashboard-main">
     {% if perms.auth.add_user %}
-    <div class="card shadow-sm">
-      <div class="card-header bg-warning">
-        <h4 class="mb-0"><i class="fa fa-user-plus"></i> Add New User</h4>
+    <header class="dashboard-page-header">
+      <div>
+        <span class="eyebrow">Accounts</span>
+        <h1><i class="fa fa-user-plus" aria-hidden="true"></i> Add new user</h1>
       </div>
-      <div class="card-body">
-        {% if form.errors %}
-        <div class="alert alert-danger">
+      <a href="{% url 'users' %}" class="btn btn--sm btn--secondary">
+        <i class="fa fa-arrow-left" aria-hidden="true"></i> Back
+      </a>
+    </header>
+
+    <div class="dashboard-panel">
+      {% if form.errors %}
+      <div class="alert alert--danger" role="alert">
+        <div>
           {% for field in form %}
           {% for error in field.errors %}
-          <p class="mb-1"><strong>{{ field.label }}:</strong> {{ error }}</p>
+          <p><strong>{{ field.label }}:</strong> {{ error }}</p>
           {% endfor %}
           {% endfor %}
           {% for error in form.non_field_errors %}
-          <p class="mb-1">{{ error }}</p>
+          <p>{{ error }}</p>
           {% endfor %}
         </div>
-        {% endif %}
-
-        <form action="{% url 'add_user' %}" method="POST">
-          {% csrf_token %}
-
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label for="id_username" class="form-label font-weight-bold">Username</label>
-                {{ form.username }}
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label for="id_email" class="form-label font-weight-bold">Email</label>
-                {{ form.email }}
-              </div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label for="id_first_name" class="form-label font-weight-bold">First Name</label>
-                {{ form.first_name }}
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label for="id_last_name" class="form-label font-weight-bold">Last Name</label>
-                {{ form.last_name }}
-              </div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label for="id_password1" class="form-label font-weight-bold">Password</label>
-                {{ form.password1 }}
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label for="id_password2" class="form-label font-weight-bold">Confirm Password</label>
-                {{ form.password2 }}
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group mb-3">
-            <div class="form-check form-check-inline">
-              {{ form.is_active }}
-              <label class="form-check-label" for="id_is_active">Active</label>
-            </div>
-          </div>
-
-          <div class="d-flex justify-content-between">
-            <a href="{% url 'users' %}" class="btn btn-secondary"><i class="fa fa-arrow-left"></i> Back</a>
-            <button type="submit" class="btn btn-warning"><i class="fa fa-save"></i> Save User</button>
-          </div>
-        </form>
       </div>
+      {% endif %}
+
+      <form action="{% url 'add_user' %}" method="POST">
+        {% csrf_token %}
+
+        <div class="editor-grid">
+          <div class="form-field">
+            <label for="id_username" class="form-label">Username</label>
+            {{ form.username }}
+          </div>
+          <div class="form-field">
+            <label for="id_email" class="form-label">Email</label>
+            {{ form.email }}
+          </div>
+        </div>
+
+        <div class="editor-grid">
+          <div class="form-field">
+            <label for="id_first_name" class="form-label">First name</label>
+            {{ form.first_name }}
+          </div>
+          <div class="form-field">
+            <label for="id_last_name" class="form-label">Last name</label>
+            {{ form.last_name }}
+          </div>
+        </div>
+
+        <div class="editor-grid">
+          <div class="form-field">
+            <label for="id_password1" class="form-label">Password</label>
+            {{ form.password1 }}
+          </div>
+          <div class="form-field">
+            <label for="id_password2" class="form-label">Confirm password</label>
+            {{ form.password2 }}
+          </div>
+        </div>
+
+        <div class="editor-check">
+          {{ form.is_active }}
+          <label for="id_is_active">Active</label>
+        </div>
+
+        <div class="editor-actions">
+          <a href="{% url 'users' %}" class="btn btn--secondary">Cancel</a>
+          <button type="submit" class="btn btn--primary"><i class="fa fa-save" aria-hidden="true"></i> Save user</button>
+        </div>
+      </form>
     </div>
     {% else %}
-    <div class="alert alert-danger">
-      <i class="fa fa-exclamation-triangle"></i> You do not have permission to view this page
+    <div class="alert alert--danger" role="alert">
+      <i class="fa fa-exclamation-triangle" aria-hidden="true"></i> You do not have permission to view this page.
     </div>
     {% endif %}
-  </div>
+  </section>
 </div>
-
 {% endblock %}

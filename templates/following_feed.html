@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Following | InkSpire{% endblock %}
+{% block meta_description %}Recent posts from the authors you follow on InkSpire.{% endblock %}
+{% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}
+{% block og_title %}Following | InkSpire{% endblock %}
+{% block og_description %}Recent posts from the authors you follow on InkSpire.{% endblock %}
+{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
+{% block twitter_title %}Following | InkSpire{% endblock %}
+{% block twitter_description %}Recent posts from the authors you follow on InkSpire.{% endblock %}
+{% block extra_head %}<meta name="robots" content="noindex,follow">{% endblock %}
+
+{% block content %}
+<section class="archive-header">
+  <div class="container">
+    <span class="eyebrow">Following</span>
+    <h1>From authors you follow</h1>
+    <p>The latest published stories from the authors you follow, newest first.</p>
+  </div>
+</section>
+
+<section class="discovery-section">
+  <div class="container">
+    {% if posts %}
+    <div class="row g-4">
+      {% for post in posts %}
+      <div class="col-md-6 col-xl-4">
+        {% include 'partials/post_card.html' with post=post %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {% include 'partials/pagination.html' with page_obj=posts aria_label='Following feed pagination' nav_class='mt-5' justify_center=True %}
+    {% else %}
+    <div class="empty-state">
+      <h2>Nothing here yet</h2>
+      <p>None of the authors you follow have published posts yet. Follow more authors to see their latest work here.</p>
+      <a href="{% url 'home' %}" class="btn btn-warning">Discover authors</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

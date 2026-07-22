@@ -112,8 +112,10 @@ describe('reading-progress.js — computeReadingProgress', () => {
   });
 
   test('non-finite inputs are handled without returning NaN', () => {
+    // Non-finite scroll offsets are coerced to a safe 0.
     expect(computeReadingProgress(NaN, 1000)).toBe(0);
-    expect(computeReadingProgress(Infinity, 1000)).toBe(100);
+    expect(computeReadingProgress(Infinity, 1000)).toBe(0);
+    // A non-finite max means no meaningful range: report 0.
     expect(computeReadingProgress(500, NaN)).toBe(0);
   });
 });

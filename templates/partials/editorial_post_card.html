@@ -1,0 +1,34 @@
+{% load editorial_extras %}
+{% comment %}
+  Editorial post card — a single cell in the asymmetric homepage grid
+  (Requirements 3.2, 4.1). Uses the Design System `.post-card` component
+  classes from editorial.css; the subtle hover lift is provided by the
+  stylesheet on pointer-capable devices. The category renders as a
+  color-coded `.category-tag` (Requirement 3.3).
+{% endcomment %}
+<article class="post-card">
+  {% if post.featured_image %}
+  <a href="{% url 'Blog_detail' post.slug %}" class="post-card__media">
+    <img src="{{ post.featured_image.url }}" alt="{{ post.featured_image_alt|default:post.title }}">
+  </a>
+  {% endif %}
+  <div class="post-card__body">
+    {% if post.category %}
+    <a href="{% url 'posts_by_category' post.category.id %}" class="category-tag"
+       style="--tag-color: {{ post.category|category_color }};">{{ post.category }}</a>
+    {% endif %}
+    <h3 class="post-card__title"><a href="{% url 'Blog_detail' post.slug %}">{{ post.title }}</a></h3>
+    {% if post.short_description %}
+    <p class="post-card__excerpt">{{ post.short_description|truncatewords:20 }}</p>
+    {% endif %}
+    <div class="post-card__footer meta">
+      <a href="{% url 'author_profile' post.author.username %}">{{ post.author.get_full_name|default:post.author.username }}</a>
+      <span aria-hidden="true">&middot;</span>
+      <span>{{ post.effective_published_at|timesince }} ago</span>
+      {% if post.reading_time %}
+      <span aria-hidden="true">&middot;</span>
+      <span>{{ post.reading_time }} min</span>
+      {% endif %}
+    </div>
+  </div>
+</article>

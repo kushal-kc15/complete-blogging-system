@@ -3,116 +3,108 @@
 {% block title %}Dashboard | InkSpire{% endblock %}
 
 {% block content %}
-<div class="row dashboard-shell">
+<div class="container-dashboard dashboard-layout">
     {% include 'dashboard/sidebar.html' %}
 
-    <div class="col-md-9">
-        <div class="dashboard-header">
+    <section class="dashboard-main">
+        <header class="dashboard-page-header">
             <div>
                 <span class="eyebrow">Dashboard</span>
                 <h1>Publishing overview</h1>
-                <p>Logged in as <strong>{{ user }}</strong></p>
+                <p class="meta">Logged in as <strong>{{ user }}</strong></p>
             </div>
             {% if perms.blogs.add_blog %}
-            <a href="{% url 'add_post' %}" class="btn btn-warning">
-                <i class="fa fa-plus"></i> New post
+            <a href="{% url 'add_post' %}" class="btn btn--sm btn--primary">
+                <i class="fa fa-plus" aria-hidden="true"></i> New post
             </a>
             {% endif %}
-        </div>
+        </header>
 
-        <div class="row g-3 mb-4">
-            <div class="col-sm-6 col-xl-3">
-                <div class="dashboard-stat-card">
-                    <span>All posts</span>
-                    <strong>{{ blogs_count }}</strong>
-                    <i class="fa fa-file-text-o"></i>
-                </div>
+        <div class="dashboard-stats">
+            <div class="dashboard-stat">
+                <span class="dashboard-stat__label">All posts</span>
+                <strong class="dashboard-stat__value">{{ blogs_count }}</strong>
             </div>
-            <div class="col-sm-6 col-xl-3">
-                <div class="dashboard-stat-card">
-                    <span>Published</span>
-                    <strong>{{ published_count }}</strong>
-                    <i class="fa fa-check-circle"></i>
-                </div>
+            <div class="dashboard-stat">
+                <span class="dashboard-stat__label">Published</span>
+                <strong class="dashboard-stat__value">{{ published_count }}</strong>
             </div>
-            <div class="col-sm-6 col-xl-3">
-                <div class="dashboard-stat-card">
-                    <span>Drafts</span>
-                    <strong>{{ draft_count }}</strong>
-                    <i class="fa fa-pencil-square-o"></i>
-                </div>
+            <div class="dashboard-stat">
+                <span class="dashboard-stat__label">Drafts</span>
+                <strong class="dashboard-stat__value">{{ draft_count }}</strong>
             </div>
-            <div class="col-sm-6 col-xl-3">
-                <div class="dashboard-stat-card">
-                    <span>Categories</span>
-                    <strong>{{ category_count }}</strong>
-                    <i class="fa fa-folder-open-o"></i>
-                </div>
+            <div class="dashboard-stat">
+                <span class="dashboard-stat__label">Categories</span>
+                <strong class="dashboard-stat__value">{{ category_count }}</strong>
             </div>
         </div>
 
         <div class="dashboard-panel">
-            <div class="dashboard-panel-header">
+            <div class="dashboard-panel__header">
                 <div>
                     <span class="eyebrow">Recent activity</span>
                     <h2>Recently updated posts</h2>
                 </div>
-                <span class="badge text-bg-warning">{{ featured_count }} featured</span>
+                <span class="status-pill status-pill--published">{{ featured_count }} featured</span>
             </div>
 
             {% if recent_posts %}
-            <div class="table-responsive">
-                <table class="table dashboard-table align-middle">
-                    <thead>
-                        <tr>
-                            <th>Post</th>
-                            <th>Category</th>
-                            <th>Status</th>
-                            <th>Updated</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for post in recent_posts %}
-                        <tr>
-                            <td>
-                                <strong>{{ post.title|truncatewords:8 }}</strong>
-                                <div class="text-muted small">By {{ post.author }}</div>
-                            </td>
-                            <td>{{ post.category }}</td>
-                            <td>
-                                <span class="status-pill status-{{ post.status }}">{{ post.status|title }}</span>
-                            </td>
-                            <td>{{ post.updated_at|timesince }} ago</td>
-                            <td class="text-end">
-                                <div class="dashboard-actions">
-                                    {% if post.status == 'published' %}
-                                    <a href="{% url 'Blog_detail' post.slug %}" class="btn btn-sm btn-outline-secondary" title="View post">
-                                        <i class="fa fa-eye"></i>
-                                    </a>
-                                    {% endif %}
-                                    {% if perms.blogs.change_blog %}
-                                    <a href="{% url 'edit_post' post.id %}" class="btn btn-sm btn-outline-success" title="Edit post">
-                                        <i class="fa fa-edit"></i>
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            <table class="data-table data-table--compact">
+                <thead>
+                    <tr>
+                        <th>Post</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th>Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for post in recent_posts %}
+                    <tr>
+                        <td>
+                            <strong>{{ post.title|truncatewords:8 }}</strong>
+                            <div class="meta">By {{ post.author }}</div>
+                        </td>
+                        <td>{{ post.category }}</td>
+                        <td>
+                            {% if post.status == 'draft' %}
+                            <span class="status-pill status-pill--draft">Draft</span>
+                            {% elif post.is_scheduled %}
+                            <span class="status-pill status-pill--scheduled">Scheduled</span>
+                            {% else %}
+                            <span class="status-pill status-pill--published">Published</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ post.updated_at|timesince }} ago</td>
+                        <td>
+                            <div class="data-table__actions">
+                                {% if post.status == 'published' %}
+                                <a href="{% url 'Blog_detail' post.slug %}" class="btn btn--sm btn--secondary" title="View post" aria-label="View post">
+                                    <i class="fa fa-eye" aria-hidden="true"></i>
+                                </a>
+                                {% endif %}
+                                {% if perms.blogs.change_blog %}
+                                <a href="{% url 'edit_post' post.id %}" class="btn btn--sm btn--secondary" title="Edit post" aria-label="Edit post">
+                                    <i class="fa fa-edit" aria-hidden="true"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             {% else %}
-            <div class="dashboard-empty">
-                <h3>No posts yet</h3>
-                <p>Create your first post to see recent activity here.</p>
+            <div class="empty-state">
+                <h3 class="empty-state__title">No posts yet</h3>
+                <p class="empty-state__message">Create your first post to see recent activity here.</p>
                 {% if perms.blogs.add_blog %}
-                <a href="{% url 'add_post' %}" class="btn btn-warning">Create post</a>
+                <a href="{% url 'add_post' %}" class="btn btn--primary">Create post</a>
                 {% endif %}
             </div>
             {% endif %}
         </div>
-    </div>
+    </section>
 </div>
 {% endblock %}
