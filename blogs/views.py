@@ -2,7 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import Http404, HttpResponse, JsonResponse
 from django.conf import settings
 from django.contrib.auth.models import User
-from .models import Blog, Category, Comment, Like, Bookmark, Contact, UserProfile
+from .models import Blog, Category, Comment, Like, Bookmark, Contact, UserProfile, Follow
+from django.db import IntegrityError
 from django.db.models import Count, F, Q
 from django.db.models import Prefetch
 from django.core.paginator import Paginator
@@ -10,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.urls import reverse
+from django.utils import timezone
 from django_ratelimit.core import get_usage
 from math import ceil
 from .forms import CommentForm, ContactForm
@@ -83,7 +85,15 @@ def BlogDetail(request, slug):
     post = get_object_or_404(
         Blog.objects.select_related('author', 'category'), slug=slug
     )
-    is_preview = post.status != 'published'
+    # A post is publicly visible only when it is published AND its
+    # publication time is either unset or has already passed. A published
+    # post with a future published_at is a Scheduled_Blog and must be treated
+    # as a preview (hidden from the public) until its time arrives.
+    now = timezone.now()
+    is_public = post.status == 'published' and (
+        post.published_at is None or post.published_at <= now
+    )
+    is_preview = not is_public
     can_preview = (
         request.user.is_authenticated and (
             post.author_id == request.user.id or
@@ -321,3 +331,33 @@ def AuthorProfile(request, username):
         'posts': posts,
     }
     return render(request, 'author_profile.html', context)
+
+
+@login_required(login_url='login')
+@require_POST
+def follow_author(request, username):
+    author = get_object_or_404(User, username=username)
+    # Guard self-follow: creating a Follow from a user to themselves is
+    # rejected (Requirement 6.3). Silently no-op back to the profile.
+    if author.id != request.user.id:
+        # get_or_create makes the follow idempotent: submitting the control
+        # more than once yields exactly one Follow record (Requirement 7.3).
+        # A concurrent duplicate that slips past get_or_create trips the DB
+        # UniqueConstraint; catch the IntegrityError and treat it as a no-op.
+        try:
+            Follow.objects.get_or_create(
+                follower=request.user, followed=author
+            )
+        except IntegrityError:
+            pass
+    return redirect('author_profile', username=author.username)
+
+
+@login_required(login_url='login')
+@require_POST
+def unfollow_author(request, username):
+    author = get_object_or_404(User, username=username)
+    # Deleting is a no-op when no Follow record exists; either way the
+    # relationship ends up unfollowed (Requirement 7.4).
+    Follow.objects.filter(follower=request.user, followed=author).delete()
+    return redirect('author_profile', username=author.username)

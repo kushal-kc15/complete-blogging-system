@@ -1,0 +1,769 @@
+/* ==========================================================================
+   InkSpire — Modern Editorial Design System
+   Token foundation (Task 10.1)
+
+   This file declares the design-token foundation for the Editorial Revamp.
+   Component classes (.hero, .post-card, .category-tag, etc.) are added in a
+   separate layer (Task 10.2). Keep this file limited to:
+     - :root light-theme tokens
+     - :root[data-theme="dark"] dark-theme overrides
+     - the base background/text application + smooth theme transition
+
+   Design constraints enforced here (Requirements 1.1-1.7, 2.5):
+     - Exactly one warm, non-purple, non-blue accent (#B5651D), identical in
+       both themes.
+     - Exactly one serif family (headings + article body) + one sans family
+       (UI, nav, meta).
+     - Maximum rectangular border-radius is 8px (--radius-md is 6px); the
+       fully circular radius is reserved for avatars / single-icon controls.
+     - Hairline (1px) borders are the primary separation technique, not heavy
+       drop shadows.
+     - Flat, single-color fills only. No gradients (except image overlays,
+       defined at the component layer), no glassmorphism/backdrop-filter, no
+       decorative shapes.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Light theme (default) — adopted from FRONTEND_V2_DESIGN_SYSTEM.md baseline.
+   These color tokens are the fixed light-theme values (Requirement 1.1).
+   -------------------------------------------------------------------------- */
+:root {
+  /* ---- Color: surfaces & text (light) ---------------------------------- */
+  --color-background: #FAFAF8;        /* warm off-white page background */
+  --color-surface: #FFFFFF;           /* cards, panels, form containers */
+  --color-surface-muted: #F2F1ED;     /* empty states, disabled, subtle fills */
+  --color-text-primary: #1A1A18;      /* near-black headings & body text */
+  --color-text-secondary: #5C5A54;    /* meta text, captions, placeholders */
+  --color-border: #E3E1DA;            /* hairline card/table/input borders */
+
+  /* ---- Color: single warm accent (identical in both themes, Req 1.2) --- */
+  --color-accent: #B5651D;            /* warm editorial rust — the only accent */
+  --color-accent-hover: #8F4F16;      /* hover/active state of accent elements */
+  --color-accent-contrast: #FFFFFF;   /* text/icon color placed on the accent */
+
+  /* ---- Color: status (muted, non-purple/non-blue) ---------------------- */
+  --color-success: #2E6B3E;           /* published pill, success alerts */
+  --color-warning: #8A6D1B;           /* draft pill, warning alerts (muted gold) */
+  --color-danger: #A3342A;            /* destructive actions, error alerts */
+
+  /* Status pill background tints (flat, single color — no gradient) */
+  --color-success-tint: rgba(46, 107, 62, 0.12);
+  --color-warning-tint: rgba(138, 109, 27, 0.12);
+  --color-danger-tint: rgba(163, 52, 42, 0.12);
+
+  /* ---- Typography: exactly two families (Requirement 1.3) -------------- */
+  /* One serif for headlines + article body; one sans for UI/nav/meta. */
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Font weights — no more than three system-wide */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* Type scale (font-size / line-height) */
+  --type-display-size: clamp(2.5rem, 6vw, 4.5rem);
+  --type-display-lh: 1.05;
+  --type-page-title-size: clamp(2rem, 4vw, 2.75rem);
+  --type-page-title-lh: 1.15;
+  --type-section-title-size: 1.5rem;
+  --type-section-title-lh: 1.25;
+  --type-article-title-size: clamp(2.25rem, 5vw, 3.5rem);
+  --type-article-title-lh: 1.1;
+  --type-subhead-size: 1.15rem;
+  --type-subhead-lh: 1.35;
+  --type-body-size: 1rem;
+  --type-body-lh: 1.6;
+  --type-article-body-size: 1.125rem;
+  --type-article-body-lh: 1.75;
+  --type-meta-size: 0.875rem;
+  --type-meta-lh: 1.5;
+  --type-caption-size: 0.8125rem;
+  --type-caption-lh: 1.5;
+  --type-eyebrow-size: 0.75rem;
+  --type-eyebrow-lh: 1.4;
+  --type-eyebrow-tracking: 0.08em;
+
+  /* ---- Spacing scale (4px base) ---------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ---- Border radius (Requirement 1.4) --------------------------------- */
+  /* No rectangular container may exceed 8px. --radius-md is the working max
+     at 6px; --radius-full is reserved for avatars / single-icon controls. */
+  --radius-none: 0px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;   /* hard ceiling for rectangles */
+  --radius-full: 999px;
+
+  /* ---- Borders (Requirement 1.5) --------------------------------------- */
+  /* Hairline borders are the primary separation technique. */
+  --border-hairline: 1px solid var(--color-border);
+  --border-width: 1px;
+
+  /* ---- Shadows (subtle, stacking-order only — never decorative) -------- */
+  --shadow-none: none;
+  --shadow-xs: 0 1px 2px rgba(20, 20, 18, 0.05);
+  --shadow-sm: 0 2px 6px rgba(20, 20, 18, 0.08);
+  --shadow-focus: 0 0 0 3px rgba(181, 101, 29, 0.25);
+
+  /* ---- Container widths ------------------------------------------------- */
+  --container-reading: 680px;
+  --container-standard: 960px;
+  --container-wide: 1200px;
+  --container-dashboard: 1320px;
+
+  /* ---- Motion (Requirement 4.5 / 2.5) ---------------------------------- */
+  /* Transitions are short, subtle state-change hints only. */
+  --motion-duration-fast: 120ms;
+  --motion-duration-base: 150ms;
+  --motion-easing: cubic-bezier(0.4, 0.0, 0.2, 1);
+  /* Dedicated duration for the theme background/text color transition. */
+  --theme-transition-duration: 200ms;
+}
+
+/* --------------------------------------------------------------------------
+   Dark theme overrides (Requirement 1.2, 2.1)
+   Near-black backgrounds, warm off-white text, SAME accent value.
+   Only tokens that differ from light are redeclared here; the accent,
+   typography, spacing, radius, and motion tokens are inherited unchanged.
+   -------------------------------------------------------------------------- */
+:root[data-theme="dark"] {
+  /* Surfaces & text — near-black bg, warm off-white text */
+  --color-background: #14130F;        /* near-black, warm-tinted */
+  --color-surface: #1D1B16;           /* elevated surface just above bg */
+  --color-surface-muted: #26241E;     /* secondary/subtle surface */
+  --color-text-primary: #F4F1E8;      /* warm off-white primary text */
+  --color-text-secondary: #B4AF9F;    /* warm muted secondary text */
+  --color-border: #3A372E;            /* hairline border on dark surfaces */
+
+  /* Accent is intentionally identical to light theme (Requirement 1.2). */
+  /* --color-accent / --color-accent-hover inherited unchanged. */
+  --color-accent-contrast: #14130F;   /* dark text on accent fills for contrast */
+
+  /* Status colors lifted for legibility on dark backgrounds */
+  --color-success: #6FB585;
+  --color-warning: #D6B24A;
+  --color-danger: #E0796E;
+
+  --color-success-tint: rgba(111, 181, 133, 0.16);
+  --color-warning-tint: rgba(214, 178, 74, 0.16);
+  --color-danger-tint: rgba(224, 121, 110, 0.16);
+
+  /* Shadows on dark surfaces need deeper alpha to remain perceptible */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.40);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.50);
+  --shadow-focus: 0 0 0 3px rgba(181, 101, 29, 0.40);
+}
+
+/* --------------------------------------------------------------------------
+   Base application of tokens + smooth theme transition (Requirement 2.5)
+   Background and text colors transition smoothly on theme change rather than
+   flashing. Component styling lives in the component layer (Task 10.2).
+   -------------------------------------------------------------------------- */
+html {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  font-weight: var(--font-weight-regular);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth color change when [data-theme] flips. Scoped to color properties so
+   only background/text animate — no layout or opacity choreography. */
+html,
+body {
+  transition:
+    background-color var(--theme-transition-duration) var(--motion-easing),
+    color var(--theme-transition-duration) var(--motion-easing);
+}
+
+/* Respect users who prefer reduced motion: disable the theme transition and
+   any token-driven motion so the change is applied without animation. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-fast: 0ms;
+    --motion-duration-base: 0ms;
+    --theme-transition-duration: 0ms;
+  }
+}
+
+/* ==========================================================================
+   InkSpire — Modern Editorial Design System
+   Component layer (Task 10.2)
+
+   Built entirely on the tokens declared above (Task 10.1). No new colors,
+   radii, or fonts are introduced here — everything references custom
+   properties so both light and dark themes are covered automatically.
+
+   Constraints re-affirmed in this layer:
+     - No rectangular border-radius exceeds 8px (--radius-lg). Circular radius
+       (--radius-full) is used ONLY for avatars and single-icon controls.
+     - Hairline (1px) borders are the primary separation technique.
+     - Flat single-color fills. The ONLY gradient permitted is the legibility
+       scrim placed over photographic imagery (.hero__media / .post-card__media).
+     - No glassmorphism / backdrop-filter, no decorative shapes.
+     - Motion is limited to user-caused hover/focus state changes.
+
+   Requirements covered: 3.2, 3.3, 4.1, 4.2, 4.4, 5.4
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Layout helpers
+   -------------------------------------------------------------------------- */
+.container-reading { max-width: var(--container-reading); margin-inline: auto; padding-inline: var(--space-4); }
+.container-standard { max-width: var(--container-standard); margin-inline: auto; padding-inline: var(--space-4); }
+.container-wide { max-width: var(--container-wide); margin-inline: auto; padding-inline: var(--space-4); }
+.container-dashboard { max-width: var(--container-dashboard); margin-inline: auto; padding-inline: var(--space-4); }
+
+/* --------------------------------------------------------------------------
+   Typography primitives
+   Serif for headings + article body; sans for UI/meta/eyebrow.
+   -------------------------------------------------------------------------- */
+h1, h2, h3, h4, h5, h6,
+.heading { font-family: var(--font-serif); color: var(--color-text-primary); font-weight: var(--font-weight-bold); margin: 0 0 var(--space-4); }
+
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--type-eyebrow-size);
+  line-height: var(--type-eyebrow-lh);
+  letter-spacing: var(--type-eyebrow-tracking);
+  text-transform: uppercase;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.meta {
+  font-family: var(--font-sans);
+  font-size: var(--type-meta-size);
+  line-height: var(--type-meta-lh);
+  color: var(--color-text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Inline text links — animated underline on hover (Requirement 4.2)
+   The underline is always present but its thickness/offset animates rather
+   than appearing/disappearing instantly. Uses background-size transition so
+   the underline "grows" smoothly.
+   -------------------------------------------------------------------------- */
+.link,
+.prose a,
+.article-body a {
+  color: var(--color-accent);
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 1px;
+  transition: background-size var(--motion-duration-base) var(--motion-easing),
+              color var(--motion-duration-fast) var(--motion-easing);
+  padding-bottom: 1px;
+}
+
+.link:hover,
+.prose a:hover,
+.article-body a:hover {
+  color: var(--color-accent-hover);
+  background-size: 100% 2px;
+}
+
+.link:focus-visible,
+.prose a:focus-visible,
+.article-body a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* --------------------------------------------------------------------------
+   Category tag — color-coded, distinguishable tag (Requirement 3.3)
+   Flat fill using the accent tint; per-category hue can be overridden inline
+   via --tag-color without introducing a gradient.
+   -------------------------------------------------------------------------- */
+.category-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-sans);
+  font-size: var(--type-eyebrow-size);
+  line-height: 1;
+  letter-spacing: var(--type-eyebrow-tracking);
+  text-transform: uppercase;
+  font-weight: var(--font-weight-medium);
+  color: var(--tag-color, var(--color-accent));
+  background-color: transparent;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--tag-color, var(--color-accent));
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Solid variant for placement over imagery / hero */
+.category-tag--solid {
+  color: var(--color-accent-contrast);
+  background-color: var(--tag-color, var(--color-accent));
+  border-color: var(--tag-color, var(--color-accent));
+}
+
+a.category-tag:hover { background-color: var(--tag-color, var(--color-accent)); color: var(--color-accent-contrast); }
+a.category-tag--solid:hover { background-color: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+
+/* --------------------------------------------------------------------------
+   Post card (Requirement 4.1 — subtle lift on hover, pointer devices only)
+   Hairline border separation, flat surface fill, radius <= 8px.
+   -------------------------------------------------------------------------- */
+.post-card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: transform var(--motion-duration-base) var(--motion-easing),
+              box-shadow var(--motion-duration-base) var(--motion-easing),
+              border-color var(--motion-duration-base) var(--motion-easing);
+}
+
+.post-card__media {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background-color: var(--color-surface-muted);
+}
+
+.post-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.post-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+}
+
+.post-card__title {
+  font-family: var(--font-serif);
+  font-size: var(--type-section-title-size);
+  line-height: var(--type-section-title-lh);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+
+.post-card__title a { color: inherit; text-decoration: none; }
+.post-card__title a:hover { color: var(--color-accent); }
+
+.post-card__excerpt {
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.post-card__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: auto;
+  padding-top: var(--space-3);
+}
+
+/* Subtle lift only on pointer-capable devices (Requirement 4.1). */
+@media (hover: hover) and (pointer: fine) {
+  .post-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-sm);
+    border-color: var(--color-text-secondary);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Asymmetric post grid (Requirement 3.2)
+   A mixed-size grid — the first two cells span wider/taller so the layout is
+   visually varied rather than a uniform grid of identical cards.
+   -------------------------------------------------------------------------- */
+.post-grid--asymmetric {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: repeat(6, 1fr);
+  align-items: start;
+}
+
+/* Default: each card spans two of six columns (three per row). */
+.post-grid--asymmetric > .post-card { grid-column: span 6; }
+
+@media (min-width: 640px) {
+  .post-grid--asymmetric > .post-card { grid-column: span 3; }
+}
+
+@media (min-width: 960px) {
+  .post-grid--asymmetric > .post-card { grid-column: span 2; }
+
+  /* Feature the first card larger, and give the second a wider span so the
+     grid reads as intentionally asymmetric, not a uniform 3-col grid. */
+  .post-grid--asymmetric > .post-card:first-child { grid-column: span 4; }
+  .post-grid--asymmetric > .post-card:first-child .post-card__media { aspect-ratio: 21 / 9; }
+  .post-grid--asymmetric > .post-card:nth-child(2) { grid-column: span 2; }
+  .post-grid--asymmetric > .post-card:nth-child(6n + 3) { grid-column: span 4; }
+}
+
+/* --------------------------------------------------------------------------
+   Hero treatment (Requirement 3.1 lead story; the ONLY permitted gradient is
+   the legibility scrim over the photographic image — Requirement 1.6)
+   -------------------------------------------------------------------------- */
+.hero {
+  position: relative;
+  display: grid;
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background-color: var(--color-surface);
+}
+
+/* Media variant: text overlaid on the image with a scrim for legibility. */
+.hero--media { min-height: clamp(360px, 55vh, 560px); }
+
+.hero__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.hero__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Legibility scrim over imagery — the single sanctioned gradient use. */
+.hero__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.72) 0%,
+    rgba(0, 0, 0, 0.35) 45%,
+    rgba(0, 0, 0, 0) 75%
+  );
+}
+
+.hero__content {
+  position: relative;
+  z-index: 1;
+  align-self: end;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-8);
+  max-width: var(--container-standard);
+}
+
+/* On the media hero, overlaid text is light for contrast against the scrim. */
+.hero--media .hero__content,
+.hero--media .hero__title,
+.hero--media .hero__excerpt,
+.hero--media .meta { color: #F4F1E8; }
+
+.hero__title {
+  font-family: var(--font-serif);
+  font-size: var(--type-display-size);
+  line-height: var(--type-display-lh);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+
+.hero__title a { color: inherit; text-decoration: none; }
+
+.hero__excerpt {
+  font-size: var(--type-subhead-size);
+  line-height: var(--type-subhead-lh);
+  margin: 0;
+  max-width: var(--container-reading);
+}
+
+/* --------------------------------------------------------------------------
+   Empty state (Requirements 3.4, 8.4) — names what is missing.
+   -------------------------------------------------------------------------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  padding: var(--space-16) var(--space-6);
+  background-color: var(--color-surface-muted);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+}
+
+.empty-state__title {
+  font-family: var(--font-serif);
+  font-size: var(--type-section-title-size);
+  line-height: var(--type-section-title-lh);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.empty-state__message { margin: 0; max-width: var(--container-reading); }
+
+/* --------------------------------------------------------------------------
+   Reading progress indicator (Requirement 4.4) — the SOLE scroll-driven
+   visual update permitted. A thin accent bar fixed to the top of the viewport;
+   its width is set from JS via --reading-progress (0%–100%).
+   -------------------------------------------------------------------------- */
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 100;
+  background-color: transparent;
+  pointer-events: none;
+}
+
+.reading-progress__bar {
+  height: 100%;
+  width: var(--reading-progress, 0%);
+  background-color: var(--color-accent);
+  /* No transition: this tracks scroll position directly and must not lag. */
+}
+
+/* --------------------------------------------------------------------------
+   Buttons — flat fills, hairline borders, radius <= 8px.
+   -------------------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: var(--type-body-size);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color var(--motion-duration-fast) var(--motion-easing),
+              color var(--motion-duration-fast) var(--motion-easing),
+              border-color var(--motion-duration-fast) var(--motion-easing),
+              box-shadow var(--motion-duration-fast) var(--motion-easing);
+}
+
+.btn:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+
+.btn--primary {
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border-color: var(--color-accent);
+}
+.btn--primary:hover { background-color: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+
+.btn--secondary {
+  background-color: transparent;
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+.btn--secondary:hover { border-color: var(--color-text-primary); background-color: var(--color-surface-muted); }
+
+.btn--ghost {
+  background-color: transparent;
+  color: var(--color-accent);
+  border-color: transparent;
+}
+.btn--ghost:hover { background-color: var(--color-surface-muted); }
+
+.btn--danger {
+  background-color: transparent;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+.btn--danger:hover { background-color: var(--color-danger); color: var(--color-accent-contrast); }
+
+.btn--sm { padding: var(--space-2) var(--space-3); font-size: var(--type-meta-size); }
+.btn--block { display: flex; width: 100%; }
+
+/* Single-icon circular control — the only rectangular exception uses
+   --radius-full intentionally (Requirement 1.4). */
+.btn--icon {
+  padding: var(--space-2);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  border-color: var(--color-border);
+  background-color: transparent;
+  color: var(--color-text-primary);
+}
+.btn--icon:hover { background-color: var(--color-surface-muted); }
+
+/* --------------------------------------------------------------------------
+   Form controls — hairline borders, flat fills, radius <= 8px.
+   -------------------------------------------------------------------------- */
+.form-field { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-5); }
+
+.form-label {
+  font-family: var(--font-sans);
+  font-size: var(--type-meta-size);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.form-control {
+  font-family: var(--font-sans);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  width: 100%;
+  transition: border-color var(--motion-duration-fast) var(--motion-easing),
+              box-shadow var(--motion-duration-fast) var(--motion-easing);
+}
+
+.form-control::placeholder { color: var(--color-text-secondary); }
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+textarea.form-control { min-height: 120px; resize: vertical; }
+select.form-control { appearance: none; }
+
+.form-control--error { border-color: var(--color-danger); }
+
+.form-help { font-size: var(--type-caption-size); color: var(--color-text-secondary); }
+.form-error { font-size: var(--type-caption-size); color: var(--color-danger); }
+
+/* --------------------------------------------------------------------------
+   Alerts — flat tinted fills + hairline accent border, radius <= 8px.
+   -------------------------------------------------------------------------- */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+}
+
+.alert--success { background-color: var(--color-success-tint); border-color: var(--color-success); color: var(--color-success); }
+.alert--warning { background-color: var(--color-warning-tint); border-color: var(--color-warning); color: var(--color-warning); }
+.alert--danger  { background-color: var(--color-danger-tint);  border-color: var(--color-danger);  color: var(--color-danger); }
+.alert--info    { background-color: var(--color-surface-muted); border-color: var(--color-border); color: var(--color-text-primary); }
+
+/* --------------------------------------------------------------------------
+   Status pills — draft / scheduled / published (Requirement 12.5).
+   Flat single-color tint fills, fully rounded pill shape.
+   -------------------------------------------------------------------------- */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-sans);
+  font-size: var(--type-caption-size);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.status-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background-color: currentColor;
+}
+
+.status-pill--published { background-color: var(--color-success-tint); color: var(--color-success); border-color: var(--color-success); }
+.status-pill--scheduled { background-color: var(--color-warning-tint); color: var(--color-warning); border-color: var(--color-warning); }
+.status-pill--draft     { background-color: var(--color-surface-muted); color: var(--color-text-secondary); border-color: var(--color-border); }
+
+/* --------------------------------------------------------------------------
+   Data table — density-optimized dashboard presentation (Requirement 5.4).
+   Compact rows, visible row actions, hairline row separators. Distinct from
+   the spacious public reading presentation.
+   -------------------------------------------------------------------------- */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  font-size: var(--type-meta-size);
+  background-color: var(--color-surface);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.data-table thead th {
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--type-eyebrow-tracking);
+  font-size: var(--type-eyebrow-size);
+  /* Compact header padding for density. */
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface-muted);
+  border-bottom: var(--border-hairline);
+}
+
+.data-table tbody td {
+  /* Tight vertical rhythm — the density-optimized presentation. */
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+@media (hover: hover) and (pointer: fine) {
+  .data-table tbody tr:hover td { background-color: var(--color-surface-muted); }
+}
+
+/* Row actions are always visible in the density layout (Requirement 5.4). */
+.data-table__actions {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.data-table--compact tbody td { padding: var(--space-1) var(--space-3); }

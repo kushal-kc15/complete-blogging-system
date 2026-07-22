@@ -27,3 +27,7 @@ django-ratelimit==4.1.0
 
 # Environment Variables
 python-dotenv==1.0.1
+
+# Testing (property-based tests + time control)
+hypothesis==6.122.3
+freezegun==1.5.1

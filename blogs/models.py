@@ -43,7 +43,14 @@ STATUS_CHOICES = (
 class Blog(models.Model):
     class QuerySet(models.QuerySet):
         def published(self):
-            return self.filter(status='published')
+            return self.filter(status='published').filter(
+                models.Q(published_at__isnull=True)
+                | models.Q(published_at__lte=timezone.now())
+            )
+
+        def scheduled(self):
+            return self.filter(
+                status='published', published_at__gt=timezone.now())
 
     title = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True)
@@ -158,3 +165,32 @@ class Contact(models.Model):
 
     def __str__(self):
         return f'{self.name} - {self.subject}'
+
+
+class Follow(models.Model):
+    follower = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='following')
+    followed = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='followers')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['follower', 'followed'], name='unique_follow'),
+            models.CheckConstraint(
+                check=~models.Q(follower=models.F('followed')),
+                name='prevent_self_follow'),
+        ]
+        indexes = [
+            models.Index(fields=['follower', 'followed']),
+            models.Index(fields=['followed']),
+        ]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.follower_id is not None and self.follower_id == self.followed_id:
+            raise ValidationError("You cannot follow yourself.")
+
+    def __str__(self):
+        return f'{self.follower.username} follows {self.followed.username}'
