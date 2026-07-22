@@ -33,3 +33,4 @@ python-dotenv==1.0.1
 hypothesis==6.122.3
 freezegun==1.5.1
 requests==2.32.3
+PyJWT>=2.8.0
