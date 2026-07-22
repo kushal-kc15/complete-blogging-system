@@ -6,8 +6,9 @@ from django.http import HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from .forms import RegisterForm, UserProfileForm, ChangePasswordForm
+from .forms import RegisterForm, UserProfileForm, ChangePasswordForm, SetPasswordForm
 from blogs.models import Category, Blog, UserProfile
+from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.views import PasswordResetView
 from django.contrib import auth
@@ -283,9 +284,15 @@ def profile(request):
     if not hasattr(user, 'profile'):
         UserProfile.objects.create(user=user)
 
+    google_account = SocialAccount.objects.filter(
+        user=user, provider='google'
+    ).first()
+
     context = {
         'user': user,
         'profile': user.profile,
+        'google_account': google_account,
+        'has_usable_password': user.has_usable_password(),
     }
     return render(request, 'profile.html', context)
 
@@ -322,6 +329,11 @@ def edit_profile(request):
 @login_required
 def change_password(request):
     """Change user password"""
+    # Social-only accounts have no usable password to change; send them to the
+    # set-password flow instead (which does not ask for a current password).
+    if not request.user.has_usable_password():
+        return redirect('set_password')
+
     if request.method == 'POST':
         form = ChangePasswordForm(request.user, request.POST)
         if form.is_valid():
@@ -337,3 +349,34 @@ def change_password(request):
         'form': form,
     }
     return render(request, 'change_password.html', context)
+
+
+@login_required
+def set_password(request):
+    """Set an initial password for a social-only account.
+
+    Users who registered through Google have no usable password. This lets
+    them create one so they can also log in with username + password.
+    """
+    # Users who already have a password should use the change-password flow.
+    if request.user.has_usable_password():
+        return redirect('change_password')
+
+    if request.method == 'POST':
+        form = SetPasswordForm(request.user, request.POST)
+        if form.is_valid():
+            form.save()
+            auth.update_session_auth_hash(request, request.user)
+            messages.success(
+                request,
+                'Password set successfully! You can now also log in with your '
+                'username and password.',
+            )
+            return redirect('profile')
+    else:
+        form = SetPasswordForm(request.user)
+
+    context = {
+        'form': form,
+    }
+    return render(request, 'set_password.html', context)

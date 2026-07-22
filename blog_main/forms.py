@@ -1,7 +1,11 @@
 from django import forms
 from django.forms import ModelForm
 from django.contrib.auth.models import User
-from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
+from django.contrib.auth.forms import (
+    UserCreationForm,
+    PasswordChangeForm,
+    SetPasswordForm as DjangoSetPasswordForm,
+)
 from blogs.models import UserProfile
 from blogs.validators import validate_image_upload
 
@@ -42,10 +46,10 @@ class UserProfileForm(forms.ModelForm):
         model = UserProfile
         fields = ['bio', 'avatar', 'website', 'location']
         widgets = {
-            'bio': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Tell us about yourself...'}),
+            'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Tell us about yourself...'}),
             'avatar': forms.ClearableFileInput(attrs={'accept': 'image/jpeg,image/png,image/webp'}),
-            'website': forms.URLInput(attrs={'placeholder': 'https://yourwebsite.com'}),
-            'location': forms.TextInput(attrs={'placeholder': 'City, Country'}),
+            'website': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://yourwebsite.com'}),
+            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'City, Country'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -79,6 +83,22 @@ class ChangePasswordForm(PasswordChangeForm):
         widget=forms.PasswordInput(
             attrs={'class': 'form-control', 'placeholder': 'Current Password'})
     )
+    new_password1 = forms.CharField(
+        widget=forms.PasswordInput(
+            attrs={'class': 'form-control', 'placeholder': 'New Password'})
+    )
+    new_password2 = forms.CharField(
+        widget=forms.PasswordInput(
+            attrs={'class': 'form-control', 'placeholder': 'Confirm New Password'})
+    )
+
+
+class SetPasswordForm(DjangoSetPasswordForm):
+    """Set an initial password for accounts created via social login.
+
+    Unlike ChangePasswordForm this does not require the current password,
+    because social-only users have no usable password to enter.
+    """
     new_password1 = forms.CharField(
         widget=forms.PasswordInput(
             attrs={'class': 'form-control', 'placeholder': 'New Password'})

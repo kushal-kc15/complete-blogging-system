@@ -4,6 +4,7 @@ from django.db import IntegrityError
 from django.core.paginator import Paginator
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import Http404
 from django.contrib import messages
 from blogs.models import Blog, Category, Comment, Contact
 from django.contrib.auth.decorators import login_required
@@ -11,6 +12,29 @@ from django.contrib.auth.decorators import permission_required, user_passes_test
 from django.views.decorators.http import require_POST
 from .forms import CategoryForm, BlogForm
 # Create your views here.
+
+
+def is_dashboard_admin(user):
+    """A dashboard admin sees the whole site (all authors' content).
+
+    Everyone else who reaches the dashboard is an author and sees only their
+    own posts and stats (the modern per-author dashboard model).
+    """
+    return user.is_staff or user.is_superuser
+
+
+def can_access_dashboard(user):
+    """Admins and authors may open the dashboard.
+
+    An author is any user granted authoring permissions (view/add/change
+    blog). Plain readers have no dashboard — they use Profile / Bookmarks.
+    """
+    return (
+        is_dashboard_admin(user)
+        or user.has_perm('blogs.view_blog')
+        or user.has_perm('blogs.add_blog')
+        or user.has_perm('blogs.change_blog')
+    )
 
 
 def superuser_required(view_func):
@@ -39,22 +63,27 @@ def comment_change_required(view_func):
 
 @login_required(login_url='login')
 @user_passes_test(
-    lambda user: user.is_staff or user.has_perms([
-        'blogs.view_blog', 'blogs.view_category',
-    ]),
+    can_access_dashboard,
     login_url='login',
     redirect_field_name=None,
 )
 def dashboard(request):
-    blogs_count = Blog.objects.all().count()
+    is_admin = is_dashboard_admin(request.user)
+    # Admins see all posts; authors see only their own (modern per-author view).
+    scoped = Blog.objects.all() if is_admin else Blog.objects.filter(author=request.user)
+
+    blogs_count = scoped.count()
     category_count = Category.objects.all().count()
-    published_count = Blog.objects.published().count()
-    draft_count = Blog.objects.filter(status='draft').count()
-    featured_count = Blog.objects.filter(is_featured=True).count()
-    recent_posts = Blog.objects.select_related(
+    published_count = Blog.objects.published().filter(
+        pk__in=scoped.values('pk')
+    ).count()
+    draft_count = scoped.filter(status='draft').count()
+    featured_count = scoped.filter(is_featured=True).count()
+    recent_posts = scoped.select_related(
         'category', 'author'
     ).order_by('-updated_at')[:5]
     context = {
+        'is_dashboard_admin': is_admin,
         'blogs_count': blogs_count,
         'category_count': category_count,
         'published_count': published_count,
@@ -127,10 +156,15 @@ def delete_category(request, id):
 @login_required(login_url='login')
 @permission_required('blogs.view_blog', raise_exception=True)
 def posts(request):
+    is_admin = is_dashboard_admin(request.user)
     post_list = Blog.objects.select_related('category', 'author').order_by('-updated_at')
+    # Authors only manage their own posts; admins manage every author's posts.
+    if not is_admin:
+        post_list = post_list.filter(author=request.user)
     paginator = Paginator(post_list, 6)
     posts = paginator.get_page(request.GET.get('page'))
     context = {
+        'is_dashboard_admin': is_admin,
         'posts': posts,
     }
     return render(request, 'dashboard/posts.html', context)
@@ -167,6 +201,9 @@ def add_post(request):
 @permission_required('blogs.change_blog', raise_exception=True)
 def edit_post(request, id):
     post = get_object_or_404(Blog, id=id)
+    # Authors may only edit their own posts; admins may edit any post.
+    if not is_dashboard_admin(request.user) and post.author_id != request.user.id:
+        raise Http404
     form = BlogForm(instance=post)
     if request.method == 'POST':
         form = BlogForm(request.POST, request.FILES, instance=post)
@@ -187,6 +224,9 @@ def edit_post(request, id):
 @require_POST
 def delete_post(request, id):
     post = get_object_or_404(Blog, id=id)
+    # Authors may only delete their own posts; admins may delete any post.
+    if not is_dashboard_admin(request.user) and post.author_id != request.user.id:
+        raise Http404
     post.delete()
     return redirect('posts')
 

@@ -156,10 +156,11 @@ class HomeViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'home.html')
-        # Locked behavior: with zero featured posts, the hero and
-        # secondary-featured sections are omitted entirely rather than
-        # rendering an empty-state placeholder in their place.
-        self.assertNotContains(response, 'Featured story')
+        # Requirement 3.4: with zero featured posts the hero is NOT rendered;
+        # instead a named "Featured story" empty-state states what is missing,
+        # regardless of whether other non-featured posts exist.
+        self.assertContains(response, 'Featured story')
+        self.assertContains(response, 'No featured story yet')
         self.assertContains(response, 'No posts yet')
 
     def test_home_shows_featured_and_latest_sections(self):
@@ -1104,4 +1105,120 @@ class ProductionSettingsTests(SimpleTestCase):
         self.assertIn(
             "os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'blog_main.settings')",
             manage_source,
+        )
+
+
+class ProfileAndGoogleOAuthTests(TestCase):
+    """Profile management + Google OAuth wiring: set-password flow for
+    social-only accounts, profile UI branching, connected-accounts display,
+    and the allauth sign-up signal that provisions a profile."""
+
+    def setUp(self):
+        self.password_user = User.objects.create_user(
+            username='has-pw', email='haspw@example.com', password='test-password'
+        )
+        UserProfile.objects.create(user=self.password_user)
+
+        self.social_user = User.objects.create_user(
+            username='googler', email='googler@example.com'
+        )
+        self.social_user.set_unusable_password()
+        self.social_user.save()
+        UserProfile.objects.create(user=self.social_user)
+
+    # ---- set-password / change-password routing --------------------------
+    def test_social_only_user_can_set_password(self):
+        self.client.force_login(self.social_user)
+        get_response = self.client.get(reverse('set_password'))
+        self.assertEqual(get_response.status_code, 200)
+
+        response = self.client.post(
+            reverse('set_password'),
+            {'new_password1': 'Str0ng-Pass!23', 'new_password2': 'Str0ng-Pass!23'},
+        )
+        self.assertRedirects(response, reverse('profile'))
+        self.social_user.refresh_from_db()
+        self.assertTrue(self.social_user.has_usable_password())
+
+    def test_change_password_redirects_social_only_user_to_set_password(self):
+        self.client.force_login(self.social_user)
+        response = self.client.get(reverse('change_password'))
+        self.assertRedirects(response, reverse('set_password'))
+
+    def test_set_password_redirects_user_who_already_has_one(self):
+        self.client.force_login(self.password_user)
+        response = self.client.get(reverse('set_password'))
+        self.assertRedirects(response, reverse('change_password'))
+
+    # ---- profile page UI branching ---------------------------------------
+    def test_profile_offers_set_password_for_social_only_user(self):
+        self.client.force_login(self.social_user)
+        response = self.client.get(reverse('profile'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse('set_password'))
+        self.assertNotContains(response, reverse('change_password'))
+
+    def test_profile_offers_change_password_for_password_user(self):
+        self.client.force_login(self.password_user)
+        response = self.client.get(reverse('profile'))
+        self.assertContains(response, reverse('change_password'))
+
+    def test_edit_profile_page_renders(self):
+        self.client.force_login(self.password_user)
+        response = self.client.get(reverse('edit_profile'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Edit profile')
+        # Uses the external, CSP-safe avatar-preview script (no inline script).
+        self.assertContains(response, 'js/avatar-preview.js')
+
+    def test_profile_shows_connect_google_when_not_connected(self):
+        self.client.force_login(self.password_user)
+        response = self.client.get(reverse('profile'))
+        self.assertContains(response, 'Connect Google')
+
+    def test_profile_shows_disconnect_when_google_connected(self):
+        from allauth.socialaccount.models import SocialAccount
+        SocialAccount.objects.create(
+            user=self.password_user, provider='google', uid='g-123',
+            extra_data={'email': 'haspw@example.com'},
+        )
+        self.client.force_login(self.password_user)
+        response = self.client.get(reverse('profile'))
+        self.assertContains(response, 'Disconnect')
+        self.assertContains(response, 'Connected')
+
+    # ---- allauth sign-up signal ------------------------------------------
+    def test_signup_signal_creates_profile_and_imports_google_name(self):
+        from types import SimpleNamespace
+        from allauth.account.signals import user_signed_up
+
+        new_user = User.objects.create_user(username='grace')
+        new_user.set_unusable_password()
+        new_user.save()
+        self.assertFalse(UserProfile.objects.filter(user=new_user).exists())
+
+        sociallogin = SimpleNamespace(
+            account=SimpleNamespace(
+                extra_data={'given_name': 'Grace', 'family_name': 'Hopper'}
+            )
+        )
+        user_signed_up.send(
+            sender=User, request=None, user=new_user, sociallogin=sociallogin
+        )
+
+        self.assertTrue(UserProfile.objects.filter(user=new_user).exists())
+        new_user.refresh_from_db()
+        self.assertEqual(new_user.first_name, 'Grace')
+        self.assertEqual(new_user.last_name, 'Hopper')
+
+    def test_signup_signal_is_idempotent_for_existing_profile(self):
+        from allauth.account.signals import user_signed_up
+
+        # password_user already has a profile from setUp; the signal must not
+        # raise (get_or_create) when fired for a non-social sign-up.
+        user_signed_up.send(
+            sender=User, request=None, user=self.password_user, sociallogin=None
+        )
+        self.assertEqual(
+            UserProfile.objects.filter(user=self.password_user).count(), 1
         )

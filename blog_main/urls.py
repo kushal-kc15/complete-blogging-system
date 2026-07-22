@@ -63,6 +63,7 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('profile/edit/', views.edit_profile, name='edit_profile'),
     path('profile/change-password/', views.change_password, name='change_password'),
+    path('profile/set-password/', views.set_password, name='set_password'),
 
     path('ckeditor5/image_upload/', views.ckeditor_image_upload,
          name='ck_editor_5_upload_file'),

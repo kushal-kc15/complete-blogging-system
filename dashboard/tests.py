@@ -161,6 +161,98 @@ class DashboardSecurityTests(TestCase):
         self.assertEqual(self.client.get(reverse('contact_messages')).status_code, 200)
 
 
+class DashboardScopingTests(TestCase):
+    """Modern per-author dashboard: authors see/manage only their own posts;
+    admins (staff/superuser) see and manage every author's posts."""
+
+    def setUp(self):
+        self.category = Category.objects.create(name='Scoping')
+
+        # A non-admin author: granted authoring permissions but not staff.
+        self.author = User.objects.create_user(
+            username='author', password='test-password'
+        )
+        for codename in ('view_blog', 'add_blog', 'change_blog', 'delete_blog'):
+            self.author.user_permissions.add(
+                Permission.objects.get(
+                    codename=codename, content_type__app_label='blogs'
+                )
+            )
+
+        # Another author, whose posts must stay invisible to the first.
+        self.other = User.objects.create_user(
+            username='other-author', password='test-password'
+        )
+        self.admin = User.objects.create_superuser(
+            username='scope-admin', email='scope-admin@example.com',
+            password='test-password'
+        )
+        self.reader = User.objects.create_user(
+            username='scope-reader', password='test-password'
+        )
+
+        self.own_post = Blog.objects.create(
+            title='My own post', slug='my-own-post', category=self.category,
+            author=self.author, short_description='Mine',
+            blog_body='<p>Body</p>', status='published'
+        )
+        self.other_post = Blog.objects.create(
+            title='Someone elses post', slug='others-post', category=self.category,
+            author=self.other, short_description='Theirs',
+            blog_body='<p>Body</p>', status='published'
+        )
+
+    def test_author_can_open_dashboard(self):
+        self.client.force_login(self.author)
+        self.assertEqual(self.client.get(reverse('dashboard')).status_code, 200)
+
+    def test_reader_without_author_permissions_is_denied(self):
+        self.client.force_login(self.reader)
+        response = self.client.get(reverse('dashboard'))
+        self.assertIn(response.status_code, (302, 403))
+
+    def test_author_posts_list_shows_only_own_posts(self):
+        self.client.force_login(self.author)
+        response = self.client.get(reverse('posts'))
+        self.assertEqual(response.status_code, 200)
+        titles = [p.title for p in response.context['posts']]
+        self.assertIn('My own post', titles)
+        self.assertNotIn('Someone elses post', titles)
+
+    def test_admin_posts_list_shows_all_posts(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('posts'))
+        titles = [p.title for p in response.context['posts']]
+        self.assertIn('My own post', titles)
+        self.assertIn('Someone elses post', titles)
+
+    def test_author_dashboard_stats_count_only_own_posts(self):
+        self.client.force_login(self.author)
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.context['blogs_count'], 1)
+        self.assertFalse(response.context['is_dashboard_admin'])
+
+    def test_author_cannot_edit_other_authors_post(self):
+        self.client.force_login(self.author)
+        response = self.client.get(reverse('edit_post', args=[self.other_post.id]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_author_cannot_delete_other_authors_post(self):
+        self.client.force_login(self.author)
+        response = self.client.post(reverse('delete_post', args=[self.other_post.id]))
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Blog.objects.filter(pk=self.other_post.pk).exists())
+
+    def test_admin_can_edit_and_delete_any_post(self):
+        self.client.force_login(self.admin)
+        self.assertEqual(
+            self.client.get(reverse('edit_post', args=[self.other_post.id])).status_code,
+            200,
+        )
+        self.client.post(reverse('delete_post', args=[self.own_post.id]))
+        self.assertFalse(Blog.objects.filter(pk=self.own_post.pk).exists())
+
+
 class BlogFormImageValidationTests(TestCase):
     def setUp(self):
         self.category = Category.objects.create(name='Images')

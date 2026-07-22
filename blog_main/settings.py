@@ -11,22 +11,54 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
+
+import dj_database_url
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load a local .env file if present (e.g. for local production-style checks).
+# Azure App Service / other hosts supply real environment variables directly,
+# so this is a no-op there.
+load_dotenv(BASE_DIR / '.env')
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+#
+# All security-sensitive settings below read from environment variables with
+# safe local-development defaults, so this file works unmodified both for
+# `manage.py runserver` and for Azure App Service (via startup.sh + Gunicorn).
 
-# Local development only. Production uses DJANGO_SECRET_KEY in settings_prod.
-SECRET_KEY = 'django-insecure-n4=4x2%iail^7yhy(w_gja#=(i@eb3#044j#c%#!pb$upof#q1'
+# Falls back to an insecure key for local development only. Always set
+# DJANGO_SECRET_KEY in any environment reachable from the internet.
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-n4=4x2%iail^7yhy(w_gja#=(i@eb3#044j#c%#!pb$upof#q1',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Defaults to True locally; set DJANGO_DEBUG=False in production.
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').strip().lower() in ('1', 'true', 'yes', 'on')
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver']
+# Comma-separated list, e.g. "myapp.azurewebsites.net,www.example.com".
+# Defaults to local-only hosts when unset.
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,testserver').split(',')
+    if host.strip()
+]
+
+# Comma-separated list of fully qualified origins (with scheme), e.g.
+# "https://myapp.azurewebsites.net". Empty by default for local development.
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
 
 
 # Application definition
@@ -104,6 +136,7 @@ CK_EDITOR_5_UPLOAD_FILE_VIEW_NAME = 'ck_editor_5_upload_file'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -137,11 +170,13 @@ WSGI_APPLICATION = 'blog_main.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# Defaults to local SQLite. Set DATABASE_URL (e.g. postgres://...) to switch
+# to another engine later without further code changes.
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+    )
 }
 
 # Local development and tests do not require a Redis server.
@@ -193,11 +228,12 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'static'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
     'blog_main/static'
 ]
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -234,3 +270,46 @@ SOCIALACCOUNT_PROVIDERS = {
         'AUTH_PARAMS': {'access_type': 'online'},
     }
 }
+
+# ---------------------------------------------------------------------------
+# django-allauth account / social behaviour
+#
+# The project keeps its own custom username+password login/register views; the
+# allauth settings below only shape the Google (social) flow and allauth's own
+# pages. Google verifies email ownership, so we trust it and skip our own email
+# verification step, and we auto-create the local account from the Google
+# profile instead of showing an intermediate allauth signup form.
+# ---------------------------------------------------------------------------
+ACCOUNT_LOGIN_METHODS = {'username', 'email'}
+ACCOUNT_SIGNUP_FIELDS = ['username*', 'email*', 'password1*', 'password2*']
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_EMAIL_REQUIRED = False
+
+
+# ---------------------------------------------------------------------------
+# Test-only performance settings
+#
+# When running the test suite (``manage.py test``) we swap in faster defaults
+# that do not change behaviour under test but dramatically cut runtime:
+#   * MD5 password hasher instead of PBKDF2 (users are created constantly by
+#     the property-based tests; PBKDF2 runs ~600k iterations per user).
+#   * In-memory SQLite so database setup/teardown avoids disk I/O.
+#   * Logging silenced so log formatting does not add per-test overhead.
+# The production engine/backends are unaffected (see settings_prod.py).
+# ---------------------------------------------------------------------------
+TESTING = 'test' in sys.argv or any('pytest' in arg for arg in sys.argv)
+
+if TESTING:
+    PASSWORD_HASHERS = [
+        'django.contrib.auth.hashers.MD5PasswordHasher',
+    ]
+
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',
+    }
+
+    import logging
+    logging.disable(logging.CRITICAL)

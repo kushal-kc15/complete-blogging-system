@@ -1,118 +1,105 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}Edit Profile | InkSpire{% endblock %}
+{% block meta_description %}Edit your InkSpire profile.{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-8">
-    <div class="card shadow-sm mt-4">
-      <div class="card-header bg-dark text-white">
-        <h4 class="mb-0"><i class="fa fa-edit"></i> Edit Profile</h4>
+<div class="container-standard">
+  <section class="account-page">
+    <div class="dashboard-panel">
+      <div class="section-heading">
+        <span class="eyebrow">Account</span>
+        <h1 class="heading"><i class="fa fa-edit" aria-hidden="true"></i> Edit profile</h1>
       </div>
-      <div class="card-body">
-        {% if form.errors %}
-        <div class="alert alert-danger">
+
+      {% if form.errors %}
+      <div class="alert alert--danger" role="alert">
+        <div>
           <strong>Please correct the errors below:</strong>
-          <ul class="mb-0 mt-2">
+          <ul>
             {% for field in form %}
             {% for error in field.errors %}
             <li>{{ field.label }}: {{ error }}</li>
             {% endfor %}
             {% endfor %}
+            {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
           </ul>
         </div>
-        {% endif %}
-
-        <form method="post" enctype="multipart/form-data">
-          {% csrf_token %}
-
-          <div class="row mb-4">
-            <!-- Avatar Preview -->
-            <div class="col-md-4 text-center">
-              {% if user.profile.avatar %}
-              <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="rounded-circle mb-3"
-                style="width: 150px; height: 150px; object-fit: cover;" id="avatar-preview">
-              {% else %}
-              <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3"
-                style="width: 150px; height: 150px;" id="avatar-placeholder">
-                <i class="fa fa-user text-white" style="font-size: 4rem;"></i>
-              </div>
-              <img src="" alt="Avatar" class="rounded-circle mb-3 d-none"
-                style="width: 150px; height: 150px; object-fit: cover;" id="avatar-preview">
-              {% endif %}
-              <div class="mb-3">
-                <label for="id_avatar" class="btn btn-outline-secondary btn-sm">
-                  <i class="fa fa-camera"></i> Change Avatar
-                </label>
-                <input type="file" name="avatar" id="id_avatar" class="d-none" accept="image/jpeg,image/png,image/webp">
-              </div>
-            </div>
-
-            <!-- User Info -->
-            <div class="col-md-8">
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">First Name</label>
-                  <input type="text" name="first_name" class="form-control" value="{{ form.first_name.value|default_if_none:'' }}"
-                    placeholder="First Name">
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Last Name</label>
-                  <input type="text" name="last_name" class="form-control" value="{{ form.last_name.value|default_if_none:'' }}"
-                    placeholder="Last Name">
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
-                {{ form.email }}
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label">Location</label>
-                {{ form.location }}
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label">Website</label>
-                {{ form.website }}
-              </div>
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Bio</label>
-            {{ form.bio }}
-          </div>
-
-          <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-success">
-              <i class="fa fa-save"></i> Save Changes
-            </button>
-            <a href="{% url 'profile' %}" class="btn btn-secondary">
-              <i class="fa fa-times"></i> Cancel
-            </a>
-          </div>
-        </form>
       </div>
-    </div>
-  </div>
-</div>
+      {% endif %}
 
-<script>
-  // Avatar preview
-  document.getElementById('id_avatar').addEventListener('change', function (e) {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const preview = document.getElementById('avatar-preview');
-        const placeholder = document.getElementById('avatar-placeholder');
-        preview.src = e.target.result;
-        preview.classList.remove('d-none');
-        if (placeholder) placeholder.classList.add('d-none');
-      };
-      reader.readAsDataURL(file);
-    }
-  });
-</script>
+      <form method="post" enctype="multipart/form-data" class="profile-edit-form">
+        {% csrf_token %}
+
+        <div class="profile-edit-grid">
+          <div class="profile-edit-avatar">
+            {% if user.profile.avatar %}
+            <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="profile-avatar" id="avatar-preview">
+            {% else %}
+            <div class="profile-avatar profile-avatar-fallback" id="avatar-placeholder" aria-hidden="true">
+              <i class="fa fa-user"></i>
+            </div>
+            <img src="" alt="Avatar preview" class="profile-avatar is-hidden" id="avatar-preview">
+            {% endif %}
+            <label for="id_avatar" class="btn btn--outline btn--sm">
+              <i class="fa fa-camera" aria-hidden="true"></i> Change avatar
+            </label>
+            <input type="file" name="avatar" id="id_avatar" class="is-hidden" accept="image/jpeg,image/png,image/webp">
+          </div>
+
+          <div class="profile-edit-fields">
+            <div class="auth-form__row">
+              <div class="form-field">
+                <label for="id_first_name" class="form-label">First name</label>
+                <input type="text" name="first_name" id="id_first_name" class="form-control"
+                  value="{{ form.first_name.value|default_if_none:'' }}" placeholder="First name">
+              </div>
+              <div class="form-field">
+                <label for="id_last_name" class="form-label">Last name</label>
+                <input type="text" name="last_name" id="id_last_name" class="form-control"
+                  value="{{ form.last_name.value|default_if_none:'' }}" placeholder="Last name">
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+              {{ form.email }}
+            </div>
+
+            <div class="form-field">
+              <label class="form-label" for="{{ form.location.id_for_label }}">Location</label>
+              {{ form.location }}
+            </div>
+
+            <div class="form-field">
+              <label class="form-label" for="{{ form.website.id_for_label }}">Website</label>
+              {{ form.website }}
+            </div>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="{{ form.bio.id_for_label }}">Bio</label>
+          {{ form.bio }}
+        </div>
+
+        <div class="editor-actions">
+          <a href="{% url 'profile' %}" class="btn btn--outline">
+            <i class="fa fa-times" aria-hidden="true"></i> Cancel
+          </a>
+          <button type="submit" class="btn btn--primary">
+            <i class="fa fa-save" aria-hidden="true"></i> Save changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/avatar-preview.js' %}" defer></script>
 {% endblock %}

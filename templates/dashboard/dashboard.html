@@ -10,8 +10,8 @@
         <header class="dashboard-page-header">
             <div>
                 <span class="eyebrow">Dashboard</span>
-                <h1>Publishing overview</h1>
-                <p class="meta">Logged in as <strong>{{ user }}</strong></p>
+                <h1>{% if is_dashboard_admin %}Publishing overview{% else %}Your publishing overview{% endif %}</h1>
+                <p class="meta">Logged in as <strong>{{ user }}</strong>{% if not is_dashboard_admin %} &middot; showing your posts{% endif %}</p>
             </div>
             {% if perms.blogs.add_blog %}
             <a href="{% url 'add_post' %}" class="btn btn--sm btn--primary">
@@ -22,7 +22,7 @@
 
         <div class="dashboard-stats">
             <div class="dashboard-stat">
-                <span class="dashboard-stat__label">All posts</span>
+                <span class="dashboard-stat__label">{% if is_dashboard_admin %}All posts{% else %}Your posts{% endif %}</span>
                 <strong class="dashboard-stat__value">{{ blogs_count }}</strong>
             </div>
             <div class="dashboard-stat">

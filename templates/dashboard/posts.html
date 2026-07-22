@@ -10,8 +10,8 @@
         <header class="dashboard-page-header">
             <div>
                 <span class="eyebrow">Content</span>
-                <h1>All posts</h1>
-                <p class="meta">Manage published, scheduled, and draft articles.</p>
+                <h1>{% if is_dashboard_admin %}All posts{% else %}Your posts{% endif %}</h1>
+                <p class="meta">{% if is_dashboard_admin %}Manage published, scheduled, and draft articles.{% else %}Manage your published, scheduled, and draft articles.{% endif %}</p>
             </div>
             {% if perms.blogs.add_blog %}
             <a href="{% url 'add_post' %}" class="btn btn--sm btn--primary">
