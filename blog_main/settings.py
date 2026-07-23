@@ -33,7 +33,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'allauth',               # <-- REQUIRED
     'allauth.account',       # <-- REQUIRED
-    'allauth.socialaccount'
+    'allauth.socialaccount',
     # Your Apps
     'blogs',
     'dashboard',
