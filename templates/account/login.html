@@ -27,6 +27,8 @@
       </div>
       {% endif %}
 
+      {% get_providers as socialaccount_providers %}
+      {% if socialaccount_providers %}
       <form method="post" action="{% provider_login_url 'google' process='login' %}" class="auth-social">
         {% csrf_token %}
         <button type="submit" class="btn btn--secondary btn--block">
@@ -35,6 +37,7 @@
       </form>
 
       <div class="auth-divider meta">or log in with username</div>
+      {% endif %}
 
       <form action="{% url 'account_login' %}" method="POST" class="auth-form">
         {% csrf_token %}
