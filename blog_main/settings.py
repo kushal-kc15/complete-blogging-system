@@ -200,6 +200,14 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 # -----------------------------------------------------------------------------
+# RATE LIMITING
+# -----------------------------------------------------------------------------
+COMMENT_RATE_LIMIT = '10/m'
+PASSWORD_RESET_RATE = '5/h'
+LOGIN_FAILURE_IP_RATE = '20/h'
+LOGIN_FAILURE_IDENTITY_RATE = '10/h'
+
+# -----------------------------------------------------------------------------
 # CKEDITOR 5
 # -----------------------------------------------------------------------------
 CKEDITOR_5_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
