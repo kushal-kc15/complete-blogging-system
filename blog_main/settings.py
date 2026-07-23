@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -12,12 +13,13 @@ load_dotenv(BASE_DIR / '.env')
 # -----------------------------------------------------------------------------
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-fallback-key-replace-in-prod')
 
-# Automatically sets DEBUG=False on Azure, True locally
+# Set DEBUG=False in production via environment variable
 DEBUG = os.environ.get('DEBUG', 'True').strip().lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = [
-    '*',  # Simple & safe for initial deployment testing
-]
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 CSRF_TRUSTED_ORIGINS = [
     'https://*.azurewebsites.net',
@@ -35,10 +37,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
-    'allauth',               # <-- REQUIRED
-    'allauth.account',       # <-- REQUIRED
+    'allauth',
+    'allauth.account',
     'allauth.socialaccount',
-    "allauth.socialaccount.providers.google",
+    'allauth.socialaccount.providers.google',
+    'crispy_forms',
+    'crispy_bootstrap5',
+    'django_ckeditor_5',
     # Your Apps
     'blogs',
     'dashboard',
@@ -78,14 +83,22 @@ TEMPLATES = [
 WSGI_APPLICATION = 'blog_main.wsgi.application'
 
 # -----------------------------------------------------------------------------
-# DATABASE (SQLite)
+# DATABASE
 # -----------------------------------------------------------------------------
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if os.environ.get('DATABASE_URL'):
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # -----------------------------------------------------------------------------
 # CACHE (In-Memory)
@@ -123,8 +136,15 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
-# Django 4.2+ / 5.x Storage Configuration
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -161,5 +181,39 @@ SOCIALACCOUNT_PROVIDERS = {
                 'secret': os.environ.get('GOOGLE_CLIENT_SECRET', ''),
             },
         ],
+    },
+}
+
+# -----------------------------------------------------------------------------
+# CRISPY FORMS
+# -----------------------------------------------------------------------------
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+# -----------------------------------------------------------------------------
+# CKEDITOR 5
+# -----------------------------------------------------------------------------
+CKEDITOR_5_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+CK_EDITOR_5_UPLOAD_FILE_VIEW_NAME = "ck_editor_5_upload_file"
+CKEDITOR_5_CONFIGS = {
+    'default': {
+        'toolbar': ['heading', '|', 'bold', 'italic', 'link',
+                    'bulletedList', 'numberedList', 'blockQuote', 'imageUpload'],
+    },
+    'extends': {
+        'toolbar': ['heading', '|', 'bold', 'italic', 'link',
+                    'underline', 'strikethrough', '|',
+                    'bulletedList', 'numberedList', 'todoList', '|',
+                    'blockQuote', 'codeBlock', '|',
+                    'imageUpload', 'mediaEmbed', '|',
+                    'insertTable', '|', 'undo', 'redo'],
+        'image': {
+            'toolbar': ['imageTextAlternative', 'imageStyle:alignLeft',
+                        'imageStyle:alignRight', 'imageStyle:alignCenter',
+                        'imageStyle:side'],
+        },
+        'table': {
+            'contentToolbar': ['tableColumn', 'tableRow', 'mergeTableCells'],
+        },
     },
 }
