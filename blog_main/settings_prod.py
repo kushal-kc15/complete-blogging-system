@@ -85,16 +85,16 @@ def _non_negative_integer_environment_value(name, *, default):
     return integer_value
 
 
-# def _postgres_sslmode():
-    sslmode = os.environ.get('POSTGRES_SSLMODE', '').strip() or 'require'
-    allowed_ssl_modes = {
-        'disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full',
-    }
-    if sslmode not in allowed_ssl_modes:
-        raise ImproperlyConfigured(
-            'POSTGRES_SSLMODE environment variable must be a supported PostgreSQL SSL mode.'
-        )
-    return sslmode
+# # def _postgres_sslmode():
+#     sslmode = os.environ.get('POSTGRES_SSLMODE', '').strip() or 'require'
+#     allowed_ssl_modes = {
+#         'disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full',
+#     }
+#     if sslmode not in allowed_ssl_modes:
+#         raise ImproperlyConfigured(
+#             'POSTGRES_SSLMODE environment variable must be a supported PostgreSQL SSL mode.'
+#         )
+#     return sslmode
 
 
 def _boolean_environment_value(name, *, default):
