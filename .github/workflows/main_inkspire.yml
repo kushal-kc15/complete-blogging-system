@@ -27,13 +27,13 @@ jobs:
           python -m venv antenv
           source antenv/bin/activate
           pip install --upgrade pip
-          if [ -f complete-blogging-system/requirements.txt ]; then pip install -r complete-blogging-system/requirements.txt; fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: complete-blogging-system
+          path: '.'
 
   deploy:
     runs-on: ubuntu-latest
