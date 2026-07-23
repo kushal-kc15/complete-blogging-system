@@ -53,7 +53,7 @@ each link is still gated by the existing Django permission model (unchanged).
         </li>
         {% endif %}
         <li>
-            <form action="{% url 'logout' %}" method="POST">
+            <form action="{% url 'account_logout' %}" method="POST">
                 {% csrf_token %}
                 <button type="submit" class="btn btn--sm btn--block btn--danger">
                     <i class="fa fa-sign-out" aria-hidden="true"></i> Logout

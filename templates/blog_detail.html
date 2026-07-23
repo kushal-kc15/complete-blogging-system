@@ -110,7 +110,7 @@
           <i class="fa fa-bookmark" aria-hidden="true"></i> {% if user_has_bookmarked %}Saved{% else %}Save{% endif %}
           </button></form>
         {% else %}
-        <a href="{% url 'login' %}" class="btn btn--sm btn--secondary">
+        <a href="{% url 'account_login' %}" class="btn btn--sm btn--secondary">
           <i class="fa fa-heart" aria-hidden="true"></i> {{ like_count }}
         </a>
         {% endif %}
@@ -265,7 +265,7 @@
           </div>
         </form>
         {% else %}
-        <p>Please <a class="link" href="{% url 'login' %}">login</a> to write a comment!</p>
+        <p>Please <a class="link" href="{% url 'account_login' %}">login</a> to write a comment!</p>
         {% endif %}
       </div>
     </section>

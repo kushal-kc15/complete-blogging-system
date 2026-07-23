@@ -15,7 +15,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, reverse_lazy
+from django.views.generic import RedirectView
 from . import views
 from django.conf import settings
 from django.conf.urls.static import static
@@ -35,9 +36,16 @@ urlpatterns = [
     path('robots.txt', views.robots_txt, name='robots_txt'),
     path('', views.home, name='home'),
     path('category/', include('blogs.urls')),
-    path('register/', views.Register, name='register'),
-    path('login/', views.Login, name='login'),
-    path('logout/', views.Logout, name='logout'),
+
+    # Legacy URLs kept for old bookmarks/links; django-allauth now owns
+    # authentication. Custom Register/Login/Logout views have been removed.
+    path('login/', RedirectView.as_view(
+        url=reverse_lazy('account_login'), query_string=True), name='login'),
+    path('register/', RedirectView.as_view(
+        url=reverse_lazy('account_signup'), query_string=True), name='register'),
+    path('logout/', RedirectView.as_view(
+        url=reverse_lazy('account_logout'), query_string=True), name='logout'),
+
     path('accounts/', include('allauth.urls')),
     path('password-reset/', views.RateLimitedPasswordResetView.as_view(
         template_name='password_reset_form.html',

@@ -36,7 +36,7 @@
 
       <div class="auth-divider meta">or log in with username</div>
 
-      <form action="{% url 'login' %}" method="POST" class="auth-form">
+      <form action="{% url 'account_login' %}" method="POST" class="auth-form">
         {% csrf_token %}
         {% if next %}
         <input type="hidden" name="next" value="{{ next }}">
@@ -60,7 +60,7 @@
         </button>
       </form>
 
-      <p class="auth-switch meta">Don't have an account? <a class="link" href="{% url 'register' %}">Create one</a></p>
+      <p class="auth-switch meta">Don't have an account? <a class="link" href="{% url 'account_signup' %}">Create one</a></p>
     </div>
   </section>
 </div>
