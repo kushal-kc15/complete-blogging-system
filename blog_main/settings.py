@@ -30,12 +30,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+    'django.contrib.sites',
+    'allauth',               # <-- REQUIRED
+    'allauth.account',       # <-- REQUIRED
+    'allauth.socialaccount'
     # Your Apps
     'blogs',
     'dashboard',
 ]
-
+SITE_ID = 1
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Serves static files directly
