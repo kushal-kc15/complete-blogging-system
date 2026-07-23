@@ -85,7 +85,7 @@ def _non_negative_integer_environment_value(name, *, default):
     return integer_value
 
 
-def _postgres_sslmode():
+# def _postgres_sslmode():
     sslmode = os.environ.get('POSTGRES_SSLMODE', '').strip() or 'require'
     allowed_ssl_modes = {
         'disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full',
@@ -262,23 +262,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'blog_main.wsgi.application'
 
 # Database - PostgreSQL is required in production.
+# Database - SQLite for production
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': _required_environment_value('POSTGRES_DB'),
-        'USER': _required_environment_value('POSTGRES_USER'),
-        'PASSWORD': _required_environment_value('POSTGRES_PASSWORD'),
-        'HOST': _required_environment_value('POSTGRES_HOST'),
-        'PORT': _required_integer_environment_value(
-            'POSTGRES_PORT', minimum=1, maximum=65535
-        ),
-        'CONN_MAX_AGE': _non_negative_integer_environment_value(
-            'POSTGRES_CONN_MAX_AGE', default=60
-        ),
-        'CONN_HEALTH_CHECKS': True,
-        'OPTIONS': {
-            'sslmode': _postgres_sslmode(),
-        },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
