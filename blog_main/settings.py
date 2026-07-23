@@ -47,11 +47,11 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True').strip().lower() in ('1', 'true', 
 # Comma-separated list, e.g. "myapp.azurewebsites.net,www.example.com".
 # Defaults to local-only hosts when unset.
 ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,testserver').split(',')
-    if host.strip()
+    'inkspire-d7dubnfnbqbebqa3.centralindia-01.azurewebsites.net',
+    '.azurewebsites.net',
+    'localhost',
+    '127.0.0.1',
 ]
-
 # Comma-separated list of fully qualified origins (with scheme), e.g.
 # "https://myapp.azurewebsites.net". Empty by default for local development.
 CSRF_TRUSTED_ORIGINS = [
