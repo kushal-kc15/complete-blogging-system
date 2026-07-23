@@ -33,9 +33,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: |
-            complete-blogging-system/
-            !complete-blogging-system/antenv/
+          path: complete-blogging-system
 
   deploy:
     runs-on: ubuntu-latest
