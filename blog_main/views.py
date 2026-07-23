@@ -20,7 +20,7 @@ from django_ratelimit.core import get_usage
 from django.core.exceptions import ValidationError
 from django.views.decorators.http import require_POST
 from django_ckeditor_5.permissions import check_upload_permission
-from django.core.files.storage import get_storage_class
+from django.core.files.storage import storages
 from blogs.validators import validate_image_upload
 
 
