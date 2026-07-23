@@ -73,4 +73,5 @@ jobs:
         with:
           app-name: 'inkspire'
           slot-name: 'Production'
+          package: './complete-blogging-system'
           
