@@ -1,115 +1,139 @@
 {% extends 'base.html' %}
 
-{% block title %}Manage Posts | InkSpire{% endblock %}
+{% block title %}Posts | InkSpire{% endblock %}
 
 {% block content %}
 <div class="container-dashboard dashboard-layout">
-    {% include 'dashboard/sidebar.html' %}
+  {% include 'dashboard/sidebar.html' %}
 
-    <section class="dashboard-main">
-        <header class="dashboard-page-header">
-            <div>
-                <span class="eyebrow">Content</span>
-                <h1>{% if is_dashboard_admin %}All posts{% else %}Your posts{% endif %}</h1>
-                <p class="meta">{% if is_dashboard_admin %}Manage published, scheduled, and draft articles.{% else %}Manage your published, scheduled, and draft articles.{% endif %}</p>
-            </div>
-            {% if user.is_authenticated %}
-            <a href="{% url 'add_post' %}" class="btn btn--sm btn--primary">
-                <i class="fa fa-plus" aria-hidden="true"></i> Add new
-            </a>
-            {% endif %}
-        </header>
+  <section class="dashboard-main">
+    <nav class="dash-breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'my_stories' %}" class="dash-breadcrumb__link">Dashboard</a>
+      <span class="dash-breadcrumb__sep" aria-hidden="true">/</span>
+      <span class="dash-breadcrumb__current">Posts</span>
+    </nav>
+    <header class="dashboard-page-header">
+      <div>
+        <span class="eyebrow">Content</span>
+        <h1>{% if is_dashboard_admin %}All posts{% else %}Your posts{% endif %}</h1>
+        <p class="meta">{% if is_dashboard_admin %}All authors' published, scheduled, and draft articles.{% else %}Your published, scheduled, and draft articles.{% endif %}</p>
+      </div>
+      <a href="{% url 'add_post' %}" class="btn btn--primary btn--sm">
+        <i class="fa fa-plus" aria-hidden="true"></i> New post
+      </a>
+    </header>
 
-        <div class="dashboard-panel">
-            {% if posts %}
-            <table class="data-table data-table--compact">
-                <thead>
-                    <tr>
-                        <th>Post</th>
-                        <th>Category</th>
-                        <th>Author</th>
-                        <th>Status</th>
-                        <th>Featured</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for post in posts %}
-                    <tr>
-                        <td>
-                            <strong>{{ post.title|truncatewords:8 }}</strong>
-                            <div class="meta">
-                                Updated {{ post.updated_at|timesince }} ago
-                                {% if post.status == 'published' %}&middot; {{ post.views }} views{% endif %}
-                            </div>
-                        </td>
-                        <td>{{ post.category }}</td>
-                        <td>{{ post.author }}</td>
-                        <td>
-                            {% if post.status == 'draft' %}
-                            <span class="status-pill status-pill--draft">Draft</span>
-                            {% elif post.is_scheduled %}
-                            <span class="status-pill status-pill--scheduled">Scheduled</span>
-                            <div class="meta">Publishes {{ post.published_at|date:"M j, Y, g:i a" }}</div>
-                            {% else %}
-                            <span class="status-pill status-pill--published">Published</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if post.is_featured %}
-                            <span class="status-pill status-pill--published">Featured</span>
-                            {% else %}
-                            <span class="meta">No</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="data-table__actions">
-                                <a href="{% url 'Blog_detail' post.slug %}" class="btn btn--sm btn--secondary" title="{% if post.status == 'published' %}View post{% else %}Preview draft{% endif %}" aria-label="{% if post.status == 'published' %}View post{% else %}Preview draft{% endif %}">
-                                    <i class="fa fa-eye" aria-hidden="true"></i>
-                                </a>
-                                {% if user.is_authenticated %}
-                                <a href="{% url 'edit_post' post.id %}" class="btn btn--sm btn--secondary" title="Edit post" aria-label="Edit post">
-                                    <i class="fa fa-edit" aria-hidden="true"></i>
-                                </a>
-                                {% endif %}
-                                {% if user.is_authenticated %}
-                                <form action="{% url 'delete_post' post.id %}" method="POST" class="dashboard-inline-form">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn--sm btn--danger" title="Delete post" aria-label="Delete post">
-                                        <i class="fa fa-trash" aria-hidden="true"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="empty-state">
-                <h2 class="empty-state__title">No posts found</h2>
-                <p class="empty-state__message">There are no posts in the dashboard yet.</p>
-                {% if user.is_authenticated %}
-                <a href="{% url 'add_post' %}" class="btn btn--primary">Create first post</a>
-                {% endif %}
-            </div>
-            {% endif %}
-
-            {% if posts.paginator.num_pages > 1 %}
-            <nav class="dashboard-pagination" aria-label="Post list pagination">
-                <span class="meta">Page {{ posts.number }} of {{ posts.paginator.num_pages }}</span>
-                <div class="data-table__actions">
-                    {% if posts.has_previous %}
-                    <a class="btn btn--sm btn--secondary" href="?page={{ posts.previous_page_number }}">Previous</a>
-                    {% endif %}
-                    {% if posts.has_next %}
-                    <a class="btn btn--sm btn--secondary" href="?page={{ posts.next_page_number }}">Next</a>
-                    {% endif %}
+    <div class="dashboard-panel">
+      {% if posts %}
+      <table class="data-table data-table--compact">
+        <thead>
+          <tr>
+            <th>Post</th>
+            <th>Category</th>
+            {% if is_dashboard_admin %}<th>Author</th>{% endif %}
+            <th>Status</th>
+            <th>Featured</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for post in posts %}
+          <tr>
+            <td>
+              <div class="post-table-cell">
+                <div class="post-table-thumb">
+                  {% if post.featured_image %}
+                  <img src="{{ post.featured_image.url }}" alt="">
+                  {% else %}
+                  <i class="fa fa-file-text-o" aria-hidden="true"></i>
+                  {% endif %}
                 </div>
-            </nav>
-            {% endif %}
+                <div>
+                  <strong>{{ post.title|truncatewords:9 }}</strong>
+                  <div class="meta">
+                    Updated {{ post.updated_at|timesince }} ago
+                    {% if post.status == 'published' %}&middot; {{ post.views }} view{{ post.views|pluralize }}{% endif %}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td>
+              {% if post.category %}
+              <span class="category-tag">{{ post.category }}</span>
+              {% else %}<span class="meta">—</span>{% endif %}
+            </td>
+            {% if is_dashboard_admin %}<td class="meta">{{ post.author }}</td>{% endif %}
+            <td>
+              {% if post.status == 'draft' %}
+              <span class="status-pill status-pill--draft">Draft</span>
+              {% elif post.is_scheduled %}
+              <span class="status-pill status-pill--scheduled">Scheduled</span>
+              <div class="meta">{{ post.published_at|date:"M j, g:i a" }}</div>
+              {% else %}
+              <span class="status-pill status-pill--published">Published</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if post.is_featured %}
+              <span class="status-pill status-pill--published">
+                <i class="fa fa-star" aria-hidden="true"></i> Yes
+              </span>
+              {% else %}
+              <span class="meta">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="data-table__actions">
+                <a href="{% url 'Blog_detail' post.slug %}" class="btn btn--sm btn--secondary"
+                   title="{% if post.status == 'published' %}View{% else %}Preview{% endif %}"
+                   aria-label="{% if post.status == 'published' %}View post{% else %}Preview draft{% endif %}">
+                  <i class="fa fa-eye" aria-hidden="true"></i>
+                </a>
+                <a href="{% url 'edit_post' post.id %}" class="btn btn--sm btn--secondary" title="Edit" aria-label="Edit post">
+                  <i class="fa fa-pencil" aria-hidden="true"></i>
+                </a>
+                <form action="{% url 'delete_post' post.id %}" method="POST" class="dashboard-inline-form"
+                      onsubmit="return confirm('Delete "{{ post.title|truncatewords:5 }}"? This cannot be undone.')">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn--sm btn--danger" title="Delete" aria-label="Delete post">
+                    <i class="fa fa-trash" aria-hidden="true"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% if posts.paginator.num_pages > 1 %}
+      <nav class="dashboard-pagination" aria-label="Post list pagination">
+        <span class="meta">Page {{ posts.number }} of {{ posts.paginator.num_pages }}</span>
+        <div class="data-table__actions">
+          {% if posts.has_previous %}
+          <a class="btn btn--sm btn--secondary" href="?page={{ posts.previous_page_number }}">
+            <i class="fa fa-chevron-left" aria-hidden="true"></i> Prev
+          </a>
+          {% endif %}
+          {% if posts.has_next %}
+          <a class="btn btn--sm btn--secondary" href="?page={{ posts.next_page_number }}">
+            Next <i class="fa fa-chevron-right" aria-hidden="true"></i>
+          </a>
+          {% endif %}
         </div>
-    </section>
+      </nav>
+      {% endif %}
+
+      {% else %}
+      <div class="empty-state">
+        <h2 class="empty-state__title">No posts yet</h2>
+        <p class="empty-state__message">Write your first post to get started.</p>
+        <a href="{% url 'add_post' %}" class="btn btn--primary" style="margin-top:var(--space-4);">
+          <i class="fa fa-plus" aria-hidden="true"></i> Create first post
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </section>
 </div>
 {% endblock %}

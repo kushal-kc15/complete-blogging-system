@@ -1,0 +1,37 @@
+{% extends 'base_feed.html' %}
+
+{% block title %}New Series | InkSpire{% endblock %}
+
+{% block feed_content %}
+  <div class="my-stories-header">
+    <div>
+      <span class="eyebrow">Writing</span>
+      <h1 class="heading" style="margin-top:var(--space-1);">New series</h1>
+    </div>
+    <a href="{% url 'series_list' %}" class="btn btn--secondary btn--sm">
+      <i class="fa fa-arrow-left" aria-hidden="true"></i> Back to series
+    </a>
+  </div>
+
+  <div style="max-width:520px;">
+    <form action="{% url 'add_series' %}" method="POST">
+      {% csrf_token %}
+      <div class="form-field">
+        <label for="id_name" class="form-label">Series name</label>
+        <input type="text" name="name" id="id_name" class="form-control" required
+               placeholder="e.g. Django for Beginners">
+      </div>
+      <div class="form-field">
+        <label for="id_description" class="form-label">Description <span class="meta">(optional)</span></label>
+        <textarea name="description" id="id_description" class="form-control" rows="3"
+                  placeholder="What is this series about?"></textarea>
+      </div>
+      <div class="editor-actions" style="margin-top:var(--space-5);">
+        <a href="{% url 'series_list' %}" class="btn btn--secondary">Cancel</a>
+        <button type="submit" class="btn btn--primary">
+          <i class="fa fa-save" aria-hidden="true"></i> Create series
+        </button>
+      </div>
+    </form>
+  </div>
+{% endblock feed_content %}

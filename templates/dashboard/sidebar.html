@@ -1,62 +1,89 @@
-{% comment %}
-Dashboard sidebar navigation. Density-optimized editorial presentation:
-compact, always-visible nav using editorial button primitives. Access to
-each link is still gated by the existing Django permission model (unchanged).
-{% endcomment %}
+{% comment %}Dashboard sidebar v2 — nav-link style, user block at top, grouped sections.{% endcomment %}
 <nav class="dashboard-sidebar" aria-label="Dashboard navigation">
-    <span class="eyebrow">Dashboard</span>
-    <ul class="dashboard-nav">
-        <li>
-            <a href="{% url 'dashboard' %}"
-                class="btn btn--sm btn--block {% if request.path == '/dashboard/' %}btn--primary{% else %}btn--ghost{% endif %}">
-                <i class="fa fa-dashboard" aria-hidden="true"></i> Dashboard
-            </a>
-        </li>
-        {% if user.is_superuser %}
-        <li>
-            <a href="{% url 'users' %}"
-                class="btn btn--sm btn--block {% if '/users/' in request.path %}btn--primary{% else %}btn--ghost{% endif %}">
-                <i class="fa fa-users" aria-hidden="true"></i> Users
-            </a>
-        </li>
-        {% endif %}
-        {% if perms.blogs.view_category %}
-        <li>
-            <a href="{% url 'categories' %}"
-                class="btn btn--sm btn--block {% if '/categories/' in request.path %}btn--primary{% else %}btn--ghost{% endif %}">
-                <i class="fa fa-folder" aria-hidden="true"></i> Categories
-            </a>
-        </li>
-        {% endif %}
-        <li>
-            <a href="{% url 'posts' %}"
-                class="btn btn--sm btn--block {% if '/posts/' in request.path %}btn--primary{% else %}btn--ghost{% endif %}">
-                <i class="fa fa-file-text" aria-hidden="true"></i> Posts
-            </a>
-        </li>
-        {% if user.is_staff or perms.blogs.view_comment or perms.blogs.change_comment %}
-        <li>
-            <a href="{% url 'dashboard_comments' %}"
-                class="btn btn--sm btn--block {% if '/comments/' in request.path %}btn--primary{% else %}btn--ghost{% endif %}">
-                <i class="fa fa-comments" aria-hidden="true"></i> Comments
-            </a>
-        </li>
-        {% endif %}
-        {% if perms.blogs.view_contact %}
-        <li>
-            <a href="{% url 'contact_messages' %}"
-                class="btn btn--sm btn--block {% if '/messages/' in request.path %}btn--primary{% else %}btn--ghost{% endif %}">
-                <i class="fa fa-envelope" aria-hidden="true"></i> Messages
-            </a>
-        </li>
-        {% endif %}
-        <li>
-            <form action="{% url 'account_logout' %}" method="POST">
-                {% csrf_token %}
-                <button type="submit" class="btn btn--sm btn--block btn--danger">
-                    <i class="fa fa-sign-out" aria-hidden="true"></i> Logout
-                </button>
-            </form>
-        </li>
-    </ul>
+
+  {# ---- User block ---- #}
+  <div class="dash-user">
+    {% if user.profile.avatar %}
+    <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="dash-user__avatar">
+    {% else %}
+    <span class="dash-user__avatar">{{ user.username|make_list|first }}</span>
+    {% endif %}
+    <div class="dash-user__info">
+      <p class="dash-user__name">{{ user.get_full_name|default:user.username }}</p>
+      <p class="dash-user__role">{% if user.is_superuser %}Superuser{% elif user.is_staff %}Staff{% else %}Author{% endif %}</p>
+    </div>
+  </div>
+
+  {# ---- Primary nav ---- #}
+  <ul class="dashboard-nav" style="gap:var(--space-1);">
+    <li>
+      <a href="{% url 'my_stories' %}"
+         class="dash-nav__link {% if request.path == '/my/stories/' %}dash-nav__link--active{% endif %}">
+        <i class="fa fa-file-text-o" aria-hidden="true"></i> Posts
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'series_list' %}"
+         class="dash-nav__link {% if '/series/' in request.path %}dash-nav__link--active{% endif %}">
+        <i class="fa fa-list-ol" aria-hidden="true"></i> Series
+      </a>
+    </li>
+    {% if perms.blogs.view_category %}
+    <li>
+      <a href="{% url 'categories' %}"
+         class="dash-nav__link {% if '/categories/' in request.path %}dash-nav__link--active{% endif %}">
+        <i class="fa fa-folder-o" aria-hidden="true"></i> Categories
+      </a>
+    </li>
+    {% endif %}
+  </ul>
+
+  {% if user.is_staff or user.is_superuser or perms.blogs.view_comment or perms.blogs.view_contact %}
+  <hr class="dash-nav__hr">
+  <span class="dash-nav__section-label">Moderation</span>
+  <ul class="dashboard-nav" style="gap:var(--space-1);">
+    {% if user.is_staff or perms.blogs.view_comment %}
+    <li>
+      <a href="{% url 'dashboard_comments' %}"
+         class="dash-nav__link {% if '/comments/' in request.path %}dash-nav__link--active{% endif %}">
+        <i class="fa fa-comments-o" aria-hidden="true"></i> Comments
+      </a>
+    </li>
+    {% endif %}
+    {% if perms.blogs.view_contact %}
+    <li>
+      <a href="{% url 'contact_messages' %}"
+         class="dash-nav__link {% if '/messages/' in request.path %}dash-nav__link--active{% endif %}">
+        <i class="fa fa-envelope-o" aria-hidden="true"></i> Messages
+      </a>
+    </li>
+    {% endif %}
+    {% if user.is_superuser %}
+    <li>
+      <a href="{% url 'users' %}"
+         class="dash-nav__link {% if '/users/' in request.path %}dash-nav__link--active{% endif %}">
+        <i class="fa fa-users" aria-hidden="true"></i> Users
+      </a>
+    </li>
+    {% endif %}
+  </ul>
+  {% endif %}
+
+  <hr class="dash-nav__hr">
+  <ul class="dashboard-nav" style="gap:var(--space-1);">
+    <li>
+      <a href="{% url 'home' %}" class="dash-nav__link">
+        <i class="fa fa-arrow-left" aria-hidden="true"></i> Back to site
+      </a>
+    </li>
+    <li>
+      <form action="{% url 'account_logout' %}" method="POST" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" class="dash-nav__logout">
+          <i class="fa fa-sign-out" aria-hidden="true"></i> Sign out
+        </button>
+      </form>
+    </li>
+  </ul>
+
 </nav>

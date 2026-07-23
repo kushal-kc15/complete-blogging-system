@@ -1,44 +1,107 @@
-{% extends 'base.html' %}
+{% extends 'base_feed.html' %}
+{% load editorial_extras %}
 
-{% block title %}Search{% if keyword %}: {{ keyword }}{% endif %} | InkSpire{% endblock %}
+{% block title %}{% if keyword %}Results for "{{ keyword }}"{% else %}Search{% endif %} | InkSpire{% endblock %}
 {% block meta_description %}Search InkSpire articles{% if keyword %} for {{ keyword }}{% endif %}.{% endblock %}
-{% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}
-{% block og_title %}Search InkSpire{% if keyword %}: {{ keyword }}{% endif %}{% endblock %}
-{% block og_description %}Search InkSpire articles{% if keyword %} for {{ keyword }}{% endif %}.{% endblock %}
-{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
-{% block twitter_title %}Search InkSpire{% if keyword %}: {{ keyword }}{% endif %}{% endblock %}
-{% block twitter_description %}Search InkSpire articles{% if keyword %} for {{ keyword }}{% endif %}.{% endblock %}
 {% block extra_head %}<meta name="robots" content="noindex,follow">{% endblock %}
 
-{% block content %}
-<div class="container-wide">
+{% block feed_content %}
 
-  {# Search header — reuses the Design System .section-heading primitive. #}
-  <section class="home-section" aria-label="Search header">
-    <div class="section-heading">
-      <span class="eyebrow">Search</span>
-      <h1 class="heading">{% if keyword %}Results for "{{ keyword }}"{% else %}Search InkSpire{% endif %}</h1>
-      <p>{% if keyword %}Articles matching your search term.{% else %}Enter a search term in the navigation bar to find articles.{% endif %}</p>
+{# ── Header ───────────────────────────────────────────────────────────────── #}
+{% if keyword %}
+<h1 class="search-results-heading">
+  Results for <strong>{{ keyword }}</strong>
+</h1>
+{% else %}
+<h1 class="search-results-heading" style="color:var(--color-text-secondary);">
+  What are you looking for?
+</h1>
+{% endif %}
+
+<div class="search-results-layout">
+
+  {# ── Middle: post results ─────────────────────────────────────────────── #}
+  <section class="search-results-main" aria-label="Search results">
+
+    {% if keyword %}
+    <div class="feed-list">
+      {% if posts %}
+        {% for post in posts %}
+          {% include 'partials/editorial_post_card.html' with post=post %}
+        {% endfor %}
+        {% include 'partials/pagination.html' with page_obj=posts aria_label='Search results pagination' nav_class='home-pagination' justify_center=False keyword=keyword %}
+      {% else %}
+        <div class="empty-state">
+          <h2 class="empty-state__title">No posts found</h2>
+          <p class="empty-state__message">No published articles matched "{{ keyword }}". Try a different search term.</p>
+          <a href="{% url 'home' %}" class="btn btn--primary" style="margin-top:var(--space-4);">Back to homepage</a>
+        </div>
+      {% endif %}
     </div>
-  </section>
-
-  <section class="home-section" aria-label="Search results">
-    {% if posts %}
-    <div class="post-grid--asymmetric">
-      {% for post in posts %}
-      {% include 'partials/editorial_post_card.html' with post=post %}
-      {% endfor %}
-    </div>
-
-    {% include 'partials/pagination.html' with page_obj=posts aria_label='Search results pagination' nav_class='home-pagination' justify_center=True keyword=keyword %}
     {% else %}
     <div class="empty-state">
-      <h2 class="empty-state__title">No posts found</h2>
-      <p class="empty-state__message">{% if keyword %}No published articles matched "{{ keyword }}". Try a different search term.{% else %}Start with a keyword, topic, or title.{% endif %}</p>
-      <a href="{% url 'home' %}" class="btn btn--primary">Back to homepage</a>
+      <h2 class="empty-state__title">Search InkSpire</h2>
+      <p class="empty-state__message">Use the search bar in the top navigation to find posts, topics, and authors.</p>
     </div>
     {% endif %}
+
   </section>
 
+  {# ── Right: topics + people ───────────────────────────────────────────── #}
+  {% if keyword %}
+  <aside class="search-results-aside" aria-label="Related topics and people">
+
+    {% if matching_categories %}
+    <div class="sidebar-section">
+      <h3 class="sidebar-section__heading">Topics matching <em>{{ keyword }}</em></h3>
+      <div class="search-topic-list">
+        {% for cat in matching_categories %}
+        <a href="{% url 'posts_by_category' cat.id %}" class="search-topic-pill"
+           style="--tag-color: {{ cat|category_color }};">
+          {{ cat.name }}
+          <span class="search-topic-count">{{ cat.published_post_count }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      <a href="{% url 'category_index' %}" class="meta link" style="display:block;margin-top:var(--space-4);">
+        See all topics <i class="fa fa-arrow-right" aria-hidden="true"></i>
+      </a>
+    </div>
+    {% endif %}
+
+    {% if matching_authors %}
+    <div class="sidebar-section">
+      <h3 class="sidebar-section__heading">People matching <em>{{ keyword }}</em></h3>
+      <ul class="search-people-list">
+        {% for author in matching_authors %}
+        <li class="search-person">
+          <a href="{% url 'author_profile' author.username %}" class="search-person__link">
+            {% if author.profile.avatar %}
+            <img src="{{ author.profile.avatar.url }}" alt="" class="search-person__avatar">
+            {% else %}
+            <span class="search-person__avatar search-person__avatar--fallback">{{ author.username|make_list|first }}</span>
+            {% endif %}
+            <div class="search-person__info">
+              <span class="search-person__name">{{ author.get_full_name|default:author.username }}</span>
+              <span class="meta">{{ author.post_count }} post{{ author.post_count|pluralize }}</span>
+            </div>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if not matching_categories and not matching_authors %}
+    <div class="sidebar-section">
+      <h3 class="sidebar-section__heading">Suggested topics</h3>
+      <a href="{% url 'category_index' %}" class="btn btn--secondary btn--sm">Browse all topics</a>
+    </div>
+    {% endif %}
+
+  </aside>
+  {% endif %}
+
 </div>
-{% endblock %}
+
+{% endblock feed_content %}

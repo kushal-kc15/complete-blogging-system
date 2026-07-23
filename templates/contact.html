@@ -1,75 +1,57 @@
 {% extends 'base.html' %}
 
-{% block title %}Contact InkSpire | InkSpire{% endblock %}
-{% block meta_description %}Contact InkSpire with questions, feedback, or collaboration ideas.{% endblock %}
-{% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}
-{% block og_title %}Contact InkSpire{% endblock %}
-{% block og_description %}Contact InkSpire with questions, feedback, or collaboration ideas.{% endblock %}
-{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
-{% block twitter_title %}Contact InkSpire{% endblock %}
-{% block twitter_description %}Contact InkSpire with questions, feedback, or collaboration ideas.{% endblock %}
+{% block title %}Contact | InkSpire{% endblock %}
+{% block meta_description %}Get in touch with InkSpire.{% endblock %}
 
 {% block content %}
+<div class="container-standard">
+  <div class="auth-page">
+    <div class="auth-card auth-card--wide">
+      <h1 class="heading" style="font-size: var(--type-page-title-size); margin-bottom: var(--space-2);">Get in touch</h1>
+      <p class="meta">Questions, feedback, or just want to say hello.</p>
 
-<div class="container mt-4">
-  <div class="row justify-content-center">
-    <div class="col-md-8">
-      <div class="card shadow-sm">
-        <div class="card-header bg-warning">
-          <h4 class="mb-0"><i class="fa fa-envelope"></i> Contact Us</h4>
+      <form action="{% url 'contact' %}" method="POST" class="auth-form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="alert alert--danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="auth-form__row">
+          <div class="form-field">
+            <label class="form-label" for="{{ form.name.id_for_label }}">Name</label>
+            {{ form.name }}
+            {% for error in form.name.errors %}
+            <span class="form-error">{{ error }}</span>
+            {% endfor %}
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+            {{ form.email }}
+            {% for error in form.email.errors %}
+            <span class="form-error">{{ error }}</span>
+            {% endfor %}
+          </div>
         </div>
-        <div class="card-body p-4">
-          <form action="{% url 'contact' %}" method="POST">
-            {% csrf_token %}
-            {% if form.non_field_errors %}
-            <div class="alert alert-danger">
-              {{ form.non_field_errors }}
-            </div>
-            {% endif %}
 
-            <div class="row">
-              <div class="col-md-6">
-                <div class="form-group mb-3">
-                  <label for="{{ form.name.id_for_label }}" class="form-label font-weight-bold">Name</label>
-                  {{ form.name }}
-                  {% for error in form.name.errors %}
-                  <div class="text-danger small mt-1">{{ error }}</div>
-                  {% endfor %}
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group mb-3">
-                  <label for="{{ form.email.id_for_label }}" class="form-label font-weight-bold">Email</label>
-                  {{ form.email }}
-                  {% for error in form.email.errors %}
-                  <div class="text-danger small mt-1">{{ error }}</div>
-                  {% endfor %}
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group mb-3">
-              <label for="{{ form.subject.id_for_label }}" class="form-label font-weight-bold">Subject</label>
-              {{ form.subject }}
-              {% for error in form.subject.errors %}
-              <div class="text-danger small mt-1">{{ error }}</div>
-              {% endfor %}
-            </div>
-
-            <div class="form-group mb-4">
-              <label for="{{ form.message.id_for_label }}" class="form-label font-weight-bold">Message</label>
-              {{ form.message }}
-              {% for error in form.message.errors %}
-              <div class="text-danger small mt-1">{{ error }}</div>
-              {% endfor %}
-            </div>
-
-            <button type="submit" class="btn btn-warning"><i class="fa fa-paper-plane"></i> Send Message</button>
-          </form>
+        <div class="form-field">
+          <label class="form-label" for="{{ form.subject.id_for_label }}">Subject</label>
+          {{ form.subject }}
+          {% for error in form.subject.errors %}
+          <span class="form-error">{{ error }}</span>
+          {% endfor %}
         </div>
-      </div>
+
+        <div class="form-field">
+          <label class="form-label" for="{{ form.message.id_for_label }}">Message</label>
+          {{ form.message }}
+          {% for error in form.message.errors %}
+          <span class="form-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <button type="submit" class="btn btn--primary">Send message</button>
+      </form>
     </div>
   </div>
 </div>
-
 {% endblock %}

@@ -1,0 +1,131 @@
+{% extends 'base_feed.html' %}
+{% load editorial_extras %}
+
+{% block title %}Your Posts | InkSpire{% endblock %}
+{% block extra_head %}<meta name="robots" content="noindex,follow">{% endblock %}
+
+{% block feed_content %}
+
+{# ── Page header ─────────────────────────────────────────────────────────── #}
+<div class="my-stories-header">
+  <div>
+    <span class="eyebrow">Writing</span>
+    <h1 class="heading" style="margin-top:var(--space-1);">Your posts</h1>
+  </div>
+  <a href="{% url 'add_post' %}" class="btn btn--primary">
+    <i class="fa fa-plus" aria-hidden="true"></i> New post
+  </a>
+</div>
+
+{# ── Tab bar ─────────────────────────────────────────────────────────────── #}
+<div class="feed-tabs" role="tablist" aria-label="Filter stories" style="margin-bottom:var(--space-6);">
+  <a href="?tab=all"
+     class="feed-tabs__tab {% if active_tab == 'all' %}feed-tabs__tab--active{% endif %}"
+     role="tab" aria-selected="{% if active_tab == 'all' %}true{% else %}false{% endif %}">
+    All <span class="story-tab-count">{{ total_count }}</span>
+  </a>
+  <a href="?tab=published"
+     class="feed-tabs__tab {% if active_tab == 'published' %}feed-tabs__tab--active{% endif %}"
+     role="tab" aria-selected="{% if active_tab == 'published' %}true{% else %}false{% endif %}">
+    Published <span class="story-tab-count">{{ published_count }}</span>
+  </a>
+  <a href="?tab=draft"
+     class="feed-tabs__tab {% if active_tab == 'draft' %}feed-tabs__tab--active{% endif %}"
+     role="tab" aria-selected="{% if active_tab == 'draft' %}true{% else %}false{% endif %}">
+    Drafts <span class="story-tab-count">{{ draft_count }}</span>
+  </a>
+</div>
+
+{# ── Story list ──────────────────────────────────────────────────────────── #}
+{% if posts %}
+<div class="story-list">
+  {% for post in posts %}
+  <div class="story-card">
+
+    {# Thumbnail #}
+    {% if post.featured_image %}
+    <a href="{% url 'edit_post' post.id %}" class="story-card__thumb" aria-hidden="true" tabindex="-1">
+      <img src="{{ post.featured_image.url }}" alt="" loading="lazy">
+    </a>
+    {% endif %}
+
+    {# Body #}
+    <div class="story-card__body">
+      <div class="story-card__meta-top">
+        {% if post.category %}
+        <span class="category-tag" style="--tag-color: {{ post.category|category_color }};">{{ post.category }}</span>
+        {% endif %}
+        {% if post.status == 'draft' %}
+        <span class="status-pill status-pill--draft">Draft</span>
+        {% elif post.is_scheduled %}
+        <span class="status-pill status-pill--scheduled">Scheduled</span>
+        {% else %}
+        <span class="status-pill status-pill--published">Published</span>
+        {% endif %}
+        {% if post.is_featured %}
+        <span class="status-pill status-pill--published" title="Featured on homepage">
+          <i class="fa fa-star" aria-hidden="true"></i> Featured
+        </span>
+        {% endif %}
+      </div>
+
+      <h2 class="story-card__title">
+        <a href="{% url 'Blog_detail' post.slug %}">{{ post.title }}</a>
+      </h2>
+
+      {% if post.short_description %}
+      <p class="story-card__excerpt">{{ post.short_description|truncatewords:20 }}</p>
+      {% endif %}
+
+      <div class="story-card__stats">
+        <span title="Views"><i class="fa fa-eye" aria-hidden="true"></i> {{ post.views }}</span>
+        <span title="Likes"><i class="fa fa-heart-o" aria-hidden="true"></i> {{ post.like_count }}</span>
+        <span title="Comments"><i class="fa fa-comment-o" aria-hidden="true"></i> {{ post.comment_count }}</span>
+        <span title="Bookmarks"><i class="fa fa-bookmark-o" aria-hidden="true"></i> {{ post.bookmark_count }}</span>
+        <span class="story-card__date">Updated {{ post.updated_at|timesince }} ago</span>
+      </div>
+    </div>
+
+    {# Actions #}
+    <div class="story-card__actions">
+      <a href="{% url 'Blog_detail' post.slug %}" class="btn btn--sm btn--secondary" title="View" aria-label="View story">
+        <i class="fa fa-eye" aria-hidden="true"></i>
+      </a>
+      <a href="{% url 'edit_post' post.id %}" class="btn btn--sm btn--secondary" title="Edit" aria-label="Edit story">
+        <i class="fa fa-pencil" aria-hidden="true"></i>
+      </a>
+      <form action="{% url 'delete_post' post.id %}" method="POST" style="margin:0;"
+            onsubmit="return confirm('Permanently delete "{{ post.title|truncatewords:5 }}"?')">
+        {% csrf_token %}
+        <button type="submit" class="btn btn--sm btn--danger" title="Delete" aria-label="Delete story">
+          <i class="fa fa-trash" aria-hidden="true"></i>
+        </button>
+      </form>
+    </div>
+
+  </div>
+  {% endfor %}
+</div>
+
+{# Pagination #}
+{% if posts.paginator.num_pages > 1 %}
+<nav class="home-pagination" aria-label="Stories pagination" style="margin-top:var(--space-8);">
+  {% include 'partials/pagination.html' with page_obj=posts aria_label='Stories pagination' nav_class='' justify_center=False %}
+</nav>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+  <h3 class="empty-state__title">
+    {% if active_tab == 'draft' %}No drafts{% elif active_tab == 'published' %}Nothing published yet{% else %}No posts yet{% endif %}
+  </h3>
+  <p class="empty-state__message">
+    {% if active_tab == 'draft' %}You don't have any drafts saved.{% elif active_tab == 'published' %}Publish a post to see it here.{% else %}Start writing your first post.{% endif %}
+  </p>
+  <a href="{% url 'add_post' %}" class="btn btn--primary" style="margin-top:var(--space-4);">
+    <i class="fa fa-plus" aria-hidden="true"></i> New post
+  </a>
+</div>
+{% endif %}
+
+{% endblock feed_content %}

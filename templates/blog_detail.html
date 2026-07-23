@@ -24,6 +24,7 @@
 {% endif %}
 {% endblock %}
 {% block extra_head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
 <meta property="article:published_time" content="{{ post.effective_published_at|date:'c' }}">
 <meta property="article:modified_time" content="{{ post.updated_at|date:'c' }}">
 <meta property="article:author" content="{{ post.author.get_full_name|default:post.author.username }}">
@@ -57,13 +58,18 @@
 
 {% block content %}
 
-<!-- Reading-progress indicator hook (Requirement 4.4). The sole scroll-driven
-     visual update; its bar width is set by reading-progress.js via the
-     --reading-progress custom property. No-ops if the script is absent. -->
 <div class="reading-progress" aria-hidden="true">
   <div class="reading-progress__bar"></div>
 </div>
 
+<div class="base-feed-layout" style="max-width:none;">
+  {% if user.is_authenticated %}
+  <nav class="base-feed-layout__nav" aria-label="Site navigation">
+    {% include 'partials/feed_nav_sidebar.html' %}
+  </nav>
+  {% endif %}
+
+  <div class="base-feed-layout__content" style="padding:0;">
 <div class="container-standard article-page">
   {% if is_preview %}
   <div class="alert alert--warning" role="alert">
@@ -139,12 +145,48 @@
       {% endif %}
     </header>
 
+    {% if post.series %}
+    <nav class="series-nav" aria-label="Post series">
+      <div class="series-nav__header">
+        <span class="eyebrow">Series</span>
+        <strong class="series-nav__title">{{ post.series.name }}</strong>
+        <span class="series-nav__count">Part {{ post.series_order }} of {{ series_posts.count }}</span>
+      </div>
+      <div class="series-nav__links">
+        {% if series_prev %}
+        <a href="{% url 'Blog_detail' series_prev.slug %}" class="series-nav__link series-nav__link--prev">
+          <i class="fa fa-arrow-left" aria-hidden="true"></i>
+          <span>{{ series_prev.title|truncatewords:8 }}</span>
+        </a>
+        {% else %}
+        <span class="series-nav__link series-nav__link--disabled"></span>
+        {% endif %}
+        {% if series_next %}
+        <a href="{% url 'Blog_detail' series_next.slug %}" class="series-nav__link series-nav__link--next">
+          <span>{{ series_next.title|truncatewords:8 }}</span>
+          <i class="fa fa-arrow-right" aria-hidden="true"></i>
+        </a>
+        {% else %}
+        <span class="series-nav__link series-nav__link--disabled"></span>
+        {% endif %}
+      </div>
+    </nav>
+    {% endif %}
+
     {% if post.featured_image %}
     <figure class="article-hero"><img src="{{ post.featured_image.url }}"
         alt="{{ post.featured_image_alt|default:post.title }}" /></figure>
     {% endif %}
 
-    <section class="article-main" data-reading-progress-target>
+    <div class="article-layout" data-reading-progress-target>
+    <aside class="article-toc" id="article-toc" aria-label="Table of contents">
+      <nav class="article-toc__nav">
+        <span class="eyebrow">Contents</span>
+        <ol class="article-toc__list" id="toc-list"></ol>
+      </nav>
+    </aside>
+
+    <section class="article-main">
       <div class="article-content article-body prose">{{ post.blog_body|sanitize_rich_text }}</div>
 
       <!-- Related Posts -->
@@ -269,6 +311,7 @@
         {% endif %}
       </div>
     </section>
+    </div>
   </article>
 
   <!-- Post-article widgets -->
@@ -303,6 +346,29 @@
   </aside>
 </div>
 
+</div>{# /container-standard article-page #}
+  </div>{# /base-feed-layout__content #}
+</div>{# /base-feed-layout #}
+
+{% if user.is_authenticated %}
+<nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+  <ul class="mobile-bottom-nav__list">
+    <li class="mobile-bottom-nav__item">
+      <a href="{% url 'home' %}"><i class="fa fa-home" aria-hidden="true"></i><span>Home</span></a>
+    </li>
+    <li class="mobile-bottom-nav__item">
+      <a href="{% url 'category_index' %}"><i class="fa fa-compass" aria-hidden="true"></i><span>Explore</span></a>
+    </li>
+    <li class="mobile-bottom-nav__item">
+      <a href="{% url 'my_bookmarks' %}"><i class="fa fa-bookmark-o" aria-hidden="true"></i><span>Library</span></a>
+    </li>
+    <li class="mobile-bottom-nav__item">
+      <a href="{% url 'profile' %}"><i class="fa fa-user-o" aria-hidden="true"></i><span>Profile</span></a>
+    </li>
+  </ul>
+</nav>
+{% endif %}
+
 <script>
   function toggleEditForm(commentId) {
     var form = document.getElementById('edit-form-' + commentId);
@@ -325,6 +391,46 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<!-- Reading-progress wiring (Requirement 4.4): origin-local, CSP-safe. -->
 <script src="{% static 'js/reading-progress.js' %}" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var content = document.querySelector('.article-content');
+  var tocList = document.getElementById('toc-list');
+  var tocAside = document.getElementById('article-toc');
+  if (!content || !tocList) return;
+
+  var headings = content.querySelectorAll('h2, h3');
+  if (headings.length < 2) {
+    if (tocAside) tocAside.style.display = 'none';
+    return;
+  }
+
+  headings.forEach(function(h, i) {
+    var id = 'heading-' + i;
+    h.id = id;
+    var li = document.createElement('li');
+    li.setAttribute('data-level', h.tagName === 'H3' ? '3' : '2');
+    var a = document.createElement('a');
+    a.href = '#' + id;
+    a.textContent = h.textContent;
+    li.appendChild(a);
+    tocList.appendChild(li);
+  });
+
+  var tocLinks = tocList.querySelectorAll('a');
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        tocLinks.forEach(function(l) { l.classList.remove('toc-active'); });
+        var active = tocList.querySelector('a[href="#' + entry.target.id + '"]');
+        if (active) active.classList.add('toc-active');
+      }
+    });
+  }, { rootMargin: '0px 0px -70% 0px', threshold: 0 });
+
+  headings.forEach(function(h) { observer.observe(h); });
+});
+</script>
 {% endblock %}

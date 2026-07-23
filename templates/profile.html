@@ -1,12 +1,12 @@
-{% extends 'base.html' %}
+{% extends 'base_feed.html' %}
 {% load socialaccount %}
 
 {% block title %}My Profile | InkSpire{% endblock %}
 {% block meta_description %}Manage your InkSpire profile.{% endblock %}
 
-{% block content %}
-<section class="account-page">
-  <div class="container-standard">
+{% block feed_content %}
+<section class="account-page" style="padding-block:0;">
+  <div>
     <div class="profile-shell">
       <div class="profile-summary">
         {% if profile.avatar %}
@@ -109,4 +109,4 @@
     </div>
   </div>
 </section>
-{% endblock %}
+{% endblock feed_content %}

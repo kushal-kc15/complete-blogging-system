@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import Http404, HttpResponse, JsonResponse
 from django.conf import settings
 from django.contrib.auth.models import User
-from .models import Blog, Category, Comment, Like, Bookmark, Contact, UserProfile, Follow
+from .models import Blog, Category, Comment, Like, Bookmark, Contact, UserProfile, Follow, Series
 from django.db import IntegrityError
 from django.db.models import Count, F, Q
 from django.db.models import Prefetch
@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django_ratelimit.core import get_usage
 from math import ceil
 from .forms import CommentForm, ContactForm
@@ -135,6 +136,22 @@ def BlogDetail(request, slug):
         user_has_bookmarked = Bookmark.objects.filter(
             user=request.user, blog=post).exists()
 
+    # Series navigation
+    series_posts = None
+    series_prev = None
+    series_next = None
+    if post.series:
+        series_posts = Blog.objects.published().filter(
+            series=post.series
+        ).order_by('series_order', 'created_at')
+        post_ids = list(series_posts.values_list('id', flat=True))
+        if post.id in post_ids:
+            idx = post_ids.index(post.id)
+            if idx > 0:
+                series_prev = series_posts[idx - 1]
+            if idx < len(post_ids) - 1:
+                series_next = series_posts[idx + 1]
+
     # Related posts (same category, excluding current post). The related
     # card only renders fields on the post itself today, but select_related
     # keeps this queryset consistent with other post listings and avoids a
@@ -198,6 +215,9 @@ def BlogDetail(request, slug):
         'like_count': post.likes.count(),
         'is_preview': is_preview,
         'comment_form': comment_form,
+        'series_posts': series_posts,
+        'series_prev': series_prev,
+        'series_next': series_next,
     }
     response = render(
         request, 'blog_detail.html', context, status=429 if rate_limited else 200
@@ -225,6 +245,9 @@ def bookmark_post(request, slug):
         user=request.user, blog=post)
     if not created:
         bookmark.delete()
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER')
+    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+        return redirect(next_url)
     return redirect('Blog_detail', slug=slug)
 
 
@@ -298,18 +321,40 @@ def Search(request):
         posts_list = Blog.objects.published().filter(
             Q(title__icontains=keyword) |
             Q(short_description__icontains=keyword) |
-            Q(blog_body__icontains=keyword)
-        ).order_by('-created_at')
+            Q(blog_body__icontains=keyword) |
+            Q(category__name__icontains=keyword) |
+            Q(author__username__icontains=keyword) |
+            Q(author__first_name__icontains=keyword) |
+            Q(author__last_name__icontains=keyword)
+        ).select_related('author__profile', 'category').distinct().order_by('-created_at')
+
+        matching_categories = Category.objects.filter(
+            name__icontains=keyword
+        ).annotate(
+            published_post_count=Count('blog', filter=Q(blog__status='published'))
+        ).filter(published_post_count__gt=0)[:8]
+
+        matching_authors = User.objects.filter(
+            Q(username__icontains=keyword) |
+            Q(first_name__icontains=keyword) |
+            Q(last_name__icontains=keyword)
+        ).select_related('profile').annotate(
+            post_count=Count('blog', filter=Q(blog__status='published'))
+        ).filter(post_count__gt=0)[:5]
     else:
         posts_list = Blog.objects.published().none()
+        matching_categories = Category.objects.none()
+        matching_authors = User.objects.none()
 
-    paginator = Paginator(posts_list, 6)
+    paginator = Paginator(posts_list, 8)
     page = request.GET.get('page')
     posts = paginator.get_page(page)
 
     context = {
         'posts': posts,
         'keyword': keyword,
+        'matching_categories': matching_categories,
+        'matching_authors': matching_authors,
     }
     return render(request, 'search.html', context)
 

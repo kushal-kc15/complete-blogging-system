@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base_feed.html' %}
 
 {% block title %}Following | InkSpire{% endblock %}
 {% block meta_description %}Recent posts from the authors you follow on InkSpire.{% endblock %}
@@ -10,35 +10,27 @@
 {% block twitter_description %}Recent posts from the authors you follow on InkSpire.{% endblock %}
 {% block extra_head %}<meta name="robots" content="noindex,follow">{% endblock %}
 
-{% block content %}
-<div class="container-wide">
+{% block feed_content %}
 
-  {# Following header — reuses the Design System .section-heading primitive. #}
-  <section class="home-section" aria-label="Following header">
-    <div class="section-heading">
-      <span class="eyebrow">Following</span>
-      <h1 class="heading">From authors you follow</h1>
-      <p>The latest published stories from the authors you follow, newest first.</p>
-    </div>
-  </section>
+  <div class="section-heading" style="margin-bottom:var(--space-6);">
+    <span class="eyebrow">Following</span>
+    <h1 class="heading">From authors you follow</h1>
+    <p class="meta">The latest published stories from the authors you follow, newest first.</p>
+  </div>
 
-  <section class="home-section" aria-label="Following feed">
-    {% if posts %}
-    <div class="post-grid--asymmetric">
-      {% for post in posts %}
-      {% include 'partials/editorial_post_card.html' with post=post %}
-      {% endfor %}
-    </div>
+  {% if posts %}
+  <div class="feed-list">
+    {% for post in posts %}
+    {% include 'partials/editorial_post_card.html' with post=post %}
+    {% endfor %}
+  </div>
+  {% include 'partials/pagination.html' with page_obj=posts aria_label='Following feed pagination' nav_class='home-pagination' justify_center=False %}
+  {% else %}
+  <div class="empty-state">
+    <h2 class="empty-state__title">Nothing here yet</h2>
+    <p class="empty-state__message">None of the authors you follow have published posts yet. Follow more authors to see their latest work here.</p>
+    <a href="{% url 'home' %}" class="btn btn--primary" style="margin-top:var(--space-4);">Discover authors</a>
+  </div>
+  {% endif %}
 
-    {% include 'partials/pagination.html' with page_obj=posts aria_label='Following feed pagination' nav_class='home-pagination' justify_center=True %}
-    {% else %}
-    <div class="empty-state">
-      <h2 class="empty-state__title">Nothing here yet</h2>
-      <p class="empty-state__message">None of the authors you follow have published posts yet. Follow more authors to see their latest work here.</p>
-      <a href="{% url 'home' %}" class="btn btn--primary">Discover authors</a>
-    </div>
-    {% endif %}
-  </section>
-
-</div>
 {% endblock %}

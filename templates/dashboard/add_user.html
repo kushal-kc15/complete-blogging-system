@@ -7,6 +7,13 @@
   {% include 'dashboard/sidebar.html' %}
 
   <section class="dashboard-main">
+    <nav class="dash-breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'my_stories' %}" class="dash-breadcrumb__link">Dashboard</a>
+      <span class="dash-breadcrumb__sep" aria-hidden="true">/</span>
+      <a href="{% url 'users' %}" class="dash-breadcrumb__link">Users</a>
+      <span class="dash-breadcrumb__sep" aria-hidden="true">/</span>
+      <span class="dash-breadcrumb__current">New user</span>
+    </nav>
     {% if perms.auth.add_user %}
     <header class="dashboard-page-header">
       <div>

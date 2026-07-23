@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .forms import RegisterForm, UserProfileForm, ChangePasswordForm, SetPasswordForm
-from blogs.models import Category, Blog, UserProfile
+from blogs.models import Category, Blog, UserProfile, Like, Bookmark, Comment
 from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.views import PasswordResetView
@@ -75,10 +75,10 @@ def home(request):
     # posts can't turn the homepage into an unbounded listing page.
     featured_post = Blog.objects.published().filter(
         is_featured=True
-    ).select_related('author', 'category').order_by('-updated_at')[:HOME_FEATURED_POST_LIMIT]
+    ).select_related('author__profile', 'category').order_by('-updated_at')[:HOME_FEATURED_POST_LIMIT]
     posts_list = Blog.objects.published().filter(
         is_featured=False
-    ).select_related('author', 'category').annotate(
+    ).select_related('author__profile', 'category').annotate(
         total_likes=Count('likes', distinct=True)
     ).order_by('-updated_at')
 
@@ -100,10 +100,21 @@ def home(request):
         '-published_post_count', 'name'
     )[:HOME_TOP_CATEGORIES_LIMIT]
 
+    trending_posts = Blog.objects.published().select_related(
+        'author__profile', 'category'
+    ).order_by('-views', '-updated_at')[:5]
+
+    if not request.user.is_authenticated:
+        return render(request, 'landing.html', {
+            'trending_posts': trending_posts,
+            'top_categories': top_categories,
+        })
+
     context = {
         'featured_post': featured_post,
         'posts': posts,
         'top_categories': top_categories,
+        'trending_posts': trending_posts,
     }
     return render(request, "home.html", context)
 
@@ -380,3 +391,60 @@ def set_password(request):
         'form': form,
     }
     return render(request, 'set_password.html', context)
+
+
+@login_required
+def my_stories(request):
+    """Author-facing stories page with tab filtering and per-post stats."""
+    tab = request.GET.get('tab', 'all')
+
+    qs = Blog.objects.filter(author=request.user).select_related(
+        'category'
+    ).annotate(
+        like_count=Count('likes', distinct=True),
+        comment_count=Count('comments', distinct=True),
+        bookmark_count=Count('bookmarks', distinct=True),
+    ).order_by('-updated_at')
+
+    if tab == 'published':
+        qs = qs.filter(status='published')
+    elif tab == 'draft':
+        qs = qs.filter(status='draft')
+
+    paginator = Paginator(qs, 10)
+    posts = paginator.get_page(request.GET.get('page'))
+
+    context = {
+        'posts': posts,
+        'active_tab': tab,
+        'total_count': Blog.objects.filter(author=request.user).count(),
+        'published_count': Blog.objects.filter(author=request.user, status='published').count(),
+        'draft_count': Blog.objects.filter(author=request.user, status='draft').count(),
+    }
+    return render(request, 'my_stories.html', context)
+
+
+@login_required
+def my_stats(request):
+    """Author stats: aggregate totals + per-post breakdown sorted by views."""
+    posts = Blog.objects.filter(author=request.user).select_related(
+        'category'
+    ).annotate(
+        like_count=Count('likes', distinct=True),
+        comment_count=Count('comments', distinct=True),
+        bookmark_count=Count('bookmarks', distinct=True),
+    ).order_by('-views')
+
+    total_views     = sum(p.views for p in posts)
+    total_likes     = sum(p.like_count for p in posts)
+    total_comments  = sum(p.comment_count for p in posts)
+    total_bookmarks = sum(p.bookmark_count for p in posts)
+
+    context = {
+        'posts': posts,
+        'total_views': total_views,
+        'total_likes': total_likes,
+        'total_comments': total_comments,
+        'total_bookmarks': total_bookmarks,
+    }
+    return render(request, 'my_stats.html', context)

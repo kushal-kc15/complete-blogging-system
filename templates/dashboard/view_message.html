@@ -1,16 +1,23 @@
 {% extends 'base.html' %}
 
-{% block title %}Message Details | InkSpire{% endblock %}
+{% block title %}Message from {{ message.name }} | InkSpire{% endblock %}
 
 {% block content %}
 <div class="container-dashboard dashboard-layout">
   {% include 'dashboard/sidebar.html' %}
 
   <section class="dashboard-main">
+    <nav class="dash-breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'my_stories' %}" class="dash-breadcrumb__link">Dashboard</a>
+      <span class="dash-breadcrumb__sep" aria-hidden="true">/</span>
+      <a href="{% url 'contact_messages' %}" class="dash-breadcrumb__link">Messages</a>
+      <span class="dash-breadcrumb__sep" aria-hidden="true">/</span>
+      <span class="dash-breadcrumb__current">{{ message.name }}</span>
+    </nav>
     <header class="dashboard-page-header">
       <div>
         <span class="eyebrow">Inbox</span>
-        <h1><i class="fa fa-envelope-open" aria-hidden="true"></i> Message details</h1>
+        <h1>Message details</h1>
       </div>
       <a href="{% url 'contact_messages' %}" class="btn btn--sm btn--secondary">
         <i class="fa fa-arrow-left" aria-hidden="true"></i> Back to messages
@@ -18,21 +25,23 @@
     </header>
 
     <div class="dashboard-panel">
-      <dl class="dashboard-detail">
-        <div class="dashboard-detail__item">
-          <dt><i class="fa fa-user" aria-hidden="true"></i> From</dt>
-          <dd>{{ message.name }}</dd>
+
+      {# Meta row #}
+      <dl class="dashboard-detail" style="margin-bottom:var(--space-6);">
+        <div class="dashboard-detail__item" style="gap:var(--space-3);align-items:center;">
+          <dt class="meta" style="min-width:72px;"><i class="fa fa-user" aria-hidden="true"></i> From</dt>
+          <dd><strong>{{ message.name }}</strong></dd>
         </div>
-        <div class="dashboard-detail__item">
-          <dt><i class="fa fa-envelope" aria-hidden="true"></i> Email</dt>
+        <div class="dashboard-detail__item" style="gap:var(--space-3);align-items:center;">
+          <dt class="meta" style="min-width:72px;"><i class="fa fa-envelope" aria-hidden="true"></i> Email</dt>
           <dd><a class="link" href="mailto:{{ message.email }}">{{ message.email }}</a></dd>
         </div>
-        <div class="dashboard-detail__item">
-          <dt><i class="fa fa-calendar" aria-hidden="true"></i> Date</dt>
-          <dd>{{ message.created_at|date:"F d, Y - H:i" }}</dd>
+        <div class="dashboard-detail__item" style="gap:var(--space-3);align-items:center;">
+          <dt class="meta" style="min-width:72px;"><i class="fa fa-calendar" aria-hidden="true"></i> Date</dt>
+          <dd class="meta">{{ message.created_at|date:"F d, Y — H:i" }}</dd>
         </div>
-        <div class="dashboard-detail__item">
-          <dt><i class="fa fa-check-circle" aria-hidden="true"></i> Status</dt>
+        <div class="dashboard-detail__item" style="gap:var(--space-3);align-items:center;">
+          <dt class="meta" style="min-width:72px;"><i class="fa fa-circle" aria-hidden="true"></i> Status</dt>
           <dd>
             {% if message.is_read %}
             <span class="status-pill status-pill--draft">Read</span>
@@ -43,32 +52,40 @@
         </div>
       </dl>
 
-      <div class="dashboard-detail__block">
-        <span class="eyebrow"><i class="fa fa-bookmark" aria-hidden="true"></i> Subject</span>
-        <h2>{{ message.subject }}</h2>
+      {# Subject #}
+      <div class="dashboard-detail__block" style="border-top:var(--border-hairline);padding-top:var(--space-5);margin-bottom:var(--space-5);">
+        <span class="eyebrow">Subject</span>
+        <h2 style="margin-top:var(--space-2);">{{ message.subject }}</h2>
       </div>
 
-      <div class="dashboard-detail__block">
-        <span class="eyebrow"><i class="fa fa-comment" aria-hidden="true"></i> Message</span>
-        <div class="prose">{{ message.message|linebreaks }}</div>
+      {# Body #}
+      <div class="dashboard-detail__block" style="border-top:var(--border-hairline);padding-top:var(--space-5);margin-bottom:var(--space-6);">
+        <span class="eyebrow">Message</span>
+        <div class="prose" style="margin-top:var(--space-3);">{{ message.message|linebreaks }}</div>
       </div>
 
-      <div class="editor-actions">
+      {# Actions #}
+      <div class="editor-actions" style="border-top:var(--border-hairline);padding-top:var(--space-5);">
         {% if not message.is_read %}
         <form action="{% url 'mark_message_read' message.id %}" method="POST" class="dashboard-inline-form">
           {% csrf_token %}
-          <button type="submit" class="btn btn--primary"><i class="fa fa-check" aria-hidden="true"></i> Mark as read</button>
+          <button type="submit" class="btn btn--secondary">
+            <i class="fa fa-check" aria-hidden="true"></i> Mark as read
+          </button>
         </form>
         {% endif %}
-        <a href="mailto:{{ message.email }}?subject=Re: {{ message.subject }}" class="btn btn--secondary">
+        <a href="mailto:{{ message.email }}?subject=Re%3A%20{{ message.subject|urlencode }}" class="btn btn--primary">
           <i class="fa fa-reply" aria-hidden="true"></i> Reply via email
         </a>
         <form action="{% url 'delete_message' message.id %}" method="POST" class="dashboard-inline-form"
-          onsubmit="return confirm('Are you sure you want to delete this message?');">
+              onsubmit="return confirm('Delete this message from {{ message.name }}?')">
           {% csrf_token %}
-          <button type="submit" class="btn btn--danger"><i class="fa fa-trash" aria-hidden="true"></i> Delete</button>
+          <button type="submit" class="btn btn--danger">
+            <i class="fa fa-trash" aria-hidden="true"></i> Delete
+          </button>
         </form>
       </div>
+
     </div>
   </section>
 </div>

@@ -1,6 +1,6 @@
 from django.core.cache import cache
 
-from .models import Category, Blog
+from .models import Category, Blog, Bookmark
 
 GLOBAL_CATEGORIES_CACHE_KEY = 'global_categories'
 GLOBAL_CATEGORIES_CACHE_TIMEOUT = 60 * 10  # 10 minutes
@@ -21,3 +21,13 @@ def get_categories(request):
 def get_posts(request):
     posts = Blog.objects.published()
     return dict(posts=posts)
+
+
+def get_user_bookmarks(request):
+    if request.user.is_authenticated:
+        slugs = set(
+            Bookmark.objects.filter(user=request.user)
+            .values_list('blog__slug', flat=True)
+        )
+        return {'user_bookmarked_slugs': slugs}
+    return {'user_bookmarked_slugs': set()}

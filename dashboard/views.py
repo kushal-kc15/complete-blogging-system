@@ -6,7 +6,7 @@ from django.db.models.deletion import ProtectedError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import Http404
 from django.contrib import messages
-from blogs.models import Blog, Category, Comment, Contact
+from blogs.models import Blog, Category, Comment, Contact, Series
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import permission_required, user_passes_test
 from django.views.decorators.http import require_POST
@@ -59,30 +59,7 @@ def comment_change_required(view_func):
     redirect_field_name=None,
 )
 def dashboard(request):
-    is_admin = is_dashboard_admin(request.user)
-    # Admins see all posts; authors see only their own (modern per-author view).
-    scoped = Blog.objects.all() if is_admin else Blog.objects.filter(author=request.user)
-
-    blogs_count = scoped.count()
-    category_count = Category.objects.all().count()
-    published_count = Blog.objects.published().filter(
-        pk__in=scoped.values('pk')
-    ).count()
-    draft_count = scoped.filter(status='draft').count()
-    featured_count = scoped.filter(is_featured=True).count()
-    recent_posts = scoped.select_related(
-        'category', 'author'
-    ).order_by('-updated_at')[:5]
-    context = {
-        'is_dashboard_admin': is_admin,
-        'blogs_count': blogs_count,
-        'category_count': category_count,
-        'published_count': published_count,
-        'draft_count': draft_count,
-        'featured_count': featured_count,
-        'recent_posts': recent_posts,
-    }
-    return render(request, 'dashboard/dashboard.html', context)
+    return redirect('my_stories')
 
 
 @login_required(login_url='login')
@@ -163,7 +140,7 @@ def posts(request):
 @login_required(login_url='login')
 def add_post(request):
     if request.method == 'POST':
-        form = BlogForm(request.POST, request.FILES)
+        form = BlogForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
@@ -176,10 +153,10 @@ def add_post(request):
                     if Blog.objects.filter(slug=post.slug).exists():
                         continue
                     raise
-                return redirect('posts')
+                return redirect('my_stories')
             form.add_error(None, 'Unable to create a unique post URL. Please try again.')
     else:
-        form = BlogForm()
+        form = BlogForm(user=request.user)
     context = {
         'form': form
     }
@@ -192,14 +169,13 @@ def edit_post(request, id):
     # Authors may only edit their own posts; admins may edit any post.
     if not is_dashboard_admin(request.user) and post.author_id != request.user.id:
         raise Http404
-    form = BlogForm(instance=post)
     if request.method == 'POST':
-        form = BlogForm(request.POST, request.FILES, instance=post)
+        form = BlogForm(request.POST, request.FILES, instance=post, user=request.user)
         if form.is_valid():
             form.save()
-            return redirect('posts')
+            return redirect('my_stories')
     else:
-        form = BlogForm(instance=post)
+        form = BlogForm(instance=post, user=request.user)
     context = {
         'form': form,
         'post': post,
@@ -215,7 +191,7 @@ def delete_post(request, id):
     if not is_dashboard_admin(request.user) and post.author_id != request.user.id:
         raise Http404
     post.delete()
-    return redirect('posts')
+    return redirect('my_stories')
 
 
 @login_required(login_url='login')
@@ -351,3 +327,49 @@ def delete_message(request, id):
     message = get_object_or_404(Contact, id=id)
     message.delete()
     return redirect('contact_messages')
+
+
+# ======== Series Management ========
+@login_required(login_url='login')
+def series_list(request):
+    user_series = Series.objects.filter(author=request.user).order_by('-created_at')
+    context = {'series_list': user_series}
+    return render(request, 'dashboard/series.html', context)
+
+
+@login_required(login_url='login')
+def add_series(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        if name:
+            Series.objects.create(name=name, description=description, author=request.user)
+            return redirect('series_list')
+        else:
+            messages.error(request, 'Series name is required.')
+    return render(request, 'dashboard/add_series.html')
+
+
+@login_required(login_url='login')
+def edit_series(request, id):
+    series = get_object_or_404(Series, id=id, author=request.user)
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        if name:
+            series.name = name
+            series.description = description
+            series.save()
+            return redirect('series_list')
+        else:
+            messages.error(request, 'Series name is required.')
+    context = {'series': series}
+    return render(request, 'dashboard/edit_series.html', context)
+
+
+@login_required(login_url='login')
+@require_POST
+def delete_series(request, id):
+    series = get_object_or_404(Series, id=id, author=request.user)
+    series.delete()
+    return redirect('series_list')

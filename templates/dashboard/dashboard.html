@@ -4,107 +4,167 @@
 
 {% block content %}
 <div class="container-dashboard dashboard-layout">
-    {% include 'dashboard/sidebar.html' %}
+  {% include 'dashboard/sidebar.html' %}
 
-    <section class="dashboard-main">
-        <header class="dashboard-page-header">
-            <div>
-                <span class="eyebrow">Dashboard</span>
-                <h1>{% if is_dashboard_admin %}Publishing overview{% else %}Your publishing overview{% endif %}</h1>
-                <p class="meta">Logged in as <strong>{{ user }}</strong>{% if not is_dashboard_admin %} &middot; showing your posts{% endif %}</p>
-            </div>
-            {% if perms.blogs.add_blog %}
-            <a href="{% url 'add_post' %}" class="btn btn--sm btn--primary">
-                <i class="fa fa-plus" aria-hidden="true"></i> New post
-            </a>
-            {% endif %}
-        </header>
+  <section class="dashboard-main">
+    <nav class="dash-breadcrumb" aria-label="Breadcrumb">
+      <span class="dash-breadcrumb__current">Dashboard</span>
+    </nav>
 
-        <div class="dashboard-stats">
-            <div class="dashboard-stat">
-                <span class="dashboard-stat__label">{% if is_dashboard_admin %}All posts{% else %}Your posts{% endif %}</span>
-                <strong class="dashboard-stat__value">{{ blogs_count }}</strong>
-            </div>
-            <div class="dashboard-stat">
-                <span class="dashboard-stat__label">Published</span>
-                <strong class="dashboard-stat__value">{{ published_count }}</strong>
-            </div>
-            <div class="dashboard-stat">
-                <span class="dashboard-stat__label">Drafts</span>
-                <strong class="dashboard-stat__value">{{ draft_count }}</strong>
-            </div>
-            <div class="dashboard-stat">
-                <span class="dashboard-stat__label">Categories</span>
-                <strong class="dashboard-stat__value">{{ category_count }}</strong>
-            </div>
+    {# ---- Greeting banner ---- #}
+    <div class="dash-greeting">
+      <div class="dash-greeting__text">
+        <h1 class="dash-greeting__title">
+          {% if is_dashboard_admin %}Publishing overview{% else %}Welcome back, {{ user.get_full_name|default:user.username }}{% endif %}
+        </h1>
+        <p class="dash-greeting__sub">
+          {% if is_dashboard_admin %}Viewing all authors &middot; {{ blogs_count }} total post{{ blogs_count|pluralize }}{% else %}Here's how your content is performing{% endif %}
+        </p>
+      </div>
+      <div class="dash-greeting__actions">
+        {% if perms.blogs.add_blog %}
+        <a href="{% url 'add_post' %}" class="btn btn--primary">
+          <i class="fa fa-plus" aria-hidden="true"></i> New post
+        </a>
+        {% endif %}
+        <a href="{% url 'posts' %}" class="btn btn--secondary">
+          Manage posts
+        </a>
+      </div>
+    </div>
+
+    {# ---- Stat cards ---- #}
+    <div class="dashboard-stats">
+      <div class="dash-stat-card">
+        <div class="dash-stat-card__body">
+          <span class="dash-stat-card__label">{% if is_dashboard_admin %}All posts{% else %}Your posts{% endif %}</span>
+          <strong class="dash-stat-card__value">{{ blogs_count }}</strong>
+          <span class="dash-stat-card__sub">Total created</span>
         </div>
+        <span class="dash-stat-card__icon dash-stat-card__icon--blue">
+          <i class="fa fa-file-text-o" aria-hidden="true"></i>
+        </span>
+      </div>
+      <div class="dash-stat-card">
+        <div class="dash-stat-card__body">
+          <span class="dash-stat-card__label">Published</span>
+          <strong class="dash-stat-card__value">{{ published_count }}</strong>
+          <span class="dash-stat-card__sub">Live on the site</span>
+        </div>
+        <span class="dash-stat-card__icon dash-stat-card__icon--green">
+          <i class="fa fa-check-circle-o" aria-hidden="true"></i>
+        </span>
+      </div>
+      <div class="dash-stat-card">
+        <div class="dash-stat-card__body">
+          <span class="dash-stat-card__label">Drafts</span>
+          <strong class="dash-stat-card__value">{{ draft_count }}</strong>
+          <span class="dash-stat-card__sub">Awaiting publish</span>
+        </div>
+        <span class="dash-stat-card__icon dash-stat-card__icon--amber">
+          <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+        </span>
+      </div>
+      <div class="dash-stat-card">
+        <div class="dash-stat-card__body">
+          <span class="dash-stat-card__label">Categories</span>
+          <strong class="dash-stat-card__value">{{ category_count }}</strong>
+          <span class="dash-stat-card__sub">Active topics</span>
+        </div>
+        <span class="dash-stat-card__icon dash-stat-card__icon--violet">
+          <i class="fa fa-folder-o" aria-hidden="true"></i>
+        </span>
+      </div>
+    </div>
 
-        <div class="dashboard-panel">
-            <div class="dashboard-panel__header">
-                <div>
-                    <span class="eyebrow">Recent activity</span>
-                    <h2>Recently updated posts</h2>
+    {# ---- Recent posts panel ---- #}
+    <div class="dashboard-panel">
+      <div class="dashboard-panel__header">
+        <div>
+          <span class="eyebrow">Recent activity</span>
+          <h2>Recently updated posts</h2>
+        </div>
+        <div class="dash-panel-meta">
+          <span class="status-pill status-pill--published">{{ featured_count }} featured</span>
+          <a href="{% url 'posts' %}" class="btn btn--sm btn--secondary">View all</a>
+        </div>
+      </div>
+
+      {% if recent_posts %}
+      <table class="data-table data-table--compact">
+        <thead>
+          <tr>
+            <th>Post</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Updated</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for post in recent_posts %}
+          <tr>
+            <td>
+              <div class="post-table-cell">
+                <div class="post-table-thumb">
+                  {% if post.featured_image %}
+                  <img src="{{ post.featured_image.url }}" alt="">
+                  {% else %}
+                  <i class="fa fa-file-text-o" aria-hidden="true"></i>
+                  {% endif %}
                 </div>
-                <span class="status-pill status-pill--published">{{ featured_count }} featured</span>
-            </div>
-
-            {% if recent_posts %}
-            <table class="data-table data-table--compact">
-                <thead>
-                    <tr>
-                        <th>Post</th>
-                        <th>Category</th>
-                        <th>Status</th>
-                        <th>Updated</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for post in recent_posts %}
-                    <tr>
-                        <td>
-                            <strong>{{ post.title|truncatewords:8 }}</strong>
-                            <div class="meta">By {{ post.author }}</div>
-                        </td>
-                        <td>{{ post.category }}</td>
-                        <td>
-                            {% if post.status == 'draft' %}
-                            <span class="status-pill status-pill--draft">Draft</span>
-                            {% elif post.is_scheduled %}
-                            <span class="status-pill status-pill--scheduled">Scheduled</span>
-                            {% else %}
-                            <span class="status-pill status-pill--published">Published</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ post.updated_at|timesince }} ago</td>
-                        <td>
-                            <div class="data-table__actions">
-                                {% if post.status == 'published' %}
-                                <a href="{% url 'Blog_detail' post.slug %}" class="btn btn--sm btn--secondary" title="View post" aria-label="View post">
-                                    <i class="fa fa-eye" aria-hidden="true"></i>
-                                </a>
-                                {% endif %}
-                                {% if perms.blogs.change_blog %}
-                                <a href="{% url 'edit_post' post.id %}" class="btn btn--sm btn--secondary" title="Edit post" aria-label="Edit post">
-                                    <i class="fa fa-edit" aria-hidden="true"></i>
-                                </a>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="empty-state">
-                <h3 class="empty-state__title">No posts yet</h3>
-                <p class="empty-state__message">Create your first post to see recent activity here.</p>
-                {% if perms.blogs.add_blog %}
-                <a href="{% url 'add_post' %}" class="btn btn--primary">Create post</a>
+                <div>
+                  <strong>{{ post.title|truncatewords:8 }}</strong>
+                  <div class="meta">By {{ post.author }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              {% if post.category %}
+              <span class="category-tag">{{ post.category }}</span>
+              {% else %}<span class="meta">—</span>{% endif %}
+            </td>
+            <td>
+              {% if post.status == 'draft' %}
+              <span class="status-pill status-pill--draft">Draft</span>
+              {% elif post.is_scheduled %}
+              <span class="status-pill status-pill--scheduled">Scheduled</span>
+              {% else %}
+              <span class="status-pill status-pill--published">Published</span>
+              {% endif %}
+            </td>
+            <td class="meta">{{ post.updated_at|timesince }} ago</td>
+            <td>
+              <div class="data-table__actions">
+                {% if post.status == 'published' %}
+                <a href="{% url 'Blog_detail' post.slug %}" class="btn btn--sm btn--secondary" title="View" aria-label="View post">
+                  <i class="fa fa-eye" aria-hidden="true"></i>
+                </a>
                 {% endif %}
-            </div>
-            {% endif %}
-        </div>
-    </section>
+                {% if perms.blogs.change_blog %}
+                <a href="{% url 'edit_post' post.id %}" class="btn btn--sm btn--secondary" title="Edit" aria-label="Edit post">
+                  <i class="fa fa-pencil" aria-hidden="true"></i>
+                </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <h3 class="empty-state__title">No posts yet</h3>
+        <p class="empty-state__message">Create your first post to see recent activity here.</p>
+        {% if perms.blogs.add_blog %}
+        <a href="{% url 'add_post' %}" class="btn btn--primary" style="margin-top:var(--space-4);">
+          <i class="fa fa-plus" aria-hidden="true"></i> Create post
+        </a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+  </section>
 </div>
 {% endblock %}

@@ -34,6 +34,34 @@ class Category(models.Model):
         return self.name
 
 
+class Series(models.Model):
+    name = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=200, unique=True)
+    description = models.TextField(blank=True)
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='series')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Series"
+        verbose_name_plural = "Series"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.name) or 'series'
+            candidate = base_slug[:200]
+            suffix = 2
+            while Series.objects.filter(slug=candidate).exists():
+                suffix_text = f'-{suffix}'
+                candidate = f'{base_slug[:200 - len(suffix_text)]}{suffix_text}'
+                suffix += 1
+            self.slug = candidate
+        super().save(*args, **kwargs)
+
+
 STATUS_CHOICES = (
     ('draft', 'Draft'),
     ('published', 'Published'),
@@ -66,6 +94,10 @@ class Blog(models.Model):
     short_description = models.TextField(max_length=500)
     status = models.CharField(
         max_length=10, choices=STATUS_CHOICES, default='draft')
+    series = models.ForeignKey(
+        Series, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='posts')
+    series_order = models.PositiveIntegerField(default=0, blank=True)
     is_featured = models.BooleanField(default=False)
     views = models.PositiveIntegerField(default=0)
     meta_description = models.CharField(max_length=160, blank=True, null=True)

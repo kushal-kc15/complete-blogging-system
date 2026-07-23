@@ -1,43 +1,33 @@
-{% extends 'base.html' %}
+{% extends 'base_feed.html' %}
 
-{% block title %}{{ category }} Articles | InkSpire{% endblock %}
+{% block title %}{{ category }} | InkSpire{% endblock %}
 {% block meta_description %}Read the latest {{ category }} articles on InkSpire.{% endblock %}
 {% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}
-{% block og_title %}{{ category }} Articles | InkSpire{% endblock %}
+{% block og_title %}{{ category }} | InkSpire{% endblock %}
 {% block og_description %}Read the latest {{ category }} articles on InkSpire.{% endblock %}
 {% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
-{% block twitter_title %}{{ category }} Articles | InkSpire{% endblock %}
+{% block twitter_title %}{{ category }} | InkSpire{% endblock %}
 {% block twitter_description %}Read the latest {{ category }} articles on InkSpire.{% endblock %}
 
-{% block content %}
-<div class="container-wide">
+{% block feed_content %}
+  <div class="section-heading" style="margin-bottom:var(--space-6);">
+    <span class="eyebrow">Category</span>
+    <h1 class="heading">{{ category }}</h1>
+    <p class="meta">Browse the latest published stories in {{ category }}.</p>
+  </div>
 
-  {# Archive header — reuses the Design System .section-heading primitive. #}
-  <section class="home-section" aria-label="Category header">
-    <div class="section-heading">
-      <span class="eyebrow">Category</span>
-      <h1 class="heading">{{ category }}</h1>
-      <p>Browse the latest published stories in {{ category }}.</p>
-    </div>
-  </section>
-
-  <section class="home-section" aria-label="Category articles">
-    {% if posts %}
-    <div class="post-grid--asymmetric">
-      {% for post in posts %}
-      {% include 'partials/editorial_post_card.html' with post=post %}
-      {% endfor %}
-    </div>
-
-    {% include 'partials/pagination.html' with page_obj=posts aria_label_prefix=category nav_class='home-pagination' justify_center=True %}
-    {% else %}
-    <div class="empty-state">
-      <h2 class="empty-state__title">No posts found</h2>
-      <p class="empty-state__message">There are no published articles in {{ category }} yet.</p>
-      <a href="{% url 'home' %}" class="btn btn--primary">Back to homepage</a>
-    </div>
-    {% endif %}
-  </section>
-
-</div>
-{% endblock %}
+  {% if posts %}
+  <div class="feed-list">
+    {% for post in posts %}
+    {% include 'partials/editorial_post_card.html' with post=post %}
+    {% endfor %}
+  </div>
+  {% include 'partials/pagination.html' with page_obj=posts aria_label='Category pagination' nav_class='home-pagination' justify_center=False %}
+  {% else %}
+  <div class="empty-state">
+    <h2 class="empty-state__title">No posts yet</h2>
+    <p class="empty-state__message">There are no published articles in {{ category }} yet.</p>
+    <a href="{% url 'category_index' %}" class="btn btn--primary">Browse all topics</a>
+  </div>
+  {% endif %}
+{% endblock feed_content %}

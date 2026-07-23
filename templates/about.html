@@ -1,77 +1,40 @@
 {% extends 'base.html' %}
 
-{% block title %}About InkSpire | InkSpire{% endblock %}
-{% block meta_description %}Learn about InkSpire, a publishing platform for high-quality stories, practical insights, and thoughtful readers.{% endblock %}
-{% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}
-{% block og_title %}About InkSpire{% endblock %}
-{% block og_description %}Learn about InkSpire, a publishing platform for high-quality stories, practical insights, and thoughtful readers.{% endblock %}
-{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
-{% block twitter_title %}About InkSpire{% endblock %}
-{% block twitter_description %}Learn about InkSpire, a publishing platform for high-quality stories, practical insights, and thoughtful readers.{% endblock %}
+{% block title %}About | InkSpire{% endblock %}
+{% block meta_description %}InkSpire is an open blogging platform built by Kushal KC.{% endblock %}
 
 {% block content %}
-<div class="row mt-5">
-  <div class="col-md-12">
-    <div class="p-4 p-md-5 mb-4 text-white rounded bg-dark">
-      <h1 class="display-4 font-italic">About Us</h1>
-      <p class="lead my-3">Empowering Voices Through Insightful Stories</p>
-    </div>
+<div class="container-standard">
 
-    <div class="card border-0 mb-5">
-      <div class="card-body">
-        <h2 class="text-warning mb-4">Our Mission</h2>
-        <p class="lead">
-          Welcome to InkSpire, your premier destination for high-quality content spanning technology, lifestyle, and
-          professional growth.
-          We believe that every story has the power to inspire, and our mission is to provide a platform where
-          meaningful insights meet a community of passionate readers.
-        </p>
-        <p>
-          Whether you are looking to stay updated with the latest industry trends, find practical life advice, or dive
-          into deep-dives on complex topics, we strive to deliver well-researched and thought-provoking articles that
-          add value to your day.
-        </p>
-        <p>
-          Our team is dedicated to fostering a space of knowledge-sharing and creative expression, ensuring that every
-          visit leaves you informed and inspired.
-          We continuously work to improve our platform and bring you the best possible reading experience.
-        </p>
-      </div>
-    </div>
+  <header class="archive-header">
+    <h1 class="heading" style="font-size: var(--type-page-title-size);">About InkSpire</h1>
+    <p class="meta">A place to write, read, and think.</p>
+  </header>
 
-    <div class="row text-center mb-5">
-      <div class="col-md-4">
-        <div class="p-3 bg-light rounded">
-          <h3 class="h5">Quality Content</h3>
-          <p class="text-muted">We prioritize accuracy and depth in every article we publish.</p>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="p-3 bg-light rounded">
-          <h3 class="h5">Diverse Topics</h3>
-          <p class="text-muted">From tech tutorials to lifestyle tips, we cover it all.</p>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="p-3 bg-light rounded">
-          <h3 class="h5">Community Focused</h3>
-          <p class="text-muted">A space for readers to engage, learn, and grow together.</p>
-        </div>
-      </div>
-    </div>
+  <article class="prose" style="max-width: var(--container-reading);">
+    <p style="font-size: var(--type-subhead-size); line-height: var(--type-subhead-lh); color: var(--color-text-secondary);">
+      InkSpire is an open blogging platform where anyone can publish. No gatekeepers, no algorithms deciding what you see first &mdash; just writing, presented cleanly.
+    </p>
 
-    <div class="card border-0 bg-light p-4 text-center mb-5">
-      <h2 class="text-warning mb-3">Connect With Us</h2>
-      <p class="lead mb-4">Stay updated and follow our journey on social media.</p>
-      <div class="d-flex justify-content-center">
-        <a href="https://github.com/kushal-kc15" class="btn btn-outline-dark mx-2" target="_blank">
-          <i class="fab fa-github"></i> GitHub
-        </a>
-        <a href="https://linkedin.com/in/kushal-kc-2896862a8" class="btn btn-outline-primary mx-2" target="_blank">
-          <i class="fab fa-linkedin"></i> LinkedIn
-        </a>
-      </div>
+    <h2>How it works</h2>
+    <p>Sign in, open the dashboard, and start writing. Your post goes live the moment you hit publish. Readers can follow authors, bookmark posts, and leave comments.</p>
+
+    <h2>Built with</h2>
+    <p>Django, PostgreSQL, and not much else. The frontend is vanilla CSS with no JavaScript framework. Dark mode respects your system preference or can be toggled manually.</p>
+
+    <h2>Who made this</h2>
+    <p>
+      Built by <strong>Kushal KC</strong> as a full-stack project &mdash; from database design to deployment on Render.
+    </p>
+    <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4);">
+      <a href="https://github.com/kushal-kc15" class="btn btn--secondary btn--sm" target="_blank" rel="noopener">
+        <i class="fa fa-github" aria-hidden="true"></i> GitHub
+      </a>
+      <a href="https://linkedin.com/in/kushal-kc-2896862a8" class="btn btn--secondary btn--sm" target="_blank" rel="noopener">
+        <i class="fa fa-linkedin" aria-hidden="true"></i> LinkedIn
+      </a>
     </div>
-  </div>
+  </article>
+
 </div>
 {% endblock %}

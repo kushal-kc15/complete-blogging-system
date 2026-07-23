@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{#
+  base_feed.html — authenticated 2-column layout (sidebar nav + content area).
+  Extend this instead of base.html for any page that should show the
+  persistent left nav (Library, Profile, Following, etc.).
+
+  Available blocks (in addition to all base.html blocks):
+    feed_content  — the main page content (rendered inside the right column)
+#}
+
+{% block content %}
+<div class="base-feed-layout">
+
+  {# ---- Persistent left nav ---- #}
+  <nav class="base-feed-layout__nav" aria-label="Site navigation">
+    {% include 'partials/feed_nav_sidebar.html' %}
+  </nav>
+
+  {# ---- Page content ---- #}
+  <div class="base-feed-layout__content">
+    {% block feed_content %}{% endblock %}
+  </div>
+
+</div>
+
+{# Mobile bottom nav #}
+<nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+  <ul class="mobile-bottom-nav__list">
+    <li class="mobile-bottom-nav__item">
+      <a href="{% url 'home' %}" {% if request.path == '/' %}class="mobile-nav--active"{% endif %}>
+        <i class="fa fa-home" aria-hidden="true"></i>
+        <span>Home</span>
+      </a>
+    </li>
+    <li class="mobile-bottom-nav__item">
+      <a href="{% url 'category_index' %}" {% if request.path == '/categories/' %}class="mobile-nav--active"{% endif %}>
+        <i class="fa fa-compass" aria-hidden="true"></i>
+        <span>Explore</span>
+      </a>
+    </li>
+    <li class="mobile-bottom-nav__item">
+      <a href="{% url 'my_bookmarks' %}" {% if 'bookmarks' in request.path %}class="mobile-nav--active"{% endif %}>
+        <i class="fa fa-bookmark-o" aria-hidden="true"></i>
+        <span>Library</span>
+      </a>
+    </li>
+    <li class="mobile-bottom-nav__item">
+      <a href="{% url 'profile' %}" {% if request.path == '/profile/' %}class="mobile-nav--active"{% endif %}>
+        <i class="fa fa-user-o" aria-hidden="true"></i>
+        <span>Profile</span>
+      </a>
+    </li>
+  </ul>
+</nav>
+{% endblock %}

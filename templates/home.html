@@ -1,90 +1,169 @@
 {% extends 'base.html' %}
 {% load editorial_extras %}
 
-{% block title %}InkSpire - Modern Blogging Platform{% endblock %}
-{% block meta_description %}Read thoughtful stories, practical guides, and fresh perspectives from InkSpire writers.{% endblock %}
-{% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}
-{% block og_title %}InkSpire - Modern Blogging Platform{% endblock %}
-{% block og_description %}Read thoughtful stories, practical guides, and fresh perspectives from InkSpire writers.{% endblock %}
-{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
-{% block twitter_title %}InkSpire - Modern Blogging Platform{% endblock %}
-{% block twitter_description %}Read thoughtful stories, practical guides, and fresh perspectives from InkSpire writers.{% endblock %}
+{% block title %}InkSpire — Home{% endblock %}
+{% block meta_description %}Stories, guides, and fresh perspectives from InkSpire writers.{% endblock %}
 
 {% block content %}
 
-<div class="container-wide home">
+<div class="feed-3col">
 
-  {# --- Lead story / featured region (Requirements 3.1, 3.4) ------------- #}
-  {# Exactly one hero for the primary featured Published_Blog. When no post  #}
-  {# is featured, render a named empty-state INSTEAD of the hero, regardless #}
-  {# of whether other (non-featured) posts exist.                           #}
-  <section class="home-section" aria-label="Featured story">
-    {% if featured_post %}
-    {% include 'partials/editorial_hero.html' with post=featured_post.0 %}
-    {% else %}
-    <div class="empty-state">
-      <h2 class="empty-state__title">No featured story yet</h2>
-      <p class="empty-state__message">
-        No post has been marked as featured, so there's no lead story to headline the homepage.
-        Once an editor features a published post, it will appear here.
-      </p>
-    </div>
-    {% endif %}
-  </section>
-
-  {# --- Asymmetric grid of more posts (Requirement 3.2) ------------------ #}
-  {# Additional featured posts (beyond the hero) plus recent published posts #}
-  {# are presented together in a mixed-size, non-uniform grid.              #}
-  {% with secondary_featured=featured_post|slice:"1:" %}
-  <section class="home-section" id="latest-stories" aria-label="More stories">
-    <div class="section-heading">
-      <span class="eyebrow">Latest</span>
-      <h2 class="heading">Recently published</h2>
-    </div>
-
-    {% if secondary_featured or posts %}
-    <div class="post-grid--asymmetric">
-      {% for post in secondary_featured %}
-      {% include 'partials/editorial_post_card.html' with post=post %}
-      {% endfor %}
-      {% for post in posts %}
-      {% include 'partials/editorial_post_card.html' with post=post %}
-      {% endfor %}
-    </div>
-
-    {% include 'partials/pagination.html' with page_obj=posts aria_label='Latest posts pagination' nav_class='home-pagination' justify_center=False %}
-    {% else %}
-    <div class="empty-state">
-      <h3 class="empty-state__title">No posts yet</h3>
-      <p class="empty-state__message">Published articles will appear here as writers publish them.</p>
-    </div>
-    {% endif %}
-  </section>
-  {% endwith %}
-
-  {# --- Explore by topic: color-coded category tags --------------------- #}
-  <section class="home-section" aria-label="Top categories">
-    <div class="section-heading">
-      <span class="eyebrow">Explore by topic</span>
-      <h2 class="heading">Top categories</h2>
-    </div>
+  {# ---- Left sticky navigation ---- #}
+  <nav class="feed-3col__left" aria-label="Site navigation">
+    {% include 'partials/feed_nav_sidebar.html' %}
 
     {% if top_categories %}
-    <div class="category-tag-list">
+    <hr class="feed-nav__divider">
+    <p class="feed-nav__section-label">Today's topics</p>
+    <ul class="feed-nav">
       {% for category in top_categories %}
-      <a href="{% url 'posts_by_category' category.id %}" class="category-tag"
-         style="--tag-color: {{ category|category_color }};">{{ category.name }}</a>
+      <li class="feed-nav__item">
+        <a href="{% url 'posts_by_category' category.id %}"
+           class="feed-nav__link {% if request.GET.category == category.id|stringformat:'s' %}feed-nav__link--active{% endif %}">
+          <i class="fa fa-tag" aria-hidden="true"></i>
+          <span>{{ category.name }}</span>
+        </a>
+      </li>
       {% endfor %}
+    </ul>
+    {% endif %}
+  </nav>
+
+  {# ---- Middle: main feed with tabs ---- #}
+  <main class="feed-3col__main" id="main-feed">
+
+    <div class="feed-tabs" role="tablist" aria-label="Feed type">
+      <button class="feed-tabs__tab feed-tabs__tab--active" role="tab" aria-selected="true"
+              aria-controls="tab-foryou" id="tab-btn-foryou" onclick="switchTab('foryou')">
+        For you
+      </button>
+      <button class="feed-tabs__tab" role="tab" aria-selected="false"
+              aria-controls="tab-featured" id="tab-btn-featured" onclick="switchTab('featured')">
+        Featured
+      </button>
     </div>
-    <p class="home-section__more"><a class="link" href="{% url 'category_index' %}">View all categories</a></p>
-    {% else %}
-    <div class="empty-state">
-      <h3 class="empty-state__title">No categories yet</h3>
-      <p class="empty-state__message">Categories will appear here once published posts are organized into them.</p>
+
+    <div class="feed-tab-panel feed-tab-panel--active" id="tab-foryou" role="tabpanel" aria-labelledby="tab-btn-foryou">
+      {% if posts %}
+        {% for post in posts %}
+          {% include 'partials/editorial_post_card.html' with post=post %}
+        {% endfor %}
+        {% include 'partials/pagination.html' with page_obj=posts aria_label='Stories pagination' nav_class='home-pagination' justify_center=False %}
+      {% else %}
+        <div class="empty-state">
+          <h3 class="empty-state__title">Nothing here yet</h3>
+          <p class="empty-state__message">Follow some authors or check back soon.</p>
+          <a href="{% url 'category_index' %}" class="btn btn--primary" style="margin-top:var(--space-4);">Explore topics</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="feed-tab-panel" id="tab-featured" role="tabpanel" aria-labelledby="tab-btn-featured">
+      {% if featured_post %}
+        {% for post in featured_post %}
+          {% include 'partials/editorial_post_card.html' with post=post %}
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <h3 class="empty-state__title">No featured stories yet</h3>
+          <p class="empty-state__message">Our editors haven't selected featured stories yet.</p>
+        </div>
+      {% endif %}
+    </div>
+
+  </main>
+
+  {# ---- Right sidebar ---- #}
+  <aside class="feed-3col__right" aria-label="Recommended content">
+
+    {% if trending_posts %}
+    <div class="sidebar-section">
+      <h3 class="sidebar-section__heading">Trending now</h3>
+      <ul class="staff-pick-list">
+        {% for post in trending_posts %}
+        <li class="staff-pick">
+          <div class="staff-pick__byline">
+            {% if post.author.profile.avatar %}
+            <img src="{{ post.author.profile.avatar.url }}" alt="" class="staff-pick__avatar">
+            {% else %}
+            <span class="staff-pick__avatar staff-pick__avatar--fallback">{{ post.author.username|make_list|first }}</span>
+            {% endif %}
+            <span>{{ post.author.get_full_name|default:post.author.username }}</span>
+          </div>
+          <a href="{% url 'Blog_detail' post.slug %}" class="staff-pick__title">{{ post.title }}</a>
+          <span class="meta">{{ post.reading_time }} min read</span>
+        </li>
+        {% endfor %}
+      </ul>
     </div>
     {% endif %}
-  </section>
+
+    {% if top_categories %}
+    <div class="sidebar-section">
+      <h3 class="sidebar-section__heading">Recommended topics</h3>
+      <div class="sidebar-topics">
+        {% for category in top_categories %}
+        <a href="{% url 'posts_by_category' category.id %}" class="sidebar-topic"
+           style="border-color: {{ category|category_color }}; color: {{ category|category_color }};">
+          {{ category.name }}
+        </a>
+        {% endfor %}
+      </div>
+      <a href="{% url 'category_index' %}" class="meta link" style="display:block;margin-top:var(--space-4);">
+        See all topics <i class="fa fa-arrow-right" aria-hidden="true"></i>
+      </a>
+    </div>
+    {% endif %}
+
+  </aside>
 
 </div>
 
+<nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+  <ul class="mobile-bottom-nav__list">
+    <li class="mobile-bottom-nav__item">
+      <a href="{% url 'home' %}" class="mobile-nav--active">
+        <i class="fa fa-home" aria-hidden="true"></i>
+        <span>Home</span>
+      </a>
+    </li>
+    <li class="mobile-bottom-nav__item">
+      <a href="{% url 'category_index' %}">
+        <i class="fa fa-compass" aria-hidden="true"></i>
+        <span>Explore</span>
+      </a>
+    </li>
+    <li class="mobile-bottom-nav__item">
+      <a href="{% url 'my_bookmarks' %}">
+        <i class="fa fa-bookmark-o" aria-hidden="true"></i>
+        <span>Library</span>
+      </a>
+    </li>
+    <li class="mobile-bottom-nav__item">
+      <a href="{% url 'profile' %}">
+        <i class="fa fa-user-o" aria-hidden="true"></i>
+        <span>Profile</span>
+      </a>
+    </li>
+  </ul>
+</nav>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function switchTab(name) {
+    document.querySelectorAll('.feed-tabs__tab').forEach(function(btn) {
+      btn.classList.remove('feed-tabs__tab--active');
+      btn.setAttribute('aria-selected', 'false');
+    });
+    document.querySelectorAll('.feed-tab-panel').forEach(function(panel) {
+      panel.classList.remove('feed-tab-panel--active');
+    });
+    var activeBtn = document.getElementById('tab-btn-' + name);
+    var activePanel = document.getElementById('tab-' + name);
+    if (activeBtn) { activeBtn.classList.add('feed-tabs__tab--active'); activeBtn.setAttribute('aria-selected', 'true'); }
+    if (activePanel) { activePanel.classList.add('feed-tab-panel--active'); }
+  }
+</script>
 {% endblock %}

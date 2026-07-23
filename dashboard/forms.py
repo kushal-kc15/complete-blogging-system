@@ -1,6 +1,6 @@
 from django import forms
 from django.utils import timezone
-from blogs.models import Blog, Category
+from blogs.models import Blog, Category, Series
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django_ckeditor_5.widgets import CKEditor5Widget
@@ -45,7 +45,7 @@ class BlogForm(RichTextSanitizingFormMixin, forms.ModelForm):
 
     class Meta:
         model = Blog
-        fields = ('title', 'category', 'featured_image', 'featured_image_alt',
+        fields = ('title', 'category', 'series', 'series_order', 'featured_image', 'featured_image_alt',
                   'short_description', 'blog_body', 'status', 'is_featured', 'meta_description')
         widgets = {
             'title': forms.TextInput(attrs={
@@ -53,6 +53,14 @@ class BlogForm(RichTextSanitizingFormMixin, forms.ModelForm):
             }),
             'category': forms.Select(attrs={
                 'class': 'form-control'
+            }),
+            'series': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'series_order': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1',
+                'placeholder': 'Part number in series',
             }),
             'featured_image': forms.ClearableFileInput(attrs={
                 'class': 'form-control',
@@ -86,10 +94,15 @@ class BlogForm(RichTextSanitizingFormMixin, forms.ModelForm):
             'is_featured': 'Featured Post',
             'featured_image_alt': 'Featured Image Alt Text',
             'meta_description': 'SEO Description (160 chars)',
+            'series': 'Series (optional)',
+            'series_order': 'Part number',
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+        if self.user:
+            self.fields['series'].queryset = Series.objects.filter(author=self.user)
         # Pre-fill the control when editing a Scheduled_Blog (status published
         # with a future published_at) so the editor can view/change/clear the
         # scheduled Publication_Time (Requirement 12.2).

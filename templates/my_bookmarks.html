@@ -1,39 +1,73 @@
-{% extends 'base.html' %}
+{% extends 'base_feed.html' %}
+{% load editorial_extras %}
 
-{% block content %}
+{% block title %}My Bookmarks | InkSpire{% endblock %}
+{% block meta_description %}Your saved stories on InkSpire.{% endblock %}
+{% block extra_head %}<meta name="robots" content="noindex,follow">{% endblock %}
 
-<div class="container mt-4">
-  <h3 class="text-uppercase text-warning mb-4" style="letter-spacing: 2px;">
-    <i class="fa fa-bookmark"></i> My Bookmarks
-  </h3>
+{% block feed_content %}
 
-  <div class="row">
+  <div class="section-heading" style="margin-bottom:var(--space-6);">
+    <span class="eyebrow">Library</span>
+    <h1 class="heading">My Bookmarks</h1>
+    <p class="meta">Stories you've saved to read later.</p>
+  </div>
+
+  {% if bookmarks %}
+  <div class="feed-list">
     {% for bookmark in bookmarks %}
-    <div class="col-md-6 mb-4">
-      <div class="card border-0 h-100">
-        {% if bookmark.blog.featured_image %}
-        <img src="{{ bookmark.blog.featured_image.url }}" class="card-img-top" alt="{{ bookmark.blog.title }}"
-          style="height: 200px; object-fit: cover;">
+    <article class="post-card">
+      <div class="post-card__body">
+        <div class="post-card__author-row meta">
+          {% if bookmark.blog.author.profile.avatar %}
+          <img src="{{ bookmark.blog.author.profile.avatar.url }}" alt="" class="post-card__avatar">
+          {% else %}
+          <span class="post-card__avatar post-card__avatar--fallback">{{ bookmark.blog.author.username|make_list|first }}</span>
+          {% endif %}
+          <a href="{% url 'author_profile' bookmark.blog.author.username %}" class="post-card__author">
+            {{ bookmark.blog.author.get_full_name|default:bookmark.blog.author.username }}
+          </a>
+          <span aria-hidden="true">&middot;</span>
+          <span>Saved {{ bookmark.created_at|timesince }} ago</span>
+        </div>
+        <h3 class="post-card__title">
+          <a href="{% url 'Blog_detail' bookmark.blog.slug %}">{{ bookmark.blog.title }}</a>
+        </h3>
+        {% if bookmark.blog.short_description %}
+        <p class="post-card__excerpt">{{ bookmark.blog.short_description|truncatewords:24 }}</p>
         {% endif %}
-        <div class="card-body">
-          <h5><a href="{% url 'Blog_detail' bookmark.blog.slug %}" class="text-dark">{{ bookmark.blog.title }}</a></h5>
-          <small class="text-muted">Bookmarked {{ bookmark.created_at|timesince }} ago</small>
-          <p class="card-text mt-2">{{ bookmark.blog.short_description|truncatewords:20 }}</p>
-          <form action="{% url 'bookmark_post' bookmark.blog.slug %}" method="POST">
+        <div class="post-card__footer meta">
+          {% if bookmark.blog.reading_time %}
+          <span>{{ bookmark.blog.reading_time }} min read</span>
+          {% endif %}
+          {% if bookmark.blog.category %}
+          <span aria-hidden="true">&middot;</span>
+          <a href="{% url 'posts_by_category' bookmark.blog.category.id %}" class="category-tag"
+             style="--tag-color: {{ bookmark.blog.category|category_color }};">{{ bookmark.blog.category }}</a>
+          {% endif %}
+          <form action="{% url 'bookmark_post' bookmark.blog.slug %}" method="POST" class="post-card__bookmark" style="margin-left:auto;">
             {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa fa-times"></i> Remove</button>
+            <button type="submit" class="post-card__bookmark-btn post-card__bookmark-btn--active"
+                    aria-label="Remove bookmark" title="Remove bookmark">
+              <i class="fa fa-bookmark" aria-hidden="true"></i>
+            </button>
           </form>
         </div>
       </div>
-    </div>
-    {% empty %}
-    <div class="col-12">
-      <div class="alert alert-info">
-        <i class="fa fa-info-circle"></i> You haven't bookmarked any posts yet.
-      </div>
-    </div>
+      {% if bookmark.blog.featured_image %}
+      <a href="{% url 'Blog_detail' bookmark.blog.slug %}" class="post-card__thumb">
+        <img src="{{ bookmark.blog.featured_image.url }}" alt="{{ bookmark.blog.title }}" loading="lazy">
+      </a>
+      {% endif %}
+    </article>
     {% endfor %}
   </div>
-</div>
+  {% else %}
+  <div class="empty-state">
+    <h3 class="empty-state__title">No bookmarks yet</h3>
+    <p class="empty-state__message">Hit the bookmark icon on any story to save it here for later.</p>
+    <a href="{% url 'home' %}" class="btn btn--primary" style="margin-top:var(--space-4);">Browse stories</a>
+  </div>
+  {% endif %}
 
 {% endblock %}

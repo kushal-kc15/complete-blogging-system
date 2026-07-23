@@ -1,36 +1,30 @@
-{% extends 'base.html' %}
+{% extends 'base_feed.html' %}
 
-{% block title %}Categories | InkSpire{% endblock %}
-{% block meta_description %}Browse every InkSpire category and see how many published articles each one has.{% endblock %}
+{% block title %}Topics | InkSpire{% endblock %}
+{% block meta_description %}Browse every InkSpire topic and see how many published articles each one has.{% endblock %}
 {% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}
-{% block og_title %}Categories | InkSpire{% endblock %}
-{% block og_description %}Browse every InkSpire category and see how many published articles each one has.{% endblock %}
+{% block og_title %}Topics | InkSpire{% endblock %}
+{% block og_description %}Browse every InkSpire topic and see how many published articles each one has.{% endblock %}
 {% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
-{% block twitter_title %}Categories | InkSpire{% endblock %}
-{% block twitter_description %}Browse every InkSpire category and see how many published articles each one has.{% endblock %}
+{% block twitter_title %}Topics | InkSpire{% endblock %}
+{% block twitter_description %}Browse every InkSpire topic and see how many published articles each one has.{% endblock %}
 
-{% block content %}
-<section class="archive-header">
-  <div class="container">
-    <span class="eyebrow">Categories</span>
-    <h1>All categories</h1>
-    <p>Every topic InkSpire publishes under, listed alphabetically with its published article count.</p>
+{% block feed_content %}
+  <div class="section-heading" style="margin-bottom:var(--space-6);">
+    <span class="eyebrow">Browse</span>
+    <h1 class="heading">All topics</h1>
+    <p class="meta">Every topic InkSpire publishes under, with published article counts.</p>
   </div>
-</section>
 
-<section class="discovery-section">
-  <div class="container">
-    {% if categories %}
-    <div class="category-chip-list" aria-label="All categories">
-      {% include 'partials/category_chips.html' with categories=categories %}
-    </div>
-    {% else %}
-    <div class="empty-state">
-      <h2>No categories yet</h2>
-      <p>Categories will appear here once they are created.</p>
-      <a href="{% url 'home' %}" class="btn btn-warning">Back to homepage</a>
-    </div>
-    {% endif %}
+  {% if categories %}
+  <div class="category-chip-list" aria-label="All categories">
+    {% include 'partials/category_chips.html' with categories=categories %}
   </div>
-</section>
-{% endblock %}
+  {% else %}
+  <div class="empty-state">
+    <h2 class="empty-state__title">No categories yet</h2>
+    <p class="empty-state__message">Categories will appear here once they are created.</p>
+    <a href="{% url 'home' %}" class="btn btn--primary">Back to homepage</a>
+  </div>
+  {% endif %}
+{% endblock feed_content %}

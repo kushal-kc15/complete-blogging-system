@@ -1,47 +1,48 @@
-{% extends 'base.html' %}
+{% extends 'base_feed.html' %}
 
-{% block title %}{{ author_profile_user.get_full_name|default:author_profile_user.username }} | InkSpire Author{% endblock %}
+{% block title %}{{ author_profile_user.get_full_name|default:author_profile_user.username }} | InkSpire{% endblock %}
 {% block meta_description %}Read published articles by {{ author_profile_user.get_full_name|default:author_profile_user.username }} on InkSpire.{% endblock %}
 {% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}
-{% block og_title %}{{ author_profile_user.get_full_name|default:author_profile_user.username }} | InkSpire Author{% endblock %}
+{% block og_title %}{{ author_profile_user.get_full_name|default:author_profile_user.username }} | InkSpire{% endblock %}
 {% block og_description %}Read published articles by {{ author_profile_user.get_full_name|default:author_profile_user.username }} on InkSpire.{% endblock %}
 {% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
-{% block twitter_title %}{{ author_profile_user.get_full_name|default:author_profile_user.username }} | InkSpire Author{% endblock %}
+{% block twitter_title %}{{ author_profile_user.get_full_name|default:author_profile_user.username }} | InkSpire{% endblock %}
 {% block twitter_description %}Read published articles by {{ author_profile_user.get_full_name|default:author_profile_user.username }} on InkSpire.{% endblock %}
-{% block og_image %}
-{% if author_profile.avatar %}
-<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ author_profile.avatar.url }}">
-{% endif %}
-{% endblock %}
-{% block twitter_image %}
-{% if author_profile.avatar %}
-<meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{{ author_profile.avatar.url }}">
-{% endif %}
-{% endblock %}
+{% block og_image %}{% if author_profile.avatar %}<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ author_profile.avatar.url }}">{% endif %}{% endblock %}
+{% block twitter_image %}{% if author_profile.avatar %}<meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{{ author_profile.avatar.url }}">{% endif %}{% endblock %}
 
-{% block content %}
-{% comment %}
-  Author Profile Page (Requirements 5.5, 5.6, 7.1, 7.2, 7.6, 9.1).
-  Presentation is driven by `use_dashboard_density` (set by the view):
-    - Editors (staff / blogs.change_blog) get the DENSITY presentation
-      (compact .data-table listing) matching the Dashboard.
-    - Visitors and non-Editor Readers get the SPACIOUS public presentation
-      (author hero + asymmetric post-card grid).
-  The follow/unfollow control is shown only when `show_follow_control` is true
-  (authenticated viewer, not the author's own profile), and reflects
-  `is_following` (Requirements 7.1, 7.2, 7.6).
-{% endcomment %}
+{% block feed_content %}
 
-{% if use_dashboard_density %}
-{# ---------------- DENSITY presentation (Editors, Requirement 5.6) -------- #}
-<div class="container-dashboard">
-  <section class="home-section" aria-label="Author overview">
-    <div class="section-heading">
-      <span class="eyebrow">Author</span>
-      <h1 class="heading">{{ author_profile_user.get_full_name|default:author_profile_user.username }}</h1>
-      <p class="meta">@{{ author_profile_user.username }}
-        &middot; {{ posts.paginator.count }} published post{{ posts.paginator.count|pluralize }}
-        &middot; {{ follower_count }} follower{{ follower_count|pluralize }}</p>
+{# ── Author header ───────────────────────────────────────────────────────── #}
+<div class="author-header" style="margin-bottom:var(--space-8);">
+  {% if author_profile.avatar %}
+  <img src="{{ author_profile.avatar.url }}" alt="{{ author_profile_user.username }}" class="author-avatar">
+  {% else %}
+  <div class="author-avatar author-avatar--fallback" aria-hidden="true">
+    <i class="fa fa-user"></i>
+  </div>
+  {% endif %}
+
+  <div class="author-header__body">
+    <span class="eyebrow">Author</span>
+    <h1 class="heading">{{ author_profile_user.get_full_name|default:author_profile_user.username }}</h1>
+    <p class="meta">@{{ author_profile_user.username }}</p>
+
+    {% if author_profile.bio %}
+    <p class="author-bio">{{ author_profile.bio }}</p>
+    {% endif %}
+
+    <div class="author-meta meta">
+      <span><i class="fa fa-file-text-o" aria-hidden="true"></i> {{ posts.paginator.count }} post{{ posts.paginator.count|pluralize }}</span>
+      <span><i class="fa fa-users" aria-hidden="true"></i> {{ follower_count }} follower{{ follower_count|pluralize }}</span>
+      {% if author_profile.location %}
+      <span><i class="fa fa-map-marker" aria-hidden="true"></i> {{ author_profile.location }}</span>
+      {% endif %}
+      {% if author_profile.website %}
+      <a class="link" href="{{ author_profile.website }}" target="_blank" rel="noopener">
+        <i class="fa fa-globe" aria-hidden="true"></i> Website
+      </a>
+      {% endif %}
     </div>
 
     {% if show_follow_control %}
@@ -49,132 +50,44 @@
       {% if is_following %}
       <form action="{% url 'unfollow_author' author_profile_user.username %}" method="POST">
         {% csrf_token %}
-        <button type="submit" class="btn btn--secondary btn--sm">Following</button>
+        <button type="submit" class="btn btn--secondary">
+          <i class="fa fa-check" aria-hidden="true"></i> Following
+        </button>
       </form>
       {% else %}
       <form action="{% url 'follow_author' author_profile_user.username %}" method="POST">
         {% csrf_token %}
-        <button type="submit" class="btn btn--primary btn--sm">Follow</button>
+        <button type="submit" class="btn btn--primary">
+          <i class="fa fa-plus" aria-hidden="true"></i> Follow
+        </button>
       </form>
       {% endif %}
     </div>
     {% endif %}
-  </section>
-
-  <section class="home-section" aria-label="Author posts">
-    {% if posts %}
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th scope="col">Title</th>
-          <th scope="col">Category</th>
-          <th scope="col">Published</th>
-          <th scope="col">Views</th>
-          <th scope="col">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for post in posts %}
-        <tr>
-          <td><a class="link" href="{% url 'Blog_detail' post.slug %}">{{ post.title }}</a></td>
-          <td>{{ post.category }}</td>
-          <td>{{ post.effective_published_at|date:"M j, Y" }}</td>
-          <td>{{ post.views }}</td>
-          <td>
-            <span class="data-table__actions">
-              <a class="btn btn--ghost btn--sm" href="{% url 'Blog_detail' post.slug %}">View</a>
-            </span>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-
-    {% include 'partials/pagination.html' with page_obj=posts aria_label='Author posts pagination' nav_class='home-pagination' justify_center=True %}
-    {% else %}
-    <div class="empty-state">
-      <h2 class="empty-state__title">No published posts yet</h2>
-      <p class="empty-state__message">{{ author_profile_user.get_full_name|default:author_profile_user.username }} does not have any public posts right now.</p>
-    </div>
-    {% endif %}
-  </section>
+  </div>
 </div>
+
+{# ── Posts ───────────────────────────────────────────────────────────────── #}
+{% if posts %}
+<div class="section-heading" style="margin-bottom:var(--space-5);">
+  <span class="eyebrow">Published work</span>
+  <h2 class="heading">Articles</h2>
+</div>
+
+<div class="feed-list">
+  {% for post in posts %}
+  {% include 'partials/editorial_post_card.html' with post=post %}
+  {% endfor %}
+</div>
+
+{% include 'partials/pagination.html' with page_obj=posts aria_label='Author posts pagination' nav_class='home-pagination' justify_center=False %}
 
 {% else %}
-{# ---------------- SPACIOUS presentation (Visitors / non-Editors, Req 5.5) - #}
-<div class="container-wide">
-  <section class="home-section" aria-label="Author profile">
-    <div class="author-header">
-      {% if author_profile.avatar %}
-      <img src="{{ author_profile.avatar.url }}" alt="{{ author_profile_user.username }} avatar" class="author-avatar">
-      {% else %}
-      <div class="author-avatar author-avatar--fallback" aria-hidden="true">
-        <i class="fa fa-user"></i>
-      </div>
-      {% endif %}
-
-      <div class="author-header__body">
-        <span class="eyebrow">Author</span>
-        <h1 class="heading">{{ author_profile_user.get_full_name|default:author_profile_user.username }}</h1>
-        <p class="meta">@{{ author_profile_user.username }}</p>
-        {% if author_profile.bio %}
-        <p class="author-bio">{{ author_profile.bio }}</p>
-        {% else %}
-        <p class="author-bio meta">This author has not added a bio yet.</p>
-        {% endif %}
-
-        <div class="author-meta meta">
-          <span><i class="fa fa-file-text-o" aria-hidden="true"></i> {{ posts.paginator.count }} published post{{ posts.paginator.count|pluralize }}</span>
-          <span><i class="fa fa-users" aria-hidden="true"></i> {{ follower_count }} follower{{ follower_count|pluralize }}</span>
-          {% if author_profile.location %}
-          <span><i class="fa fa-map-marker" aria-hidden="true"></i> {{ author_profile.location }}</span>
-          {% endif %}
-          {% if author_profile.website %}
-          <a class="link" href="{{ author_profile.website }}" target="_blank" rel="noopener"><i class="fa fa-globe" aria-hidden="true"></i> Website</a>
-          {% endif %}
-        </div>
-
-        {% if show_follow_control %}
-        <div class="author-follow">
-          {% if is_following %}
-          <form action="{% url 'unfollow_author' author_profile_user.username %}" method="POST">
-            {% csrf_token %}
-            <button type="submit" class="btn btn--secondary"><i class="fa fa-check" aria-hidden="true"></i> Following</button>
-          </form>
-          {% else %}
-          <form action="{% url 'follow_author' author_profile_user.username %}" method="POST">
-            {% csrf_token %}
-            <button type="submit" class="btn btn--primary"><i class="fa fa-plus" aria-hidden="true"></i> Follow</button>
-          </form>
-          {% endif %}
-        </div>
-        {% endif %}
-      </div>
-    </div>
-  </section>
-
-  <section class="home-section" aria-label="Author posts">
-    <div class="section-heading">
-      <span class="eyebrow">Published work</span>
-      <h2 class="heading">Articles by {{ author_profile_user.get_full_name|default:author_profile_user.username }}</h2>
-    </div>
-
-    {% if posts %}
-    <div class="post-grid--asymmetric">
-      {% for post in posts %}
-      {% include 'partials/editorial_post_card.html' with post=post %}
-      {% endfor %}
-    </div>
-
-    {% include 'partials/pagination.html' with page_obj=posts aria_label='Author posts pagination' nav_class='home-pagination' justify_center=True %}
-    {% else %}
-    <div class="empty-state">
-      <h2 class="empty-state__title">No published posts yet</h2>
-      <p class="empty-state__message">{{ author_profile_user.get_full_name|default:author_profile_user.username }} does not have any public posts right now.</p>
-      <a href="{% url 'home' %}" class="btn btn--primary">Explore latest posts</a>
-    </div>
-    {% endif %}
-  </section>
+<div class="empty-state">
+  <h2 class="empty-state__title">No published posts yet</h2>
+  <p class="empty-state__message">{{ author_profile_user.get_full_name|default:author_profile_user.username }} hasn't published anything yet.</p>
+  <a href="{% url 'home' %}" class="btn btn--primary" style="margin-top:var(--space-4);">Explore latest posts</a>
 </div>
 {% endif %}
-{% endblock %}
+
+{% endblock feed_content %}

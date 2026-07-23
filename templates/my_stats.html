@@ -1,0 +1,146 @@
+{% extends 'base_feed.html' %}
+{% load editorial_extras %}
+
+{% block title %}Your Stats | InkSpire{% endblock %}
+{% block extra_head %}<meta name="robots" content="noindex,follow">{% endblock %}
+
+{% block feed_content %}
+
+{# ── Page header ─────────────────────────────────────────────────────────── #}
+<div class="my-stories-header" style="margin-bottom:var(--space-6);">
+  <div>
+    <span class="eyebrow">Analytics</span>
+    <h1 class="heading" style="margin-top:var(--space-1);">Your stats</h1>
+  </div>
+  <a href="{% url 'my_stories' %}" class="btn btn--secondary btn--sm">
+    <i class="fa fa-arrow-left" aria-hidden="true"></i> Stories
+  </a>
+</div>
+
+{# ── Aggregate stat cards ─────────────────────────────────────────────────── #}
+<div class="stats-grid">
+  <div class="stat-tile">
+    <div class="stat-tile__icon stat-tile__icon--blue">
+      <i class="fa fa-eye" aria-hidden="true"></i>
+    </div>
+    <div class="stat-tile__body">
+      <span class="stat-tile__value">{{ total_views }}</span>
+      <span class="stat-tile__label">Total views</span>
+    </div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-tile__icon stat-tile__icon--red">
+      <i class="fa fa-heart-o" aria-hidden="true"></i>
+    </div>
+    <div class="stat-tile__body">
+      <span class="stat-tile__value">{{ total_likes }}</span>
+      <span class="stat-tile__label">Total likes</span>
+    </div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-tile__icon stat-tile__icon--green">
+      <i class="fa fa-comment-o" aria-hidden="true"></i>
+    </div>
+    <div class="stat-tile__body">
+      <span class="stat-tile__value">{{ total_comments }}</span>
+      <span class="stat-tile__label">Total comments</span>
+    </div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-tile__icon stat-tile__icon--amber">
+      <i class="fa fa-bookmark-o" aria-hidden="true"></i>
+    </div>
+    <div class="stat-tile__body">
+      <span class="stat-tile__value">{{ total_bookmarks }}</span>
+      <span class="stat-tile__label">Bookmarks</span>
+    </div>
+  </div>
+</div>
+
+{# ── Per-post breakdown ───────────────────────────────────────────────────── #}
+{% if posts %}
+<div class="dashboard-panel" style="margin-top:var(--space-6);">
+  <div class="dashboard-panel__header">
+    <div>
+      <span class="eyebrow">Per story</span>
+      <h2>Breakdown by post</h2>
+    </div>
+    <span class="meta">Sorted by views</span>
+  </div>
+
+  <table class="data-table data-table--compact">
+    <thead>
+      <tr>
+        <th>Story</th>
+        <th>Status</th>
+        <th><i class="fa fa-eye" aria-hidden="true"></i> Views</th>
+        <th><i class="fa fa-heart-o" aria-hidden="true"></i> Likes</th>
+        <th><i class="fa fa-comment-o" aria-hidden="true"></i> Comments</th>
+        <th><i class="fa fa-bookmark-o" aria-hidden="true"></i> Saved</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for post in posts %}
+      <tr>
+        <td>
+          <div class="post-table-cell">
+            <div class="post-table-thumb">
+              {% if post.featured_image %}
+              <img src="{{ post.featured_image.url }}" alt="">
+              {% else %}
+              <i class="fa fa-file-text-o" aria-hidden="true"></i>
+              {% endif %}
+            </div>
+            <div>
+              <a href="{% url 'Blog_detail' post.slug %}" class="link" style="font-weight:var(--font-weight-medium);">
+                {{ post.title|truncatewords:8 }}
+              </a>
+              {% if post.category %}
+              <div><span class="category-tag" style="--tag-color:{{ post.category|category_color }};font-size:0.68rem;">{{ post.category }}</span></div>
+              {% endif %}
+            </div>
+          </div>
+        </td>
+        <td>
+          {% if post.status == 'draft' %}
+          <span class="status-pill status-pill--draft">Draft</span>
+          {% elif post.is_scheduled %}
+          <span class="status-pill status-pill--scheduled">Scheduled</span>
+          {% else %}
+          <span class="status-pill status-pill--published">Published</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="stats-cell {% if post.views > 100 %}stats-cell--high{% endif %}">
+            {{ post.views }}
+          </span>
+        </td>
+        <td class="meta">{{ post.like_count }}</td>
+        <td class="meta">{{ post.comment_count }}</td>
+        <td class="meta">{{ post.bookmark_count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="stats-total-row">
+        <td><strong>Total</strong></td>
+        <td></td>
+        <td><strong>{{ total_views }}</strong></td>
+        <td><strong>{{ total_likes }}</strong></td>
+        <td><strong>{{ total_comments }}</strong></td>
+        <td><strong>{{ total_bookmarks }}</strong></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% else %}
+<div class="empty-state" style="margin-top:var(--space-6);">
+  <h3 class="empty-state__title">No stories yet</h3>
+  <p class="empty-state__message">Write and publish a story to start seeing stats here.</p>
+  <a href="{% url 'add_post' %}" class="btn btn--primary" style="margin-top:var(--space-4);">
+    <i class="fa fa-plus" aria-hidden="true"></i> Write a story
+  </a>
+</div>
+{% endif %}
+
+{% endblock feed_content %}

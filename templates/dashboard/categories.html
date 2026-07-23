@@ -7,14 +7,19 @@
   {% include 'dashboard/sidebar.html' %}
 
   <section class="dashboard-main">
+    <nav class="dash-breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'my_stories' %}" class="dash-breadcrumb__link">Dashboard</a>
+      <span class="dash-breadcrumb__sep" aria-hidden="true">/</span>
+      <span class="dash-breadcrumb__current">Categories</span>
+    </nav>
     <header class="dashboard-page-header">
       <div>
         <span class="eyebrow">Taxonomy</span>
-        <h1>All categories</h1>
+        <h1>Categories</h1>
         <p class="meta">Organize posts into editorial categories.</p>
       </div>
-      <a href="{% url 'add_category' %}" class="btn btn--sm btn--primary">
-        <i class="fa fa-plus" aria-hidden="true"></i> Add new
+      <a href="{% url 'add_category' %}" class="btn btn--primary btn--sm">
+        <i class="fa fa-plus" aria-hidden="true"></i> New category
       </a>
     </header>
 
@@ -24,27 +29,30 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>Category name</th>
+            <th>Name</th>
             <th>Created</th>
-            <th>Updated</th>
+            <th>Last updated</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for cat in categories %}
           <tr>
-            <td>{{ forloop.counter }}</td>
-            <td><strong>{{ cat }}</strong></td>
-            <td>{{ cat.created_at|date:"M j, Y" }}</td>
-            <td>{{ cat.updated_at|date:"M j, Y" }}</td>
+            <td class="meta">{{ forloop.counter }}</td>
+            <td>
+              <strong>{{ cat }}</strong>
+            </td>
+            <td class="meta">{{ cat.created_at|date:"M j, Y" }}</td>
+            <td class="meta">{{ cat.updated_at|date:"M j, Y" }}</td>
             <td>
               <div class="data-table__actions">
-                <a href="{% url 'edit_category' cat.id %}" class="btn btn--sm btn--secondary" title="Edit category" aria-label="Edit category">
-                  <i class="fa fa-edit" aria-hidden="true"></i>
+                <a href="{% url 'edit_category' cat.id %}" class="btn btn--sm btn--secondary" title="Edit" aria-label="Edit category">
+                  <i class="fa fa-pencil" aria-hidden="true"></i>
                 </a>
-                <form action="{% url 'delete_category' cat.id %}" method="POST" class="dashboard-inline-form">
+                <form action="{% url 'delete_category' cat.id %}" method="POST" class="dashboard-inline-form"
+                      onsubmit="return confirm('Delete category "{{ cat }}"?')">
                   {% csrf_token %}
-                  <button type="submit" class="btn btn--sm btn--danger" title="Delete category" aria-label="Delete category">
+                  <button type="submit" class="btn btn--sm btn--danger" title="Delete" aria-label="Delete category">
                     <i class="fa fa-trash" aria-hidden="true"></i>
                   </button>
                 </form>
@@ -58,7 +66,7 @@
       <div class="empty-state">
         <h2 class="empty-state__title">No categories yet</h2>
         <p class="empty-state__message">Add a category to start organizing your posts.</p>
-        <a href="{% url 'add_category' %}" class="btn btn--primary">Add first category</a>
+        <a href="{% url 'add_category' %}" class="btn btn--primary" style="margin-top:var(--space-4);">Add first category</a>
       </div>
       {% endif %}
     </div>

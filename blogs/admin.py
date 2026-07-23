@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Blog, Comment, Like, Bookmark, Contact, UserProfile
+from .models import Category, Blog, Comment, Like, Bookmark, Contact, UserProfile, Series
 from .forms import BlogAdminForm
 
 
@@ -19,6 +19,15 @@ class CategoryAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Category, CategoryAdmin)
+
+
+class SeriesAdmin(admin.ModelAdmin):
+    list_display = ['name', 'author', 'created_at']
+    prepopulated_fields = {'slug': ('name',)}
+    search_fields = ['name', 'author__username']
+
+
+admin.site.register(Series, SeriesAdmin)
 
 
 class BlogAdmin(admin.ModelAdmin):

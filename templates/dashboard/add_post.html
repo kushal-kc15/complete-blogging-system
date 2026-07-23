@@ -1,136 +1,129 @@
-{% extends 'base.html' %}
+{% extends 'base_feed.html' %}
 
-{% block title %}Add Post | InkSpire{% endblock %}
+{% block title %}New Post | InkSpire{% endblock %}
 
-{% block content %}
-<div class="container-dashboard dashboard-layout">
-    {% include 'dashboard/sidebar.html' %}
+{% block feed_content %}
 
-    <section class="dashboard-main">
-        <header class="dashboard-page-header">
-            <div>
-                <span class="eyebrow">Editor</span>
-                <h1>Add new post</h1>
-                <p class="meta">Create a draft or publish a story using the existing editorial fields.</p>
-            </div>
-            <a href="{% url 'posts' %}" class="btn btn--sm btn--secondary">
-                <i class="fa fa-arrow-left" aria-hidden="true"></i> Back to posts
-            </a>
-        </header>
-
-        {% if form.errors %}
-        <div class="alert alert--danger editor-errors" role="alert">
-            <div>
-                <strong>Please fix the highlighted fields.</strong>
-                <ul class="editor-errors__list">
-                    {% for field in form %}
-                    {% for error in field.errors %}
-                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
-                    {% endfor %}
-                    {% endfor %}
-                    {% for error in form.non_field_errors %}
-                    <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-        {% endif %}
-
-        <form action="{% url 'add_post' %}" method="POST" enctype="multipart/form-data" class="post-editor-form">
-            {% csrf_token %}
-            {{ form.media }}
-
-            <div class="editor-panel">
-                <div class="editor-panel-header">
-                    <span class="eyebrow">Story basics</span>
-                    <h2>Title and summary</h2>
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.title.id_for_label }}" class="form-label">Title</label>
-                    {{ form.title }}
-                    {{ form.title.errors }}
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.short_description.id_for_label }}" class="form-label">Short description</label>
-                    <p class="form-help">Used on article cards and social previews.</p>
-                    {{ form.short_description }}
-                    {{ form.short_description.errors }}
-                </div>
-            </div>
-
-            <div class="editor-panel">
-                <div class="editor-panel-header">
-                    <span class="eyebrow">Publishing</span>
-                    <h2>Status and placement</h2>
-                </div>
-                <div class="editor-grid">
-                    <div class="form-field">
-                        <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
-                        {{ form.category }}
-                        {{ form.category.errors }}
-                    </div>
-                    <div class="form-field">
-                        <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
-                        {{ form.status }}
-                        {{ form.status.errors }}
-                    </div>
-                </div>
-                <div class="editor-check">
-                    {{ form.is_featured }}
-                    <label for="{{ form.is_featured.id_for_label }}">Mark as featured post</label>
-                </div>
-            </div>
-
-            <div class="editor-panel">
-                <div class="editor-panel-header">
-                    <span class="eyebrow">Media</span>
-                    <h2>Featured image</h2>
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.featured_image.id_for_label }}" class="form-label">Upload image</label>
-                    {{ form.featured_image }}
-                    {{ form.featured_image.errors }}
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.featured_image_alt.id_for_label }}" class="form-label">Image alt text</label>
-                    <p class="form-help">Describe the image for accessibility and image SEO.</p>
-                    {{ form.featured_image_alt }}
-                    {{ form.featured_image_alt.errors }}
-                </div>
-            </div>
-
-            <div class="editor-panel editor-panel-content">
-                <div class="editor-panel-header">
-                    <span class="eyebrow">Article</span>
-                    <h2>Content</h2>
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.blog_body.id_for_label }}" class="form-label">Post body</label>
-                    {{ form.blog_body }}
-                    {{ form.blog_body.errors }}
-                </div>
-            </div>
-
-            <div class="editor-panel">
-                <div class="editor-panel-header">
-                    <span class="eyebrow">SEO</span>
-                    <h2>Search metadata</h2>
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.meta_description.id_for_label }}" class="form-label">SEO meta description</label>
-                    <p class="form-help">Keep this concise; around 160 characters works best.</p>
-                    {{ form.meta_description }}
-                    {{ form.meta_description.errors }}
-                </div>
-            </div>
-
-            <div class="editor-actions">
-                <a href="{% url 'posts' %}" class="btn btn--secondary">Cancel</a>
-                <button type="submit" class="btn btn--primary">
-                    <i class="fa fa-save" aria-hidden="true"></i> Save post
-                </button>
-            </div>
-        </form>
-    </section>
+<div class="my-stories-header">
+  <div>
+    <nav class="dash-breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'my_stories' %}" class="dash-breadcrumb__link">Posts</a>
+      <span class="dash-breadcrumb__sep" aria-hidden="true">/</span>
+      <span class="dash-breadcrumb__current">New post</span>
+    </nav>
+    <h1 class="heading" style="margin-top:var(--space-2);">New post</h1>
+  </div>
+  <a href="{% url 'my_stories' %}" class="btn btn--secondary btn--sm">
+    <i class="fa fa-arrow-left" aria-hidden="true"></i> Back to posts
+  </a>
 </div>
-{% endblock %}
+
+{% if form.errors %}
+<div class="alert alert--danger editor-errors" role="alert">
+  <strong>Please fix the highlighted fields.</strong>
+  <ul class="editor-errors__list">
+    {% for field in form %}{% for error in field.errors %}
+    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+    {% endfor %}{% endfor %}
+    {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<form action="{% url 'add_post' %}" method="POST" enctype="multipart/form-data" class="post-editor-form">
+  {% csrf_token %}
+  {{ form.media }}
+
+  <div class="editor-panel">
+    <div class="editor-panel-header">
+      <span class="eyebrow">Basics</span>
+      <h2>Title &amp; summary</h2>
+    </div>
+    <div class="form-field">
+      <label for="{{ form.title.id_for_label }}" class="form-label">Title</label>
+      {{ form.title }}{{ form.title.errors }}
+    </div>
+    <div class="form-field">
+      <label for="{{ form.short_description.id_for_label }}" class="form-label">Short description</label>
+      <p class="form-help">Used on article cards and social previews.</p>
+      {{ form.short_description }}{{ form.short_description.errors }}
+    </div>
+  </div>
+
+  <div class="editor-panel">
+    <div class="editor-panel-header">
+      <span class="eyebrow">Publishing</span>
+      <h2>Status &amp; placement</h2>
+    </div>
+    <div class="editor-grid">
+      <div class="form-field">
+        <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
+        {{ form.category }}{{ form.category.errors }}
+      </div>
+      <div class="form-field">
+        <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+        {{ form.status }}{{ form.status.errors }}
+      </div>
+      <div class="form-field">
+        <label for="{{ form.series.id_for_label }}" class="form-label">Series <span class="meta">(optional)</span></label>
+        {{ form.series }}{{ form.series.errors }}
+      </div>
+      <div class="form-field">
+        <label for="{{ form.series_order.id_for_label }}" class="form-label">Part number <span class="meta">(optional)</span></label>
+        {{ form.series_order }}{{ form.series_order.errors }}
+      </div>
+    </div>
+    <div class="editor-check">
+      {{ form.is_featured }}
+      <label for="{{ form.is_featured.id_for_label }}">Mark as featured post</label>
+    </div>
+  </div>
+
+  <div class="editor-panel">
+    <div class="editor-panel-header">
+      <span class="eyebrow">Media</span>
+      <h2>Featured image</h2>
+    </div>
+    <div class="form-field">
+      <label for="{{ form.featured_image.id_for_label }}" class="form-label">Upload image</label>
+      {{ form.featured_image }}{{ form.featured_image.errors }}
+    </div>
+    <div class="form-field">
+      <label for="{{ form.featured_image_alt.id_for_label }}" class="form-label">Image alt text</label>
+      <p class="form-help">Describe the image for screen readers and image SEO.</p>
+      {{ form.featured_image_alt }}{{ form.featured_image_alt.errors }}
+    </div>
+  </div>
+
+  <div class="editor-panel editor-panel-content">
+    <div class="editor-panel-header">
+      <span class="eyebrow">Content</span>
+      <h2>Post body</h2>
+    </div>
+    <div class="form-field">
+      <label for="{{ form.blog_body.id_for_label }}" class="form-label sr-only">Post body</label>
+      {{ form.blog_body }}{{ form.blog_body.errors }}
+    </div>
+  </div>
+
+  <div class="editor-panel">
+    <div class="editor-panel-header">
+      <span class="eyebrow">SEO</span>
+      <h2>Search metadata</h2>
+    </div>
+    <div class="form-field">
+      <label for="{{ form.meta_description.id_for_label }}" class="form-label">Meta description</label>
+      <p class="form-help">Keep under 160 characters for best search results.</p>
+      {{ form.meta_description }}{{ form.meta_description.errors }}
+    </div>
+  </div>
+
+  <div class="editor-actions">
+    <a href="{% url 'my_stories' %}" class="btn btn--secondary">Cancel</a>
+    <button type="submit" class="btn btn--primary">
+      <i class="fa fa-save" aria-hidden="true"></i> Save post
+    </button>
+  </div>
+</form>
+
+{% endblock feed_content %}

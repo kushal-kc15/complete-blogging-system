@@ -84,6 +84,8 @@ urlpatterns = [
     path('authors/<str:username>/unfollow/', BlogsView.unfollow_author, name='unfollow_author'),
     path('following/', BlogsView.following_feed, name='following_feed'),
     path('categories/', BlogsView.category_index, name='category_index'),
+    path('my/stories/', views.my_stories, name='my_stories'),
+    path('my/stats/', views.my_stats, name='my_stats'),
     path('<slug:slug>/', BlogsView.BlogDetail, name='Blog_detail'),
     path('blogs/search/', BlogsView.Search, name='search'),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),

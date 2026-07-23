@@ -16,6 +16,11 @@ urlpatterns = [
     path('comments/toggle/<int:id>/', views.toggle_comment_visibility,
          name='toggle_comment_visibility'),
 
+    path('series/', views.series_list, name='series_list'),
+    path('series/add/', views.add_series, name='add_series'),
+    path('series/edit/<int:id>/', views.edit_series, name='edit_series'),
+    path('series/delete/<int:id>/', views.delete_series, name='delete_series'),
+
     path('users/', views.users, name='users'),
     path('users/add', views.add_user, name='add_user'),
     path('users/edit/<int:id>/', views.edit_user, name='edit_user'),

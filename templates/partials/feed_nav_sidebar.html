@@ -1,0 +1,61 @@
+<ul class="feed-nav">
+  <li class="feed-nav__item">
+    <a href="{% url 'home' %}"
+       class="feed-nav__link {% if request.path == '/' %}feed-nav__link--active{% endif %}">
+      <i class="fa fa-home" aria-hidden="true"></i>
+      <span>Home</span>
+    </a>
+  </li>
+  <li class="feed-nav__item">
+    <a href="{% url 'my_bookmarks' %}"
+       class="feed-nav__link {% if 'bookmarks' in request.path %}feed-nav__link--active{% endif %}">
+      <i class="fa fa-bookmark-o" aria-hidden="true"></i>
+      <span>Library</span>
+    </a>
+  </li>
+  <li class="feed-nav__item">
+    <a href="{% url 'following_feed' %}"
+       class="feed-nav__link {% if request.path == '/following/' %}feed-nav__link--active{% endif %}">
+      <i class="fa fa-users" aria-hidden="true"></i>
+      <span>Following</span>
+    </a>
+  </li>
+</ul>
+
+<hr class="feed-nav__divider">
+<p class="feed-nav__section-label">Writing</p>
+<ul class="feed-nav">
+  <li class="feed-nav__item">
+    <a href="{% url 'my_stories' %}"
+       class="feed-nav__link {% if request.path == '/my/stories/' %}feed-nav__link--active{% endif %}">
+      <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+      <span>Posts</span>
+    </a>
+  </li>
+  <li class="feed-nav__item">
+    <a href="{% url 'series_list' %}"
+       class="feed-nav__link {% if 'series' in request.path %}feed-nav__link--active{% endif %}">
+      <i class="fa fa-list-ol" aria-hidden="true"></i>
+      <span>Series</span>
+    </a>
+  </li>
+  <li class="feed-nav__item">
+    <a href="{% url 'my_stats' %}"
+       class="feed-nav__link {% if request.path == '/my/stats/' %}feed-nav__link--active{% endif %}">
+      <i class="fa fa-bar-chart" aria-hidden="true"></i>
+      <span>Stats</span>
+    </a>
+  </li>
+</ul>
+
+<hr class="feed-nav__divider">
+<p class="feed-nav__section-label">Discover</p>
+<ul class="feed-nav">
+  <li class="feed-nav__item">
+    <a href="{% url 'category_index' %}"
+       class="feed-nav__link {% if request.path == '/categories/' %}feed-nav__link--active{% endif %}">
+      <i class="fa fa-compass" aria-hidden="true"></i>
+      <span>Topics</span>
+    </a>
+  </li>
+</ul>

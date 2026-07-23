@@ -1,0 +1,220 @@
+{% load static %}
+{% load editorial_extras %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="{% static 'js/theme-init.js' %}"></script>
+  <title>InkSpire — Human stories &amp; ideas</title>
+  <meta name="description" content="A place to read, write, and deepen your understanding of the things that matter most to you.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="{% static 'css/editorial.css' %}" rel="stylesheet">
+  <link href="{% static 'css/landing.css' %}" rel="stylesheet">
+  <script src="{% static 'js/theme-toggle.js' %}" defer></script>
+</head>
+<body class="lp-body">
+
+{# ── Navbar ─────────────────────────────────────────────────────────────── #}
+<header class="lp-nav">
+  <div class="lp-nav__inner">
+    <a class="lp-nav__brand" href="{% url 'home' %}">
+      <i class="fa fa-pencil" aria-hidden="true"></i>
+      <span>InkSpire</span>
+    </a>
+    <nav class="lp-nav__links" aria-label="Landing navigation">
+      <a href="{% url 'about' %}">About</a>
+      <a href="{% url 'category_index' %}">Explore</a>
+    </nav>
+    <div class="lp-nav__actions">
+      <button type="button" class="theme-toggle" data-theme-toggle
+        aria-label="Toggle color theme" aria-pressed="false" title="Toggle light/dark theme">
+        <i class="fa fa-moon-o theme-toggle__icon theme-toggle__icon--dark" aria-hidden="true"></i>
+        <i class="fa fa-sun-o theme-toggle__icon theme-toggle__icon--light" aria-hidden="true"></i>
+      </button>
+      <a href="{% url 'account_login' %}" class="lp-nav__signin">Sign in</a>
+      <a href="{% url 'account_signup' %}" class="lp-nav__cta">Get Started</a>
+    </div>
+  </div>
+</header>
+
+{# ── Hero ────────────────────────────────────────────────────────────────── #}
+<section class="lp-hero">
+  <div class="lp-hero__inner">
+    <div class="lp-hero__text">
+      <h1 class="lp-hero__headline">
+        Human<br>
+        <em>stories</em> &amp;<br>
+        ideas.
+      </h1>
+      <p class="lp-hero__sub">
+        A place to read, write, and deepen your understanding of the things that matter most to you.
+      </p>
+      <div class="lp-hero__actions">
+        <a href="{% url 'account_signup' %}" class="lp-btn lp-btn--primary lp-btn--lg">
+          Start reading
+        </a>
+        <a href="{% url 'account_login' %}" class="lp-btn lp-btn--ghost">
+          Already have an account?
+        </a>
+      </div>
+    </div>
+    <div class="lp-hero__visual" aria-hidden="true">
+      <div class="lp-hero__blob lp-hero__blob--1"></div>
+      <div class="lp-hero__blob lp-hero__blob--2"></div>
+      <div class="lp-hero__float-card lp-hero__float-card--a">
+        <i class="fa fa-pencil"></i>
+        <span>Write your story</span>
+      </div>
+      <div class="lp-hero__float-card lp-hero__float-card--b">
+        <i class="fa fa-users"></i>
+        <span>Join the community</span>
+      </div>
+      <div class="lp-hero__float-card lp-hero__float-card--c">
+        <i class="fa fa-bookmark-o"></i>
+        <span>Save &amp; revisit</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ── Marquee topics ──────────────────────────────────────────────────────── #}
+{% if top_categories %}
+<div class="lp-marquee" aria-hidden="true">
+  <div class="lp-marquee__track">
+    {% for category in top_categories %}
+    <span class="lp-marquee__tag" style="--tag-color: {{ category|category_color }};">{{ category.name }}</span>
+    {% endfor %}
+    {% for category in top_categories %}
+    <span class="lp-marquee__tag" style="--tag-color: {{ category|category_color }};">{{ category.name }}</span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# ── Trending posts preview ──────────────────────────────────────────────── #}
+{% if trending_posts %}
+<section class="lp-posts" aria-label="Trending stories">
+  <div class="lp-posts__inner">
+    <div class="lp-section-header">
+      <span class="lp-eyebrow">Trending on InkSpire</span>
+      <a href="{% url 'account_signup' %}" class="lp-link">See all stories &rarr;</a>
+    </div>
+    <div class="lp-posts__grid">
+      {% for post in trending_posts %}
+      <a href="{% url 'account_signup' %}" class="lp-post-card">
+        {% if post.featured_image %}
+        <div class="lp-post-card__thumb">
+          <img src="{{ post.featured_image.url }}"
+               alt="{{ post.featured_image_alt|default:post.title }}" loading="lazy">
+        </div>
+        {% else %}
+        <div class="lp-post-card__thumb lp-post-card__thumb--empty">
+          <i class="fa fa-file-text-o" aria-hidden="true"></i>
+        </div>
+        {% endif %}
+        <div class="lp-post-card__body">
+          <div class="lp-post-card__byline">
+            {% if post.author.profile.avatar %}
+            <img src="{{ post.author.profile.avatar.url }}" alt="" class="lp-post-card__avatar">
+            {% else %}
+            <span class="lp-post-card__avatar lp-post-card__avatar--fallback">{{ post.author.username|make_list|first }}</span>
+            {% endif %}
+            <span>{{ post.author.get_full_name|default:post.author.username }}</span>
+          </div>
+          <h3 class="lp-post-card__title">{{ post.title }}</h3>
+          {% if post.short_description %}
+          <p class="lp-post-card__excerpt">{{ post.short_description|truncatewords:18 }}</p>
+          {% endif %}
+          <div class="lp-post-card__meta">
+            <span>{{ post.effective_published_at|date:"M j" }}</span>
+            {% if post.reading_time %}
+            <span>&middot; {{ post.reading_time }} min read</span>
+            {% endif %}
+            {% if post.category %}
+            <span class="lp-post-card__tag" style="color: {{ post.category|category_color }};">
+              {{ post.category }}
+            </span>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ── Features strip ──────────────────────────────────────────────────────── #}
+<section class="lp-features">
+  <div class="lp-features__inner">
+    <div class="lp-section-header lp-section-header--center">
+      <h2 class="lp-features__heading">Everything a great writing platform should be</h2>
+    </div>
+    <div class="lp-features__grid">
+      <div class="lp-feature">
+        <div class="lp-feature__icon">
+          <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+        </div>
+        <h3 class="lp-feature__title">Write beautifully</h3>
+        <p class="lp-feature__desc">A distraction-free editor with rich formatting so your ideas get the presentation they deserve.</p>
+      </div>
+      <div class="lp-feature">
+        <div class="lp-feature__icon">
+          <i class="fa fa-users" aria-hidden="true"></i>
+        </div>
+        <h3 class="lp-feature__title">Find your audience</h3>
+        <p class="lp-feature__desc">Readers who care about your topic already live here. Your words reach the right people.</p>
+      </div>
+      <div class="lp-feature">
+        <div class="lp-feature__icon">
+          <i class="fa fa-bookmark-o" aria-hidden="true"></i>
+        </div>
+        <h3 class="lp-feature__title">Save what matters</h3>
+        <p class="lp-feature__desc">Bookmark any story to your personal library and come back whenever you're ready to read.</p>
+      </div>
+      <div class="lp-feature">
+        <div class="lp-feature__icon">
+          <i class="fa fa-moon-o" aria-hidden="true"></i>
+        </div>
+        <h3 class="lp-feature__title">Day and night modes</h3>
+        <p class="lp-feature__desc">A carefully tuned dark theme so you can read comfortably whatever the hour.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ── CTA banner ──────────────────────────────────────────────────────────── #}
+<section class="lp-cta">
+  <div class="lp-cta__inner">
+    <h2 class="lp-cta__heading">Start reading today — it's free.</h2>
+    <p class="lp-cta__sub">Join thousands of curious readers and writers on InkSpire.</p>
+    <a href="{% url 'account_signup' %}" class="lp-btn lp-btn--primary lp-btn--lg">
+      Create your free account
+    </a>
+  </div>
+</section>
+
+{# ── Footer ──────────────────────────────────────────────────────────────── #}
+<footer class="lp-footer">
+  <div class="lp-footer__inner">
+    <a class="lp-nav__brand" href="{% url 'home' %}">
+      <i class="fa fa-pencil" aria-hidden="true"></i>
+      <span>InkSpire</span>
+    </a>
+    <nav class="lp-footer__links" aria-label="Footer navigation">
+      <a href="{% url 'home' %}">Home</a>
+      <a href="{% url 'about' %}">About</a>
+      <a href="{% url 'contact' %}">Contact</a>
+      <a href="{% url 'category_index' %}">Topics</a>
+      <a href="{% url 'rss_feed' %}">RSS</a>
+    </nav>
+    <p class="lp-footer__copy">&copy; 2026 InkSpire. Made with <i class="fa fa-heart" aria-hidden="true"></i> for curious minds.</p>
+  </div>
+</footer>
+
+</body>
+</html>

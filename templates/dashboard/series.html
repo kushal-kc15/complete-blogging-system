@@ -1,0 +1,55 @@
+{% extends 'base_feed.html' %}
+
+{% block title %}Series | InkSpire{% endblock %}
+
+{% block feed_content %}
+  <div class="my-stories-header">
+    <div>
+      <span class="eyebrow">Writing</span>
+      <h1 class="heading" style="margin-top:var(--space-1);">Series</h1>
+      <p class="meta">Group related posts into multi-part series.</p>
+    </div>
+    <a href="{% url 'add_series' %}" class="btn btn--primary">
+      <i class="fa fa-plus" aria-hidden="true"></i> New series
+    </a>
+  </div>
+
+  {% if series_list %}
+  <div class="story-list">
+    {% for s in series_list %}
+    <div class="story-card">
+      <div class="story-card__body">
+        <div class="story-card__meta-top">
+          <span class="status-pill status-pill--draft">{{ s.posts.count }} post{{ s.posts.count|pluralize }}</span>
+        </div>
+        <h2 class="story-card__title" style="font-size:1.05rem;">{{ s.name }}</h2>
+        {% if s.description %}
+        <p class="story-card__excerpt">{{ s.description|truncatewords:20 }}</p>
+        {% endif %}
+        <div class="story-card__stats">
+          <span>Created {{ s.created_at|date:"M j, Y" }}</span>
+        </div>
+      </div>
+      <div class="story-card__actions">
+        <a href="{% url 'edit_series' s.id %}" class="btn btn--sm btn--secondary" title="Edit" aria-label="Edit series">
+          <i class="fa fa-pencil" aria-hidden="true"></i>
+        </a>
+        <form action="{% url 'delete_series' s.id %}" method="POST" style="margin:0;"
+              onsubmit="return confirm('Delete series \'{{ s.name }}\'? Posts will be unlinked but not deleted.')">
+          {% csrf_token %}
+          <button type="submit" class="btn btn--sm btn--danger" title="Delete" aria-label="Delete series">
+            <i class="fa fa-trash" aria-hidden="true"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state" style="margin-top:var(--space-6);">
+    <h2 class="empty-state__title">No series yet</h2>
+    <p class="empty-state__message">Create a series to group related posts (e.g. "Django for Beginners Part 1, 2, 3…").</p>
+    <a href="{% url 'add_series' %}" class="btn btn--primary" style="margin-top:var(--space-4);">Create first series</a>
+  </div>
+  {% endif %}
+{% endblock feed_content %}
