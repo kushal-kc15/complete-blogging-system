@@ -24,17 +24,8 @@ def is_dashboard_admin(user):
 
 
 def can_access_dashboard(user):
-    """Admins and authors may open the dashboard.
-
-    An author is any user granted authoring permissions (view/add/change
-    blog). Plain readers have no dashboard — they use Profile / Bookmarks.
-    """
-    return (
-        is_dashboard_admin(user)
-        or user.has_perm('blogs.view_blog')
-        or user.has_perm('blogs.add_blog')
-        or user.has_perm('blogs.change_blog')
-    )
+    """Any authenticated user can access the dashboard to write posts."""
+    return user.is_authenticated
 
 
 def superuser_required(view_func):
@@ -154,7 +145,6 @@ def delete_category(request, id):
 
 
 @login_required(login_url='login')
-@permission_required('blogs.view_blog', raise_exception=True)
 def posts(request):
     is_admin = is_dashboard_admin(request.user)
     post_list = Blog.objects.select_related('category', 'author').order_by('-updated_at')
@@ -171,7 +161,6 @@ def posts(request):
 
 
 @login_required(login_url='login')
-@permission_required('blogs.add_blog', raise_exception=True)
 def add_post(request):
     if request.method == 'POST':
         form = BlogForm(request.POST, request.FILES)
@@ -198,7 +187,6 @@ def add_post(request):
 
 
 @login_required(login_url='login')
-@permission_required('blogs.change_blog', raise_exception=True)
 def edit_post(request, id):
     post = get_object_or_404(Blog, id=id)
     # Authors may only edit their own posts; admins may edit any post.
@@ -220,7 +208,6 @@ def edit_post(request, id):
 
 
 @login_required(login_url='login')
-@permission_required('blogs.delete_blog', raise_exception=True)
 @require_POST
 def delete_post(request, id):
     post = get_object_or_404(Blog, id=id)
