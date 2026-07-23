@@ -28,14 +28,12 @@ each link is still gated by the existing Django permission model (unchanged).
             </a>
         </li>
         {% endif %}
-        {% if perms.blogs.view_blog %}
         <li>
             <a href="{% url 'posts' %}"
                 class="btn btn--sm btn--block {% if '/posts/' in request.path %}btn--primary{% else %}btn--ghost{% endif %}">
                 <i class="fa fa-file-text" aria-hidden="true"></i> Posts
             </a>
         </li>
-        {% endif %}
         {% if user.is_staff or perms.blogs.view_comment or perms.blogs.change_comment %}
         <li>
             <a href="{% url 'dashboard_comments' %}"

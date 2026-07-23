@@ -89,9 +89,7 @@
             <a class="btn btn--outline btn--sm" href="{% url 'profile' %}">
               <i class="fa fa-user" aria-hidden="true"></i> Profile
             </a>
-            {% if user.is_staff or user.is_superuser or perms.blogs.view_blog or perms.blogs.add_blog or perms.blogs.change_blog %}
             <a class="btn btn--accent btn--sm" href="{% url 'dashboard' %}">Dashboard</a>
-            {% endif %}
             <form action="{% url 'account_logout' %}" method="POST" class="site-nav__logout">
               {% csrf_token %}
               <button type="submit" class="btn btn--danger-outline btn--sm">Logout</button>

@@ -13,7 +13,7 @@
                 <h1>{% if is_dashboard_admin %}All posts{% else %}Your posts{% endif %}</h1>
                 <p class="meta">{% if is_dashboard_admin %}Manage published, scheduled, and draft articles.{% else %}Manage your published, scheduled, and draft articles.{% endif %}</p>
             </div>
-            {% if perms.blogs.add_blog %}
+            {% if user.is_authenticated %}
             <a href="{% url 'add_post' %}" class="btn btn--sm btn--primary">
                 <i class="fa fa-plus" aria-hidden="true"></i> Add new
             </a>
@@ -67,12 +67,12 @@
                                 <a href="{% url 'Blog_detail' post.slug %}" class="btn btn--sm btn--secondary" title="{% if post.status == 'published' %}View post{% else %}Preview draft{% endif %}" aria-label="{% if post.status == 'published' %}View post{% else %}Preview draft{% endif %}">
                                     <i class="fa fa-eye" aria-hidden="true"></i>
                                 </a>
-                                {% if perms.blogs.change_blog %}
+                                {% if user.is_authenticated %}
                                 <a href="{% url 'edit_post' post.id %}" class="btn btn--sm btn--secondary" title="Edit post" aria-label="Edit post">
                                     <i class="fa fa-edit" aria-hidden="true"></i>
                                 </a>
                                 {% endif %}
-                                {% if perms.blogs.delete_blog %}
+                                {% if user.is_authenticated %}
                                 <form action="{% url 'delete_post' post.id %}" method="POST" class="dashboard-inline-form">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn--sm btn--danger" title="Delete post" aria-label="Delete post">
@@ -90,7 +90,7 @@
             <div class="empty-state">
                 <h2 class="empty-state__title">No posts found</h2>
                 <p class="empty-state__message">There are no posts in the dashboard yet.</p>
-                {% if perms.blogs.add_blog %}
+                {% if user.is_authenticated %}
                 <a href="{% url 'add_post' %}" class="btn btn--primary">Create first post</a>
                 {% endif %}
             </div>
