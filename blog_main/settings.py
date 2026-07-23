@@ -54,12 +54,13 @@ ALLOWED_HOSTS = [
 ]
 # Comma-separated list of fully qualified origins (with scheme), e.g.
 # "https://myapp.azurewebsites.net". Empty by default for local development.
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',')
-    if origin.strip()
-]
+import os
 
+# Read from env if available, otherwise fallback to list
+CSRF_TRUSTED_ORIGINS = os.getenv(
+    'CSRF_TRUSTED_ORIGINS', 
+    'https://inkspire-d7dubnfnbqbebqa3.centralindia-01.azurewebsites.net'
+).split(',')
 
 # Application definition
 
