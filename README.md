@@ -2,7 +2,7 @@
 
 InkSpire is a Django blogging and publishing platform built as a portfolio-grade project. It started as a simple blog and has been improved into a cleaner, safer publishing system with public discovery pages, author profiles, an editorial dashboard, SEO foundations, comment moderation, and a more professional writing workflow.
 
-Live demo: https://complete-blogging-system.onrender.com
+**Live demo: https://inkspire-blog-fqad.onrender.com**
 
 ## What it does
 
@@ -48,13 +48,14 @@ Live demo: https://complete-blogging-system.onrender.com
 
 - Python 3.12
 - Django 5.2.16 LTS
-- SQLite for local development
-- Bootstrap 5
-- django-allauth for Google authentication
-- CKEditor 5
+- SQLite for local development / PostgreSQL on Render
+- Custom CSS design system (Source Serif 4 + Inter, dark mode, design tokens)
+- django-allauth for Google OAuth authentication
+- CKEditor 5 for rich text editing
 - django-crispy-forms + crispy-bootstrap5
-- Pillow
-- WhiteNoise + Gunicorn for production-style deployment
+- Cloudinary for persistent media/image storage
+- Pillow for image validation
+- WhiteNoise + Gunicorn for production deployment
 
 ## Setup
 
@@ -85,17 +86,23 @@ DEBUG=True
 ALLOWED_HOSTS=127.0.0.1,localhost
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
 ```
 
-For production, set:
+For production (set these in your Render dashboard under Environment Variables):
 
 ```env
 DEBUG=False
 SECRET_KEY=your-production-secret
-ALLOWED_HOSTS=your-domain.com,www.your-domain.com
-DJANGO_SETTINGS_MODULE=blog_main.settings_prod
+ALLOWED_HOSTS=your-domain.onrender.com
+DATABASE_URL=your-postgres-url
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
 ```
 
 Local password reset uses Django's console email backend, so reset links are printed in the terminal during development.
@@ -152,7 +159,6 @@ Article HTML is sanitized server-side with one shared allowlist. New and edited 
 - Dashboard filters and pagination for posts/comments/messages
 - Richer author pages with selected social links
 - Better image handling, thumbnails, and responsive image variants
-- Production database and media storage configuration
 - More accessibility pass coverage
 - Deployment hardening checklist and CI pipeline
 
