@@ -4,6 +4,8 @@ cffi==2.1.0
 charset-normalizer==3.4.9
 crispy-bootstrap5==2024.10
 cryptography==49.0.0
+cloudinary==1.41.0
+django-cloudinary-storage==0.3.0
 dj-database-url==2.3.0
 Django==5.2.16
 django-allauth==65.3.1
