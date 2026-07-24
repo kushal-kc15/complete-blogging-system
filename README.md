@@ -128,27 +128,7 @@ Production/static files:
 python manage.py collectstatic --noinput
 ```
 
-## Screenshots
-
-Add screenshots here before sharing widely:
-
-- Homepage / discovery page
-- Article detail page
-- Public author profile
-- Login/register flow
-- Dashboard overview
-- Post editor
 - Comment moderation page
-
-## Project notes
-
-This project focuses on practical publishing-platform fundamentals rather than oversized startup features. The current version emphasizes:
-
-- safe role-based dashboard access;
-- clean public reading experience;
-- stable publishing semantics;
-- SEO-ready public pages;
-- minimal, test-covered moderation and editorial tooling.
 
 ### Rich-text security
 
@@ -162,16 +142,4 @@ Article HTML is sanitized server-side with one shared allowlist. New and edited 
 - More accessibility pass coverage
 - Deployment hardening checklist and CI pipeline
 
-## Portfolio / CV bullet
 
-Built InkSpire, a Django publishing platform with secure editorial workflows, public author pages, SEO-ready metadata, RSS/sitemap/robots support, image validation, comment moderation, and 26 automated tests covering security and publishing behavior.
-
-## LinkedIn project description
-
-InkSpire is a Django-based publishing platform I improved from a basic blog into a more professional content system. I focused on security containment, editorial dashboard UX, public reading experience, SEO metadata, RSS/sitemap/robots support, author profiles, image validation, comment moderation, and test coverage.
-
-## 60-second interview explanation
-
-InkSpire is a Django publishing platform that I evolved from a simple blogging app into a more complete editorial system. The main work was not just adding UI polish, but tightening the product foundations: protecting dashboard access, making state-changing actions POST-only, separating public and private profile views, adding password reset, improving SEO metadata, and ensuring drafts cannot leak into public lists, search, sitemap, RSS, or author pages.
-
-On the publishing side, I added safer draft previews, stable slugs after editing, a `published_at` field, featured image validation, alt text, and comment moderation. I also redesigned the public reading and discovery pages and improved the dashboard overview, post list, and editor workflow. The project now has automated tests covering the important security and publishing rules, so it is a much stronger portfolio example than a normal CRUD blog.
